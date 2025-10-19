@@ -1,0 +1,18 @@
+# Build
+**/dist/
+**/node_modules/
+*.tsbuildinfo
+
+# pnpm
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+# R
+src-r/
+
+# Rust
+src-tauri/
+
+# TypeScript
+tsconfig.json
+tsconfig.node.json
