@@ -1,0 +1,22 @@
+# Build
+dist/
+node_modules/
+*.tsbuildinfo
+
+# Docs
+docs/llms-txt/
+
+# Editor
+.cursor/
+
+# Environment
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# macOS system files
+.DS_Store
