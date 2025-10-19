@@ -48,7 +48,6 @@ const DescriptiveStatsPanel: FC<Props> = ({ path, sheet, onSelectionChange }) =>
 
   useEffect(() => {
     onSelectionChange?.(selected, order);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order]);
 
   return (
