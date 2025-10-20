@@ -6,6 +6,8 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import BaseButton from '../components/BaseButton';
 import tauriIPC from '../ipc';
 import type { DescriptiveOrder } from '../types';
+import type { CorrOptionValue } from '../types';
+import CorrAnalysisPage from './analysis/CorrAnalysisPage';
 import DescriptiveStatsPage from './analysis/DescriptiveStatsPage';
 
 const AnalysisPage: FC = () => {
@@ -18,6 +20,7 @@ const AnalysisPage: FC = () => {
   const [order, setOrder] = useState<DescriptiveOrder>('default');
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [corrOptions, setCorrOptions] = useState<CorrOptionValue | null>(null);
 
   useEffect(() => {
     const win = getCurrentWebviewWindow();
@@ -41,12 +44,29 @@ const AnalysisPage: FC = () => {
     try {
       // 1) Excelから数値データセットを抽出
       const dataset = await tauriIPC.buildNumericDataset(path, sheet, selectedVars);
-      // 2) Rで分析実行（MVP: descriptive固定） + 並び順はRで適用
-      const result = await tauriIPC.runRAnalysisWithDataset('descriptive', dataset, 30_000, order);
+      // 2) Rで分析実行（種類に応じて切り替え）
+      let result;
+      if (type === 'descriptive') {
+        result = await tauriIPC.runRAnalysisWithDataset('descriptive', dataset, 30_000, order);
+      } else if (type === 'correlation') {
+        const sel =
+          corrOptions ??
+          ({ methods: { pearson: true, kendall: false, spearman: false }, alt: 'two.sided', use: 'all.obs' } as const);
+        const opts = {
+          methods: Object.entries(sel.methods)
+            .filter(([, v]) => !!v)
+            .map(([k]) => k),
+          alt: sel.alt,
+          use: sel.use,
+        } as { methods: string[]; alt: string; use: string };
+        result = await tauriIPC.runRAnalysisWithDataset('correlation', dataset, 30_000, JSON.stringify(opts));
+      } else {
+        throw new Error(`未対応の分析種別: ${type}`);
+      }
 
       // 3) トークンを発行し、URLで渡す（イベント依存を排除）
       const token = await tauriIPC.issueResultToken(result);
-      const url = `pages/result.html?analysis=${encodeURIComponent('descriptive')}&token=${encodeURIComponent(token)}`;
+      const url = `pages/result.html?analysis=${encodeURIComponent(type)}&token=${encodeURIComponent(token)}`;
       await tauriIPC.openOrReuseWindow('result', url);
       // 結果ウィンドウを開いたら、分析ウィンドウは安全に閉じる
       // 新規ウィンドウ作成とフォーカス移行をOS側に委ねるため、次フレームで閉じる
@@ -85,6 +105,16 @@ const AnalysisPage: FC = () => {
           onSelectionChange={(sel, ord) => {
             setSelectedVars(sel);
             setOrder(ord);
+          }}
+        />
+      ) : null}
+      {type === 'correlation' ? (
+        <CorrAnalysisPage
+          path={path}
+          sheet={sheet}
+          onSelectionChange={(sel, opts) => {
+            setSelectedVars(sel);
+            setCorrOptions(opts);
           }}
         />
       ) : null}
