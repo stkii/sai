@@ -10,6 +10,7 @@ import type { DescriptiveOrder } from '../types';
 type Props = {
   value: DescriptiveOrder;
   onChange: (next: DescriptiveOrder) => void;
+  className?: string;
 };
 
 /**
@@ -20,41 +21,47 @@ type Props = {
  * @param {Props} props - Component props
  * @returns {JSX.Element} A fieldset with three radio button options
  */
-const DescriptiveOption: FC<Props> = ({ value, onChange }) => {
+const DescriptiveOption: FC<Props> = ({ value, onChange, className }) => {
   return (
-    <fieldset className="option-group">
-      <legend>表示順</legend>
-      <label className="radio">
-        <input
-          type="radio"
-          name="desc-order"
-          value="default"
-          checked={value === 'default'}
-          onChange={() => onChange('default')}
-        />
-        変数リスト順（デフォルト）
-      </label>
-      <label className="radio">
-        <input
-          type="radio"
-          name="desc-order"
-          value="mean_asc"
-          checked={value === 'mean_asc'}
-          onChange={() => onChange('mean_asc')}
-        />
-        平均値による昇順
-      </label>
-      <label className="radio">
-        <input
-          type="radio"
-          name="desc-order"
-          value="mean_desc"
-          checked={value === 'mean_desc'}
-          onChange={() => onChange('mean_desc')}
-        />
-        平均値による降順
-      </label>
-    </fieldset>
+    <div
+      className={['flex flex-col justify-start border rounded-lg p-2 h-full', className || '']
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <span className="font-semibold mb-1">表示順</span>
+      <div className="flex flex-col gap-1 mt-0.5">
+        <label className="flex items-center gap-1 text-sm">
+          <input
+            type="radio"
+            name="desc-order"
+            value="default"
+            checked={value === 'default'}
+            onChange={() => onChange('default')}
+          />
+          変数リスト順（デフォルト）
+        </label>
+        <label className="flex items-center gap-1 text-sm">
+          <input
+            type="radio"
+            name="desc-order"
+            value="mean_asc"
+            checked={value === 'mean_asc'}
+            onChange={() => onChange('mean_asc')}
+          />
+          平均値による昇順
+        </label>
+        <label className="flex items-center gap-1 text-sm">
+          <input
+            type="radio"
+            name="desc-order"
+            value="mean_desc"
+            checked={value === 'mean_desc'}
+            onChange={() => onChange('mean_desc')}
+          />
+          平均値による降順
+        </label>
+      </div>
+    </div>
   );
 };
 

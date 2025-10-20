@@ -125,8 +125,6 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
             disabled={!selectedSheet || loading}
             label={<>読み込む</>}
           />
-
-
         </>
       )}
     </div>

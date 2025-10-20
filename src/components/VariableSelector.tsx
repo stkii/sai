@@ -11,90 +11,101 @@ type Props = {
   rightLabel?: string;
 };
 
-// チェックボックス方式の変数選択（検索バーはプレースホルダ）
 const VariableSelector: FC<Props> = ({
   allVariables,
   value,
   onChange,
   className,
   leftLabel = '変数一覧',
-  rightLabel = '分析に使用する変数',
+  rightLabel = '使用変数',
 }) => {
   const available = useMemo(() => {
     const selectedSet = new Set(value);
     return allVariables.filter((v) => !selectedSet.has(v));
   }, [allVariables, value]);
 
-  const [leftChecked, setLeftChecked] = useState<Record<string, boolean>>({});
-  const [rightChecked, setRightChecked] = useState<Record<string, boolean>>({});
+  const [availChecked, setAvailChecked] = useState<Record<string, boolean>>({});
+  const [selectedChecked, setSelectedChecked] = useState<Record<string, boolean>>({});
 
   const handleAdd = () => {
-    const picked = available.filter((v) => rightChecked[v]);
+    const picked = available.filter((v) => availChecked[v]);
     if (picked.length === 0) return;
     onChange([...value, ...picked]);
-    setRightChecked({});
+    setAvailChecked({});
   };
 
   const handleRemove = () => {
-    const toRemove = new Set(Object.keys(leftChecked).filter((k) => leftChecked[k]));
+    const toRemove = new Set(Object.keys(selectedChecked).filter((k) => selectedChecked[k]));
     if (toRemove.size === 0) return;
     const next = value.filter((v) => !toRemove.has(v));
     onChange(next);
-    setLeftChecked({});
+    setSelectedChecked({});
   };
 
-  const onLeftChange = (e: ChangeEvent<HTMLInputElement>, name: string) => {
+  const onAvailChange = (e: ChangeEvent<HTMLInputElement>, name: string) => {
     const checked = (e.target as HTMLInputElement).checked;
-    setLeftChecked((cur) => ({ ...cur, [name]: checked }));
+    setAvailChecked((cur) => ({ ...cur, [name]: checked }));
   };
 
-  const onRightChange = (e: ChangeEvent<HTMLInputElement>, name: string) => {
+  const onSelectedChange = (e: ChangeEvent<HTMLInputElement>, name: string) => {
     const checked = (e.target as HTMLInputElement).checked;
-    setRightChecked((cur) => ({ ...cur, [name]: checked }));
+    setSelectedChecked((cur) => ({ ...cur, [name]: checked }));
   };
 
   return (
-    <div className={`varsel ${className ?? ''}`.trim()}>
-      <div className="varsel__search">
-        <input className="varsel__searchInput" placeholder="検索（未実装）" disabled />
-      </div>
-      <div className="varsel__cols">
-        <div className="varsel__panel">
-          <div className="varsel__label">{leftLabel}</div>
-          <div className="varsel__items" role="listbox" aria-multiselectable>
+    <div
+      className={['flex flex-col border rounded-lg px-2 pt-2 pb-3 h-full', className || '']
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <div className="flex flex-row justify-between gap-4 h-full">
+        {/* 変数一覧 */}
+        <div className="flex flex-col w-[45%] min-w-0">
+          <span className="font-semibold mb-1">{leftLabel}</span>
+          <div className="flex flex-col border rounded-md p-1 h-[260px] overflow-auto">
             {available.map((name) => (
-              <label key={`right-${name}`} className="varsel__item" title={name}>
+              <label key={`avail-${name}`} className="flex items-center gap-2 text-sm py-0.5" title={name}>
                 <input
                   type="checkbox"
-                  checked={!!rightChecked[name]}
-                  onChange={(e) => onRightChange(e as unknown as ChangeEvent<HTMLInputElement>, name)}
+                  checked={!!availChecked[name]}
+                  onChange={(e) => onAvailChange(e, name)}
                 />
-                <span className="varsel__name">{name}</span>
+                <span className="truncate">{name}</span>
               </label>
             ))}
-            {available.length === 0 && <div className="muted small">全て追加済み</div>}
+            {available.length === 0 && <div className="text-gray-500 text-xs">全て追加済み</div>}
           </div>
+          <BaseButton
+            className="mt-auto"
+            widthGroup="analysis-primary"
+            onClick={handleAdd}
+            label={<>追加 →</>}
+          />
         </div>
-        <div className="varsel__panel">
-          <div className="varsel__label">{rightLabel}</div>
-          <div className="varsel__items" role="listbox" aria-multiselectable>
+
+        {/* 使用変数 */}
+        <div className="flex flex-col w-[45%] min-w-0">
+          <span className="font-semibold mb-1">{rightLabel}</span>
+          <div className="flex flex-col border rounded-md p-1 h-[260px] overflow-auto">
             {value.map((name) => (
-              <label key={`left-${name}`} className="varsel__item" title={name}>
+              <label key={`sel-${name}`} className="flex items-center gap-2 text-sm py-0.5" title={name}>
                 <input
                   type="checkbox"
-                  checked={!!leftChecked[name]}
-                  onChange={(e) => onLeftChange(e as unknown as ChangeEvent<HTMLInputElement>, name)}
+                  checked={!!selectedChecked[name]}
+                  onChange={(e) => onSelectedChange(e, name)}
                 />
-                <span className="varsel__name">{name}</span>
+                <span className="truncate">{name}</span>
               </label>
             ))}
-            {value.length === 0 && <div className="muted small">未選択</div>}
+            {value.length === 0 && <div className="text-gray-500 text-xs">未選択</div>}
           </div>
+          <BaseButton
+            className="mt-auto"
+            widthGroup="analysis-secondary"
+            onClick={handleRemove}
+            label={<>← 戻す</>}
+          />
         </div>
-      </div>
-      <div className="varsel__footer">
-        <BaseButton widthGroup="analysis-primary" onClick={handleAdd} label={<>追加</>} />
-        <BaseButton widthGroup="analysis-secondary" onClick={handleRemove} label={<>削除</>} />
       </div>
     </div>
   );

@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-import BaseButton from '../components/BaseButton';
+import RunField from '../components/RunField';
+import '../globals.css';
 import tauriIPC from '../ipc';
 import type { DescriptiveOrder } from '../types';
 import type { CorrOptionValue } from '../types';
@@ -51,7 +52,11 @@ const AnalysisPage: FC = () => {
       } else if (type === 'correlation') {
         const sel =
           corrOptions ??
-          ({ methods: { pearson: true, kendall: false, spearman: false }, alt: 'two.sided', use: 'all.obs' } as const);
+          ({
+            methods: { pearson: true, kendall: false, spearman: false },
+            alt: 'two.sided',
+            use: 'all.obs',
+          } as const);
         const opts = {
           methods: Object.entries(sel.methods)
             .filter(([, v]) => !!v)
@@ -82,42 +87,43 @@ const AnalysisPage: FC = () => {
   }
 
   return (
-    <main className="container analysis-panel-root h-[100vh] w-full relative overflow-hidden">
-      <h1 className="absolute left-[16px] top-[12px] m-0">分析パネル</h1>
-      <p className="analysis-panel-subtitle absolute left-[16px] m-0 muted small top-[48px] text-[#666666] text-[12px]">
+    <main className="w-full h-full flex flex-col bg-white rounded-2xl shadow-md p-4 overflow-hidden">
+      <h1 className="text-2xl font-bold mb-1">分析パネル</h1>
+      <p className="text-sm mb-2">
         分析: {type} / シート: {sheet}
       </p>
-      {error && (
-        <p className="absolute left-[16px] top-[66px] text-[#b00020] text-[12px] m-0">エラー: {error}</p>
-      )}
-      <div className="absolute right-[16px] top-[40px]">
-        <BaseButton
-          widthGroup="analysis-primary"
-          onClick={executeAnalysis}
-          disabled={running || !path || !sheet || selectedVars.length === 0}
-          label={<>{running ? '実行中…' : '実行'}</>}
-        />
+      {error && <p className="text-[#b00020] text-sm mb-2">エラー: {error}</p>}
+
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {type === 'descriptive' ? (
+          <DescriptiveStatsPage
+            path={path}
+            sheet={sheet}
+            onSelectionChange={(sel, ord) => {
+              setSelectedVars(sel);
+              setOrder(ord);
+            }}
+          />
+        ) : null}
+        {type === 'correlation' ? (
+          <CorrAnalysisPage
+            path={path}
+            sheet={sheet}
+            onSelectionChange={(sel, opts) => {
+              setSelectedVars(sel);
+              setCorrOptions(opts);
+            }}
+          />
+        ) : null}
       </div>
-      {type === 'descriptive' ? (
-        <DescriptiveStatsPage
-          path={path}
-          sheet={sheet}
-          onSelectionChange={(sel, ord) => {
-            setSelectedVars(sel);
-            setOrder(ord);
-          }}
-        />
-      ) : null}
-      {type === 'correlation' ? (
-        <CorrAnalysisPage
-          path={path}
-          sheet={sheet}
-          onSelectionChange={(sel, opts) => {
-            setSelectedVars(sel);
-            setCorrOptions(opts);
-          }}
-        />
-      ) : null}
+
+      <RunField
+        className="mt-3"
+        onRun={executeAnalysis}
+        onClose={() => getCurrentWebviewWindow().close()}
+        running={running}
+        disabled={running || !path || !sheet || selectedVars.length === 0}
+      />
     </main>
   );
 };

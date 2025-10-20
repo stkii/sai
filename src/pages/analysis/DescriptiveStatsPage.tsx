@@ -51,17 +51,18 @@ const DescriptiveStatsPanel: FC<Props> = ({ path, sheet, onSelectionChange }) =>
   }, [order]);
 
   return (
-    <section className="desc-panel-abs absolute left-[16px] right-[16px] top-[80px] bottom-[48px]">
+    <section className="flex flex-1 min-h-0 flex-col">
       {loading && <p>読み込み中…</p>}
-      {error && <p className="error text-[#b00020]">エラー: {error}</p>}
+      {error && <p className="text-[#b00020]">エラー: {error}</p>}
       {!loading && !error && (
-        <div className="desc-content absolute inset-0">
-          <div className="desc-varsel-abs absolute left-0 right-[288px] top-0 bottom-0">
-            <VariableSelector allVariables={headers} value={selected} onChange={applySelection} />
-          </div>
-          <div className="desc-order-abs absolute right-0 top-0 left-auto w-[272px]">
-            <DescriptiveOption value={order} onChange={setOrder} />
-          </div>
+        <div className="flex flex-row gap-4 flex-1 min-h-0 items-stretch">
+          <VariableSelector
+            className="w-1/2"
+            allVariables={headers}
+            value={selected}
+            onChange={applySelection}
+          />
+          <DescriptiveOption className="w-1/2" value={order} onChange={setOrder} />
         </div>
       )}
     </section>
