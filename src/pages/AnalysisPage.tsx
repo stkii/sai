@@ -48,7 +48,13 @@ const AnalysisPage: FC = () => {
       // 2) Rで分析実行（種類に応じて切り替え）
       let result;
       if (type === 'descriptive') {
-        result = await tauriIPC.runRAnalysisWithDataset('descriptive', dataset, 30_000, order);
+        const options = { order };
+        result = await tauriIPC.runRAnalysisWithDataset(
+          'descriptive',
+          dataset,
+          30_000,
+          JSON.stringify(options)
+        );
       } else if (type === 'correlation') {
         const sel =
           corrOptions ??

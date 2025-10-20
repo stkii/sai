@@ -30,7 +30,7 @@ sequenceDiagram
     F->>T: invoke build_numeric_dataset(path, sheet, variables)
     T-->>F: dataset (Map<String, Array<number|null>>)
 
-    F->>T: invoke run_r_analysis_with_dataset(analysis, dataset, timeoutMs, order?)
+    F->>T: invoke run_r_analysis_with_dataset(analysis, dataset, timeoutMs, optionsJson?)
     T->>R: Rscript --vanilla cli.R analysis in.json out.json [order]
     R-->>T: JSON (ParsedTable)
     T-->>F: ParsedTable
@@ -65,7 +65,7 @@ sequenceDiagram
     F->>T: invoke build_numeric_dataset(path, sheet, variables)
     T-->>F: dataset
 
-    F->>T: invoke run_r_analysis_with_dataset(analysis, dataset, timeoutMs, order?)
+    F->>T: invoke run_r_analysis_with_dataset(analysis, dataset, timeoutMs, optionsJson?)
     T->>R: Rscript --vanilla cli.R analysis in.json out.json [order]
 
     alt R実行がタイムアウト
@@ -79,3 +79,16 @@ sequenceDiagram
 
 - タイムアウト値はフロントから `timeoutMs`（ミリ秒）で渡され、Rust側で `Duration` に変換して待機します。
 - タイムアウト時は `issue_result_token` や `open_or_reuse_window` は呼ばれないため、結果ビューは開きません。
+
+## セル値の特別表現と解釈
+
+表示用テーブル（ParsedTable）のセルには、統計・Excel由来の特殊値を表す文字列が含まれることがあります。UI は基本的に素の文字列をそのまま表示します。
+
+- 欠損: `null`
+- NaN: `"NaN!"`
+- 無限大: `"Inf!"` / `"-Inf!"`
+- Excelエラー: `"#DIV/0!"`, `"#N/A"`, `"#NAME?"`, `"#NULL!"`, `"#NUM!"`, `"#REF!"`, `"#VALUE!"`, `"#GETTING"`
+- 相関分析 p 値の対角成分（未定義）: `"-"`
+
+注:
+- これらは表示のための表記です。再計算やフィルタなど機械処理を行う場合は、用途に応じた変換・判定が必要です。

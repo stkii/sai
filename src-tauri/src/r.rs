@@ -12,6 +12,10 @@ use std::process::{
 use std::time::Duration;
 
 use calamine::Data;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tauri::AppHandle;
 use tempfile::NamedTempFile;
 use wait_timeout::ChildExt;
@@ -19,38 +23,19 @@ use wait_timeout::ChildExt;
 use crate::dto::ParsedTable;
 use crate::excel;
 
-fn default_header(index: usize) -> String {
-    format!("列{}", index + 1)
-}
-
-fn header_from_cell(
-    cell: &Data,
-    index: usize,
-) -> String {
-    let s = match cell {
-        Data::String(s) => s.trim().to_string(),
-        Data::Float(f) => match serde_json::Number::from_f64(*f) {
-            Some(n) => n.to_string(),
-            None => String::new(),
-        },
-        #[allow(deprecated)]
-        Data::Int(n) => n.to_string(),
-        Data::Bool(b) => {
-            if *b {
-                "TRUE".into()
-            } else {
-                "FALSE".into()
-            }
-        },
-        Data::Empty | Data::Error(_) => String::new(),
-        other => other.to_string(),
-    };
-    let s = s.trim();
-    if s.is_empty() {
-        default_header(index)
-    } else {
-        s.to_string()
-    }
+// IPC options typed on Rust side, converted later for R CLI
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+enum AnalysisOptions {
+    Correlation {
+        methods: Vec<String>,
+        alt: String,
+        #[serde(rename = "use")]
+        r#use: String,
+    },
+    Descriptive {
+        order: String,
+    },
 }
 
 fn to_f64_opt(cell: &Data) -> Option<f64> {
@@ -77,31 +62,9 @@ pub fn build_numeric_dataset(
         return Err("指定シートにデータがありません".to_string());
     }
 
-    // ヘッダー生成
+    // ヘッダー生成（excel.rs に集約された実装を利用）
     let header_row = &rows[0];
-    let headers: Vec<String> = header_row
-        .iter()
-        .enumerate()
-        .map(|(i, cell)| header_from_cell(cell, i))
-        .collect();
-
-    // 重複ヘッダー検出（元の文言を維持）
-    {
-        let mut counts: HashMap<&str, usize> = HashMap::new();
-        for h in &headers {
-            *counts.entry(h.as_str()).or_default() += 1;
-        }
-        let dups: Vec<&str> = counts
-            .into_iter()
-            .filter_map(|(k, c)| (c > 1).then_some(k))
-            .collect();
-        if !dups.is_empty() {
-            return Err(format!(
-                "シートのヘッダー（列名）が重複しています: {}",
-                dups.join(", ")
-            ));
-        }
-    }
+    let headers: Vec<String> = excel::compute_headers_from_first_row(header_row)?;
 
     // 変数存在確認（ヘッダー順の仕様は維持。存在確認は O(1) 用にマップ化）
     let header_index: HashMap<&str, usize> =
@@ -175,7 +138,7 @@ pub fn run_r_analysis_with_dataset(
     _handle: &AppHandle,
     analysis: &str,
     dataset: &IndexMap<String, Vec<Option<f64>>>,
-    order: Option<&str>,
+    options_json: Option<&str>,
     timeout: Duration,
 ) -> Result<ParsedTable, String> {
     // 一時ファイル（入力/出力、自動クリーンアップ）
@@ -202,9 +165,30 @@ pub fn run_r_analysis_with_dataset(
         .env("R_PROJECT_ROOT", &root_src_r)
         .stderr(Stdio::piped());
 
-    if let Some(ord) = order {
-        if !ord.is_empty() {
-            cmd.arg(ord);
+    // options_json をRust側で型付けして検証し、R CLI へ適切に引き渡す
+    if let Some(raw) = options_json {
+        if !raw.is_empty() {
+            match serde_json::from_str::<AnalysisOptions>(raw) {
+                Ok(AnalysisOptions::Descriptive { order }) => {
+                    if !order.trim().is_empty() {
+                        cmd.arg(order);
+                    }
+                },
+                Ok(AnalysisOptions::Correlation { methods, alt, r#use }) => {
+                    // 正規化してから JSON で渡す
+                    let opts = serde_json::json!({
+                        "methods": methods,
+                        "alt": alt,
+                        "use": r#use,
+                    });
+                    let s = serde_json::to_string(&opts).map_err(|e| e.to_string())?;
+                    cmd.arg(s);
+                },
+                Err(_) => {
+                    // 型付けに失敗した場合は生文字列をそのまま渡して後段で扱う
+                    cmd.arg(raw);
+                },
+            }
         }
     }
 

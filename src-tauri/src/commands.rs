@@ -48,14 +48,14 @@ pub fn run_r_analysis_with_dataset(
     app: tauri::AppHandle,
     analysis: String,
     dataset: IndexMap<String, Vec<Option<f64>>>,
-    order: Option<String>,
+    options_json: Option<String>,
     timeout_ms: u64,
 ) -> Result<ParsedTable, String> {
     r::run_r_analysis_with_dataset(
         &app,
         &analysis,
         &dataset,
-        order.as_deref(),
+        options_json.as_deref(),
         Duration::from_millis(timeout_ms),
     )
 }

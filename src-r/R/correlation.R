@@ -207,8 +207,8 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
       if (j < i) {
         row_vals[[j + 1]] <- "" # lower triangle blank
       } else if (j == i) {
-        # "NULL" is represented as undefinend value
-        row_vals[[j + 1]] <- "NULL" # diagonal p-value undefined
+        # diagonal p-value undefined -> represent as "-"
+        row_vals[[j + 1]] <- "-"
       } else {
         p <- pval[i, j]
         if (is.na(p)) {
