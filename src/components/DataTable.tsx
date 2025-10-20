@@ -91,7 +91,7 @@ const DataTable: FC<Props> = ({ data, className }) => {
               {Array.from({ length: colCount }, (_, cIdx) => {
                 return (
                   <td className={cx(cellBaseCls)} key={cIdx}>
-                    {row[cIdx]}
+                    {String(row[cIdx] ?? '')} {/* フォールバックは boolean のため */}
                   </td>
                 );
               })}

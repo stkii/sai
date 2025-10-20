@@ -18,6 +18,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
   const [filePath, setFilePath] = useState<string | null>(null);
   const [sheetNames, setSheetNames] = useState<string[] | null>(null);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
+  const [analysisType, setAnalysisType] = useState<string>('');
 
   async function pickFile() {
     try {
@@ -59,14 +60,16 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
     }
   }
 
-  async function handleAnalyze() {
-    if (!filePath || !selectedSheet) return;
+  async function openAnalysis(kind: string) {
+    if (!filePath || !selectedSheet || !kind) return;
     const url = `pages/analysis.html?path=${encodeURIComponent(filePath)}&sheet=${encodeURIComponent(
       selectedSheet
-    )}&analysis=${encodeURIComponent('descriptive')}`;
+    )}&analysis=${encodeURIComponent(kind)}`;
     try {
       await tauriIPC.openOrReuseWindow('analysis', url);
       onAnalyze?.({ filePath, sheet: selectedSheet });
+      // 分析パネルを開いた後は分析種類の選択をリセット（再選択できるようにする）
+      setTimeout(() => setAnalysisType(''), 0);
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     }
@@ -99,6 +102,23 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
             ))}
           </select>
 
+          <select
+            className="border rounded px-2 py-1"
+            value={analysisType}
+            onChange={(e) => {
+              const kind = e.currentTarget.value;
+              setAnalysisType(kind);
+              if (kind) void openAnalysis(kind);
+            }}
+            disabled={loading || !selectedSheet}
+          >
+            <option value="" disabled>
+              分析を選択
+            </option>
+            <option value="descriptive">記述統計</option>
+            <option value="correlation">相関分析</option>
+          </select>
+
           <BaseButton
             widthGroup="ribbon"
             onClick={loadSelectedSheet}
@@ -106,12 +126,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
             label={<>読み込む</>}
           />
 
-          <BaseButton
-            widthGroup="ribbon"
-            onClick={handleAnalyze}
-            disabled={!selectedSheet || loading}
-            label={<>分析</>}
-          />
+
         </>
       )}
     </div>
