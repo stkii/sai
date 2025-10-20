@@ -102,8 +102,8 @@ pub fn open_or_reuse_window(
     match label.as_str() {
         "analysis" => {
             builder = builder.title("SAI - (Analysis Panel)");
-            builder = builder.inner_size(600.0, 450.0);
-            builder = builder.resizable(false);
+            builder = builder.inner_size(720.0, 540.0);
+            // builder = builder.resizable(false);
         },
         "result" => {
             builder = builder.title("SAI - (Result Viewer)");
