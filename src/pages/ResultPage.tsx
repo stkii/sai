@@ -1,90 +1,229 @@
-import { useEffect, useMemo, useState, type FC } from 'react';
+import { useEffect, useRef, useState, type FC } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { save } from '@tauri-apps/plugin-dialog';
+
+import BaseButton from '../components/BaseButton';
+import DataTable from '../components/DataTable';
 import type { ParsedTable } from '../dto';
+import '../globals.css';
 import tauriIPC from '../ipc';
 
+type AnalysisEntry = {
+  id: string;
+  createdAt: number;
+  analysis: string;
+  source: { filePath: string; sheet: string };
+  variables: string[];
+  params?: unknown;
+  dataset?: Record<string, Array<number | null>>;
+  result: ParsedTable;
+};
+
 const ResultPage: FC = () => {
-  const query = useMemo(() => new URLSearchParams(window.location.search || ''), []);
-  const analysis = query.get('analysis') || '';
-
-  const [table, setTable] = useState<ParsedTable | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState<boolean>(true);
+  const [entries, setEntries] = useState<AnalysisEntry[]>([]);
+  const consumedTokensRef = useRef<Set<string>>(new Set());
+  const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const sessionIdRef = useRef<string>(Math.random().toString(16).slice(2) + '-' + Date.now().toString(36));
 
-  useEffect(() => {
-    const token = query.get('token') || '';
-    let cancelled = false;
-    (async () => {
+  // URL依存の単発読み込みは廃止（イベント経由のみ）
+
+  // 共通ハンドラ
+  async function handlePayload(p: Record<string, unknown>) {
+    const token = String(p['token'] || '');
+    const analysis = String(p['analysis'] || '');
+    const path = String(p['path'] || '');
+    const sheet = String(p['sheet'] || '');
+    const variables = (p['variables'] as string[]) || [];
+    const params = p['params'];
+    const dataset = p['dataset'] as Record<string, Array<number | null>> | undefined;
+    if (!token) return;
+    try {
+      if (consumedTokensRef.current.has(token)) return;
+      const cacheKey = `sai:result-token:${token}`;
+      let result: ParsedTable | null = null;
       try {
-        setError(null);
-        if (!token) throw new Error('tokenがURLに含まれていません');
-
-        // React StrictMode 下ではエフェクトが二重に実行されるため
-        // トークンの二重消費を避ける目的で sessionStorage を使ってキャッシュする。
-        const cacheKey = `sai:result-token:${token}`;
-        let cached: ParsedTable | null = null;
-        try {
-          const raw = sessionStorage.getItem(cacheKey);
-          if (raw) cached = JSON.parse(raw) as ParsedTable;
-        } catch {
-          void 0; // storage/JSON が使えない環境では黙って続行
-        }
-
-        if (cached) {
-          if (!cancelled) setTable(cached);
-          return;
-        }
-
-        const result = await tauriIPC.consumeResultToken(token);
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) result = JSON.parse(raw) as ParsedTable;
+      } catch {
+        void 0;
+      }
+      if (!result) {
+        result = await tauriIPC.consumeResultToken(token);
         try {
           sessionStorage.setItem(cacheKey, JSON.stringify(result));
         } catch {
-          void 0; // ストレージ容量やプライベートモード等の例外は無視
+          void 0;
         }
-        if (!cancelled) setTable(result);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       }
+      if (!result) return;
+      consumedTokensRef.current.add(token);
+      const entry: AnalysisEntry = {
+        id: token,
+        createdAt: Date.now(),
+        analysis,
+        source: { filePath: path, sheet },
+        variables,
+        params,
+        dataset,
+        result,
+      };
+      setEntries((cur) => [...cur, entry]);
+      try {
+        await tauriIPC.appendAnalysisLog(entry);
+      } catch {
+        // ログ失敗はUIのブロック要因にしない
+      }
+      setTimeout(() => {
+        const el = entryRefs.current[entry.id];
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  // 初回マウント時に Analysis 側が置いたペンディングペイロードを確認
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('sai:pending-result-payload');
+      if (raw) {
+        const p = JSON.parse(raw) as Record<string, unknown>;
+        // 一度取り出したら消す（多重処理防止）
+        localStorage.removeItem('sai:pending-result-payload');
+        void handlePayload(p);
+      }
+    } catch {
+      // 読み取り失敗は無視（イベントに委ねる）
+    }
+  }, []);
+
+  // result:load イベントでの追記
+  useEffect(() => {
+    const win = getCurrentWebviewWindow();
+    let unlisten: (() => void) | null = null;
+    (async () => {
+      unlisten = await win.listen('result:load', async (ev: { payload: unknown }) => {
+        const p = (ev.payload as Record<string, unknown> | null) ?? null;
+        if (!p) return;
+        await handlePayload(p);
+      });
     })();
     return () => {
-      cancelled = true;
+      if (unlisten) unlisten();
     };
-  }, [query]);
+  }, []);
+
+  const formatTime = (ms: number) => {
+    const d = new Date(ms);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  async function onExport() {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const ymd = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const hms = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const suggested = `sai-export-${ymd}-${hms}.json`;
+    const dest = await save({ defaultPath: suggested, filters: [{ name: 'JSON', extensions: ['json'] }] });
+    if (!dest) return;
+    const exportObj = {
+      app: 'sai',
+      format: 1,
+      exportedAt: now.toISOString(),
+      sessionId: sessionIdRef.current,
+      entries,
+    };
+    try {
+      await tauriIPC.saveTextFile(dest, JSON.stringify(exportObj, null, 2));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
 
   return (
-    <main className="container result-root p-4">
-      <h1 className="m-0">結果ビューア</h1>
-      <p className="muted small text-[#666]">分析: {analysis || '-'}</p>
-      {error ? (
-        <p className="mt-4 text-[#b00020]">エラー: {error}</p>
-      ) : !table ? (
-        <p className="mt-4">結果を取得中…</p>
-      ) : (
-        <div className="mt-3 overflow-auto">
-          <table className="border-collapse min-w-[480px]">
-            <thead>
-              <tr>
-                {table.headers.map((h, i) => (
-                  <th key={`h-${i}`} className="bg-[#fafafa] border px-2 py-1 text-left">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {table.rows.map((row, r) => (
-                <tr key={`r-${r}`}>
-                  {row.map((cell, c) => (
-                    <td key={`c-${r}-${c}`} className="border px-2 py-1">
-                      {String(cell ?? '')}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <main className="w-full h-screen flex flex-col overflow-hidden bg-white">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#E0E0E0] sticky top-0 bg-white z-10">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="履歴パネルの表示/非表示"
+            className="px-2 py-1 text-sm rounded hover:bg-gray-50"
+            onClick={() => setShowSidebar((v) => !v)}
+            title="履歴パネルの表示/非表示"
+          >
+            ☰
+          </button>
+          <h1 className="text-xl font-semibold m-0">結果ビューア</h1>
         </div>
-      )}
+        <BaseButton onClick={onExport} label={<>⬇ エクスポート</>} />
+      </div>
+      {error && <p className="text-[#b00020] px-3 py-1 border-b border-[#E0E0E0]">エラー: {error}</p>}
+      <div
+        className={`flex-1 min-h-0 flex flex-row overflow-hidden ${showSidebar ? 'divide-x divide-[#E0E0E0]' : ''}`}
+      >
+        {/* 左: 履歴（固定幅） */}
+        {showSidebar && (
+          <aside className="w-[260px] shrink-0 flex flex-col min-h-0 overflow-hidden">
+            <div className="text-sm text-gray-600 px-3 py-2 sticky top-0 bg-white z-10">分析履歴</div>
+            <div className="flex-1 overflow-y-auto px-2 py-1">
+              {entries.length === 0 && (
+                <div className="text-xs text-gray-500 px-1 py-1">まだ結果はありません</div>
+              )}
+              {entries.map((e, idx) => (
+                <button
+                  key={e.id}
+                  className="w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-50"
+                  onClick={() => {
+                    const el = entryRefs.current[e.id];
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  title={`${e.analysis} (${e.source.sheet})`}
+                >
+                  <span className="text-gray-500 mr-1">#{idx + 1}</span>
+                  <span className="font-medium">{e.analysis || 'unknown'}</span>
+                  <span className="text-gray-500 ml-2">{formatTime(e.createdAt)}</span>
+                </button>
+              ))}
+            </div>
+          </aside>
+        )}
+
+        {/* 右: 結果（可変幅） */}
+        <section className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="text-sm text-gray-600 px-3 py-2 sticky top-0 bg-white z-10">分析結果</div>
+          <div className="flex-1 overflow-y-auto px-3 py-2">
+            {entries.map((e, idx) => (
+              <div
+                key={e.id}
+                ref={(el) => {
+                  entryRefs.current[e.id] = el;
+                }}
+                className="mb-4 pb-3 border-b last:border-b-0"
+              >
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-base font-semibold m-0">
+                    #{idx + 1} {e.analysis}
+                    <span className="text-gray-500 text-xs ml-2">{formatTime(e.createdAt)}</span>
+                  </h2>
+                  <div className="text-xs text-gray-500">
+                    {e.source.sheet}
+                    {e.variables?.length ? ` / 変数: ${e.variables.length}` : ''}
+                  </div>
+                </div>
+                <DataTable data={e.result} fluid />
+              </div>
+            ))}
+            {entries.length === 0 && (
+              <div className="text-sm text-gray-500">分析パネルから実行するとここに結果が蓄積されます</div>
+            )}
+          </div>
+        </section>
+      </div>
     </main>
   );
 };

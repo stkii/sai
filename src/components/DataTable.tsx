@@ -5,6 +5,7 @@ import { type ParsedTable } from '../dto';
 type Props = {
   data: ParsedTable | null;
   className?: string;
+  fluid?: boolean;
 };
 
 // Merge and sort class names lexicographically
@@ -15,7 +16,7 @@ const cx = (...parts: Array<string | null | undefined | false>): string =>
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     .join(' ');
 
-const DataTable: FC<Props> = ({ data, className }) => {
+const DataTable: FC<Props> = ({ data, className, fluid }) => {
   if (!data || data.rows.length === 0) {
     return null;
   }
@@ -38,7 +39,7 @@ const DataTable: FC<Props> = ({ data, className }) => {
     'max-h-[90vh]',
     'my-2.5',
     'overflow-auto',
-    'w-[calc(100vw-5vh)]'
+    fluid ? 'w-full' : 'w-[calc(100vw-5vh)]'
   );
 
   const tableCls = cx('border-separate', 'border-spacing-0', 'w-full');

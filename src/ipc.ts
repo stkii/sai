@@ -48,6 +48,14 @@ class TauriIPC {
   async consumeResultToken(token: string): Promise<ParsedTable> {
     return await invoke('consume_result_token', { token });
   }
+
+  async saveTextFile(path: string, contents: string): Promise<void> {
+    return await invoke('save_text_file', { path, contents });
+  }
+
+  async appendAnalysisLog(entry: unknown): Promise<void> {
+    return await invoke('append_analysis_log', { entry });
+  }
 }
 
 const tauriIPC = new TauriIPC();
