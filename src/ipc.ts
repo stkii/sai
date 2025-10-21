@@ -31,13 +31,13 @@ class TauriIPC {
     analysis: string,
     dataset: Record<string, Array<number | null>>,
     timeoutMs: number,
-    order?: string
+    optionsJson?: string
   ): Promise<ParsedTable> {
     return await invoke('run_r_analysis_with_dataset', {
       analysis,
       dataset,
       timeoutMs,
-      order,
+      optionsJson,
     });
   }
 

@@ -104,7 +104,9 @@ pub fn create_parsed_table(rows_data: Vec<Vec<Data>>) -> Result<ParsedTable, Str
     Ok(ParsedTable { headers, rows })
 }
 
-fn compute_headers_from_first_row(row0: &[Data]) -> Result<Vec<String>, String> {
+/// Normalize headers from the first row and check duplicates.
+/// This function is the single source of truth for header naming rules.
+pub fn compute_headers_from_first_row(row0: &[Data]) -> Result<Vec<String>, String> {
     let headers: Vec<String> = row0
         .iter()
         .enumerate()

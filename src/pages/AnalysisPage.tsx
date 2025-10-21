@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
-import BaseButton from '../components/BaseButton';
+import RunField from '../components/RunField';
+import '../globals.css';
 import tauriIPC from '../ipc';
 import type { DescriptiveOrder } from '../types';
+import type { CorrOptionValue } from '../types';
+import CorrAnalysisPage from './analysis/CorrAnalysisPage';
 import DescriptiveStatsPage from './analysis/DescriptiveStatsPage';
 
 const AnalysisPage: FC = () => {
@@ -18,6 +21,7 @@ const AnalysisPage: FC = () => {
   const [order, setOrder] = useState<DescriptiveOrder>('default');
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [corrOptions, setCorrOptions] = useState<CorrOptionValue | null>(null);
 
   useEffect(() => {
     const win = getCurrentWebviewWindow();
@@ -41,12 +45,39 @@ const AnalysisPage: FC = () => {
     try {
       // 1) Excelから数値データセットを抽出
       const dataset = await tauriIPC.buildNumericDataset(path, sheet, selectedVars);
-      // 2) Rで分析実行（MVP: descriptive固定） + 並び順はRで適用
-      const result = await tauriIPC.runRAnalysisWithDataset('descriptive', dataset, 30_000, order);
+      // 2) Rで分析実行（種類に応じて切り替え）
+      let result;
+      if (type === 'descriptive') {
+        const options = { order };
+        result = await tauriIPC.runRAnalysisWithDataset(
+          'descriptive',
+          dataset,
+          30_000,
+          JSON.stringify(options)
+        );
+      } else if (type === 'correlation') {
+        const sel =
+          corrOptions ??
+          ({
+            methods: { pearson: true, kendall: false, spearman: false },
+            alt: 'two.sided',
+            use: 'all.obs',
+          } as const);
+        const opts = {
+          methods: Object.entries(sel.methods)
+            .filter(([, v]) => !!v)
+            .map(([k]) => k),
+          alt: sel.alt,
+          use: sel.use,
+        } as { methods: string[]; alt: string; use: string };
+        result = await tauriIPC.runRAnalysisWithDataset('correlation', dataset, 30_000, JSON.stringify(opts));
+      } else {
+        throw new Error(`未対応の分析種別: ${type}`);
+      }
 
       // 3) トークンを発行し、URLで渡す（イベント依存を排除）
       const token = await tauriIPC.issueResultToken(result);
-      const url = `pages/result.html?analysis=${encodeURIComponent('descriptive')}&token=${encodeURIComponent(token)}`;
+      const url = `pages/result.html?analysis=${encodeURIComponent(type)}&token=${encodeURIComponent(token)}`;
       await tauriIPC.openOrReuseWindow('result', url);
       // 結果ウィンドウを開いたら、分析ウィンドウは安全に閉じる
       // 新規ウィンドウ作成とフォーカス移行をOS側に委ねるため、次フレームで閉じる
@@ -62,32 +93,43 @@ const AnalysisPage: FC = () => {
   }
 
   return (
-    <main className="container analysis-panel-root h-[100vh] w-full relative overflow-hidden">
-      <h1 className="absolute left-[16px] top-[12px] m-0">分析パネル</h1>
-      <p className="analysis-panel-subtitle absolute left-[16px] m-0 muted small top-[48px] text-[#666666] text-[12px]">
+    <main className="w-full h-full flex flex-col bg-white rounded-2xl shadow-md p-4 overflow-hidden">
+      <h1 className="text-2xl font-bold mb-1">分析パネル</h1>
+      <p className="text-sm mb-2">
         分析: {type} / シート: {sheet}
       </p>
-      {error && (
-        <p className="absolute left-[16px] top-[66px] text-[#b00020] text-[12px] m-0">エラー: {error}</p>
-      )}
-      <div className="absolute right-[16px] top-[40px]">
-        <BaseButton
-          widthGroup="analysis-primary"
-          onClick={executeAnalysis}
-          disabled={running || !path || !sheet || selectedVars.length === 0}
-          label={<>{running ? '実行中…' : '実行'}</>}
-        />
+      {error && <p className="text-[#b00020] text-sm mb-2">エラー: {error}</p>}
+
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {type === 'descriptive' ? (
+          <DescriptiveStatsPage
+            path={path}
+            sheet={sheet}
+            onSelectionChange={(sel, ord) => {
+              setSelectedVars(sel);
+              setOrder(ord);
+            }}
+          />
+        ) : null}
+        {type === 'correlation' ? (
+          <CorrAnalysisPage
+            path={path}
+            sheet={sheet}
+            onSelectionChange={(sel, opts) => {
+              setSelectedVars(sel);
+              setCorrOptions(opts);
+            }}
+          />
+        ) : null}
       </div>
-      {type === 'descriptive' ? (
-        <DescriptiveStatsPage
-          path={path}
-          sheet={sheet}
-          onSelectionChange={(sel, ord) => {
-            setSelectedVars(sel);
-            setOrder(ord);
-          }}
-        />
-      ) : null}
+
+      <RunField
+        className="mt-3"
+        onRun={executeAnalysis}
+        onClose={() => getCurrentWebviewWindow().close()}
+        running={running}
+        disabled={running || !path || !sheet || selectedVars.length === 0}
+      />
     </main>
   );
 };

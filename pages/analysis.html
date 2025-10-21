@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SAI (Analysis Panel)</title>
+    <!-- Per-file css styles  -->
+    <style>
+      /* Viewport should not show scrollbars for panel shadow */
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden; /* prevent box-shadow from creating scrollbars */
+      }
+      /* React root should fill the window to allow h-full */
+      #root { height: 100%; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

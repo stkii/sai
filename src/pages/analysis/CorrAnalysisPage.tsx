@@ -1,25 +1,29 @@
 import { useEffect, useMemo, useState, type FC } from 'react';
 
-import DescriptiveOption from '../../components/DescriptiveOption';
+import CorrOption from '../../components/CorrOption';
 import VariableSelector from '../../components/VariableSelector';
 import type { ParsedTable } from '../../dto';
 import tauriIPC from '../../ipc';
-import type { DescriptiveOrder } from '../../types';
+import type { CorrOptionValue } from '../../types';
 
 type Props = {
   path: string;
   sheet: string;
-  onSelectionChange?: (selectedVariables: string[], order: DescriptiveOrder) => void;
+  onSelectionChange?: (selectedVariables: string[], options: CorrOptionValue) => void;
 };
 
-const DescriptiveStatsPanel: FC<Props> = ({ path, sheet, onSelectionChange }) => {
+const CorrAnalysisPage: FC<Props> = ({ path, sheet, onSelectionChange }) => {
   const [table, setTable] = useState<ParsedTable | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const headers = useMemo(() => table?.headers ?? [], [table]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [order, setOrder] = useState<DescriptiveOrder>('default');
+  const [options, setOptions] = useState<CorrOptionValue>({
+    methods: { pearson: true, kendall: false, spearman: false },
+    alt: 'two.sided',
+    use: 'all.obs',
+  });
 
   useEffect(() => {
     if (!path || !sheet) return;
@@ -43,12 +47,12 @@ const DescriptiveStatsPanel: FC<Props> = ({ path, sheet, onSelectionChange }) =>
 
   const applySelection = (next: string[]) => {
     setSelected(next);
-    onSelectionChange?.(next, order);
+    onSelectionChange?.(next, options);
   };
 
   useEffect(() => {
-    onSelectionChange?.(selected, order);
-  }, [order]);
+    onSelectionChange?.(selected, options);
+  }, [options]);
 
   return (
     <section className="flex flex-1 min-h-0 flex-col">
@@ -62,11 +66,11 @@ const DescriptiveStatsPanel: FC<Props> = ({ path, sheet, onSelectionChange }) =>
             value={selected}
             onChange={applySelection}
           />
-          <DescriptiveOption className="w-1/2" value={order} onChange={setOrder} />
+          <CorrOption className="w-1/2" value={options} onChange={setOptions} />
         </div>
       )}
     </section>
   );
 };
 
-export default DescriptiveStatsPanel;
+export default CorrAnalysisPage;

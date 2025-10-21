@@ -48,14 +48,14 @@ pub fn run_r_analysis_with_dataset(
     app: tauri::AppHandle,
     analysis: String,
     dataset: IndexMap<String, Vec<Option<f64>>>,
-    order: Option<String>,
+    options_json: Option<String>,
     timeout_ms: u64,
 ) -> Result<ParsedTable, String> {
     r::run_r_analysis_with_dataset(
         &app,
         &analysis,
         &dataset,
-        order.as_deref(),
+        options_json.as_deref(),
         Duration::from_millis(timeout_ms),
     )
 }
@@ -102,8 +102,8 @@ pub fn open_or_reuse_window(
     match label.as_str() {
         "analysis" => {
             builder = builder.title("SAI - (Analysis Panel)");
-            builder = builder.inner_size(600.0, 450.0);
-            builder = builder.resizable(false);
+            builder = builder.inner_size(720.0, 540.0);
+            // builder = builder.resizable(false);
         },
         "result" => {
             builder = builder.title("SAI - (Result Viewer)");

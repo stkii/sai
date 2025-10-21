@@ -11,6 +11,7 @@
 #   - sd: standard deviation
 #   - min: minimum value
 #   - max: maximum value
+#
 Describe <- function(x, na.rm=TRUE){
   # If x is a list, convert to data.frame
   if (is.list(x) && !is.data.frame(x)) x <- as.data.frame(x)
@@ -33,7 +34,9 @@ Describe <- function(x, na.rm=TRUE){
 }
 
 # Wrapper to return ParsedTable-compatible structure
-# Returns: list(headers=[..], rows=[[..], ...])
+# Returns:
+# - list(headers=[..], rows=[[..], ...])
+#
 DescribeParsed <- function(x, na.rm=TRUE){
   stats <- Describe(x, na.rm=na.rm)
 
@@ -50,4 +53,31 @@ DescribeParsed <- function(x, na.rm=TRUE){
   })
 
   return(list(headers=headers, rows=rows))
+}
+
+# High-level runner used by CLI dispatcher
+#
+# Arguments:
+# - x (data.frame): numeric dataset
+# - options (list):
+#     - order (character): 'default' | 'mean' | 'mean_asc' | 'mean_desc'
+#
+# Returns:
+# - ParsedTable-like list(headers, rows)
+#
+RunDescriptive <- function(x, options = NULL) {
+  if (is.null(options)) options <- list()
+  ord <- tryCatch({
+    o <- options$order
+    if (is.null(o) || !nzchar(o)) 'default' else as.character(o)
+  }, error = function(e) 'default')
+
+  parsed <- DescribeParsed(x)
+
+  # Optional sorting using Sort() utility when available
+  if (exists("Sort") && is.function(get("Sort"))) {
+    sorter <- Sort(ord)
+    parsed <- sorter(parsed)
+  }
+  parsed
 }
