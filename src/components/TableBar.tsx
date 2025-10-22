@@ -117,6 +117,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
             </option>
             <option value="descriptive">記述統計</option>
             <option value="correlation">相関分析</option>
+            <option value="reliability">信頼性分析</option>
           </select>
 
           <BaseButton

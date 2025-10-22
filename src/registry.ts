@@ -2,9 +2,10 @@ import { createElement, type ReactNode } from 'react';
 
 import CorrAnalysisPage from './pages/analysis/CorrAnalysisPage';
 import DescriptiveStatsPage from './pages/analysis/DescriptiveStatsPage';
+import ReliabilityPage from './pages/analysis/ReliabilityPage';
 import type { CorrOptionValue, DescriptiveOrder } from './types';
 
-export type AnalysisType = 'descriptive' | 'correlation';
+export type AnalysisType = 'descriptive' | 'correlation' | 'reliability';
 
 export type AnalysisLocalState = {
   selectedVars: string[];
@@ -90,4 +91,17 @@ const correlationDef: AnalysisDefinition = {
 export const ANALYSIS_REGISTRY: Record<AnalysisType, AnalysisDefinition> = {
   descriptive: descriptiveDef,
   correlation: correlationDef,
+  reliability: {
+    id: 'reliability',
+    label: '信頼性',
+    renderEditor: ({ path, sheet, setSelectedVars }) =>
+      createElement(ReliabilityPage, {
+        path,
+        sheet,
+        onSelectionChange: (sel) => setSelectedVars(sel),
+      }),
+    // 現状パラメータはなし（既定で Cronbach の α）。
+    buildParamsForPayload: () => undefined,
+    buildOptionsJson: () => undefined,
+  },
 };
