@@ -2,10 +2,10 @@
 
 ReadJsonFile <- function(path) {
   info <- base::tryCatch(base::file.info(path), error = function(e) NULL)
-  if (base::is.null(info)) base::stop(base::paste0("Failed to stat input path: ", path))
-  if (base::isTRUE(info$isdir)) base::stop(base::paste0("Input path is a directory (expected file): ", path))
+  if (is.null(info)) stop(base::paste0("Failed to stat input path: ", path))
+  if (isTRUE(info$isdir)) stop(base::paste0("Input path is a directory (expected file): ", path))
   txt <- base::tryCatch(base::paste(base::readLines(path, warn = FALSE), collapse = "\n"), error = function(e) {
-    base::stop(base::paste0("Failed to read JSON file: ", path, " (", e$message, ")"))
+    stop(base::paste0("Failed to read JSON file: ", path, " (", e$message, ")"))
   })
   jsonlite::fromJSON(txt)
 }

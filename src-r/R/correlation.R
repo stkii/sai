@@ -19,21 +19,21 @@
 #
 CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
   # Convert list to data.frame if necessary
-  if (base::is.list(x) && !base::is.data.frame(x)) x <- base::as.data.frame(x)
-  if (!base::is.data.frame(x) && !base::is.matrix(x)) base::stop("x must be a data.frame or matrix")
+  if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
+  if (!is.data.frame(x) && !is.matrix(x)) stop("x must be a data.frame or matrix")
 
   # Keep only numeric columns
-  is_num <- if (base::is.data.frame(x)) base::vapply(x, base::is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(x))
+  is_num <- if (is.data.frame(x)) base::vapply(x, is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(x))
   if (base::any(!is_num)) {
     x <- x[, is_num, drop = FALSE]  # Non-numeric columns are dropped
-    base::warning("Non-numeric columns were dropped")
+    warning("Non-numeric columns were dropped")
   }
-  if (base::ncol(x) < 2) base::stop("Need at least two numeric columns")
+  if (base::ncol(x) < 2) stop("Need at least two numeric columns")
 
   # For speed, work in matrix form and preserve column names
   x_mat <- base::as.matrix(x)
   colnames_x <- base::colnames(x_mat)
-  if (base::is.null(colnames_x)) colnames_x <- base::paste0("V", base::seq_len(base::ncol(x_mat)))
+  if (is.null(colnames_x)) colnames_x <- base::paste0("V", base::seq_len(base::ncol(x_mat)))
 
   x_work <- x_mat
 
@@ -41,18 +41,18 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
   n_col <- base::ncol(x_work)
   col_names <- base::colnames(x_work)
 
-  corr_mtx <- base::matrix(NA_real_, n_col, n_col, dimnames=base::list(col_names, col_names)) # correlation matrix
-  p_mtx <- base::matrix(NA_real_, n_col, n_col, dimnames=base::list(col_names, col_names))    # p-value matrix
-  t_mtx <- base::matrix(NA_real_, n_col, n_col, dimnames=base::list(col_names, col_names))    # t-value matrix
-  df_mtx <- base::matrix(NA_real_, n_col, n_col, dimnames=base::list(col_names, col_names))   # degree of freedom matrix
-  n_mtx <- base::matrix(NA_integer_, n_col, n_col, dimnames=base::list(col_names, col_names)) # sample size matrix
+  corr_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names)) # correlation matrix
+  p_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))    # p-value matrix
+  t_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))    # t-value matrix
+  df_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))   # degree of freedom matrix
+  n_mtx <- matrix(NA_integer_, n_col, n_col, dimnames=list(col_names, col_names)) # sample size matrix
 
   PvalueFromTValue <- function(t_val, df, alt) {
     # Return NA if t_val or df is NA
-    if (base::is.na(t_val) || base::is.na(df)) return(NA_real_)
+    if (is.na(t_val) || is.na(df)) return(NA_real_)
 
     # Special handling for infinite values (perfect correlation, etc.)
-    if (!base::is.finite(t_val)) {
+    if (!is.finite(t_val)) {
       if (alt == "two.sided") return(0)                     # Two-sided test: p = 0
       if (alt == "greater") return(base::ifelse(t_val > 0, 0, 1)) # Right-sided test
       if (alt == "less") return(base::ifelse(t_val < 0, 0, 1))    # Left-sided test
@@ -82,14 +82,14 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
     n_complete <- base::sum(stats::complete.cases(x_work))
     n_mtx[,] <- n_complete
   } else { # pairwise.complete.obs
-    m <- !base::is.na(x_work)
+    m <- !is.na(x_work)
     N_num <- base::t(m) %*% m  # Number of non-missing values for each pair
     n_mtx[,] <- N_num
     base::storage.mode(n_mtx) <- "integer"
   }
 
   if (use == "pairwise.complete.obs") {
-    for (i in base::seq_len(n_col)) n_mtx[i, i] <- base::sum(!base::is.na(x_work[, i]))
+    for (i in base::seq_len(n_col)) n_mtx[i, i] <- base::sum(!is.na(x_work[, i]))
   }
 
   # t-statistic, degree of freedom, and p-value calculation (derived from corr_mtx and n_mtx)
@@ -107,10 +107,10 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
       for (j in base::seq.int(i + 1L, n_col)) {
         r <- corr_mtx[i, j]
         n <- base::as.numeric(n_mtx[i, j])
-        df <- if (!base::is.na(n) && n >= 3) n - 2 else NA_real_
+        df <- if (!is.na(n) && n >= 3) n - 2 else NA_real_
         t_val <- NA_real_
-        if (!base::is.na(r) && !base::is.na(n) && n >= 3) {
-          if (base::is.finite(r)) {
+        if (!is.na(r) && !is.na(n) && n >= 3) {
+          if (is.finite(r)) {
             if (base::abs(r) < 1) {
               t_val <- r * base::sqrt((n - 2) / (1 - r^2))
             } else {
@@ -126,7 +126,7 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
   }
 
   # Combine the results into a list
-  res <- base::list(
+  res <- list(
     corr = corr_mtx,           # correlation matrix
     p = p_mtx,                 # p-value matrix
     t = t_mtx,                 # t-value matrix
@@ -139,7 +139,7 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
 
   # Round to N decimal places
   RoundMatrix <- function(mtx, digits = 4) {
-    if (base::is.null(mtx)) return(NULL)
+    if (is.null(mtx)) return(NULL)
     scale <- 10^digits
     return(base::sign(mtx) * base::floor(base::abs(mtx) * scale + 0.5) / scale)
   }
@@ -160,11 +160,11 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
   pval <- res$p
 
   vars <- base::colnames(corr)
-  if (base::is.null(vars)) vars <- base::paste0("V", base::seq_len(base::ncol(corr)))
+  if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::ncol(corr)))
 
   # Significance stars helper
   stars_for_p <- function(p) {
-    if (base::is.na(p)) return("")
+    if (is.na(p)) return("")
     if (p < 0.001) return("***")
     if (p < 0.01)  return("**")
     if (p < 0.05)  return("*")
@@ -182,14 +182,14 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
       if (j < i) {
         row_vals[[j + 1]] <- "" # lower triangle blank
       } else if (j == i) {
-        row_vals[[j + 1]] <- base::sprintf("%.3f", 1.0) # diagonal
+        row_vals[[j + 1]] <- sprintf("%.3f", 1.0) # diagonal
       } else {
         r <- corr[i, j]
         p <- pval[i, j]
-        if (base::is.na(r)) {
+        if (is.na(r)) {
           row_vals[[j + 1]] <- "1.000"
         } else {
-          row_vals[[j + 1]] <- base::paste0(base::sprintf("%.3f", r), stars_for_p(p))
+          row_vals[[j + 1]] <- base::paste0(sprintf("%.3f", r), stars_for_p(p))
         }
       }
     }
@@ -211,7 +211,7 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
         row_vals[[j + 1]] <- "-"
       } else {
         p <- pval[i, j]
-        if (base::is.na(p)) {
+        if (is.na(p)) {
           row_vals[[j + 1]] <- "NULL"
         } else {
           # half-up rounding to 3 decimal places
@@ -219,7 +219,7 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
           if (p > 0 && p3 == 0) {
             row_vals[[j + 1]] <- "<.001"
           } else {
-            row_vals[[j + 1]] <- base::sprintf("%.3f", p3)
+            row_vals[[j + 1]] <- sprintf("%.3f", p3)
           }
         }
       }
@@ -227,8 +227,8 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
     row_vals
   })
 
-  rows <- c(rows_corr, base::list(sep_row), rows_p)
-  return(base::list(headers=headers, rows=rows))
+  rows <- c(rows_corr, list(sep_row), rows_p)
+  return(list(headers=headers, rows=rows))
 }
 
 # High-level runner used by CLI dispatcher
@@ -242,40 +242,40 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
 #
 # Returns ParsedTable-like list(headers, rows)
 RunCorrelation <- function(x, options = NULL) {
-  if (base::is.null(options)) options <- base::list()
+  if (is.null(options)) options <- list()
 
   # Validate/normalize options
   methods <- base::tryCatch({
     m <- options$methods
-    if (base::is.null(m)) base::character(0) else base::as.character(m)
+    if (is.null(m)) base::character(0) else base::as.character(m)
   }, error = function(e) base::character(0))
   if (base::length(methods) == 0) methods <- c("pearson")
 
   alt <- base::tryCatch({
     a <- options$alt
-    if (base::is.null(a) || !base::nzchar(a)) "two.sided" else base::as.character(a)
+    if (is.null(a) || !base::nzchar(a)) "two.sided" else base::as.character(a)
   }, error = function(e) "two.sided")
   alt_r <- if (base::identical(alt, "one.sided")) "greater" else alt
   if (!alt_r %in% c("two.sided", "greater", "less")) alt_r <- "two.sided"
 
   use <- base::tryCatch({
     u <- options$use
-    if (base::is.null(u) || !base::nzchar(u)) "all.obs" else base::as.character(u)
+    if (is.null(u) || !base::nzchar(u)) "all.obs" else base::as.character(u)
   }, error = function(e) "all.obs")
   if (!use %in% c("all.obs", "complete.obs", "pairwise.complete.obs")) use <- "all.obs"
 
   # Build combined table per selected method
   headers <- NULL
-  rows_all <- base::list()
+  rows_all <- list()
   for (i in base::seq_along(methods)) {
     m <- methods[[i]]
     res <- CorrParsed(x, method = m, use = use, alternative = alt_r)
-    if (base::is.null(headers)) headers <- res$headers
+    if (is.null(headers)) headers <- res$headers
     if (i > 1) {
       sep <- c(base::paste0('--- ', m, ' ---'), base::rep('', base::length(headers) - 1L))
       rows_all[[base::length(rows_all) + 1L]] <- sep
     }
     for (r in res$rows) rows_all[[base::length(rows_all) + 1L]] <- r
   }
-  base::list(headers = headers, rows = rows_all)
+  list(headers = headers, rows = rows_all)
 }

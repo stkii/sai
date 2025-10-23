@@ -17,7 +17,7 @@
 #
 Sort <- function(criterion, desc = FALSE) {
   # normalize inputs
-  if (base::is.null(criterion) || !base::nzchar(criterion)) criterion <- "default"
+  if (is.null(criterion) || !base::nzchar(criterion)) criterion <- "default"
   criterion <- base::tolower(base::as.character(criterion))
 
   # unwrap shorthand codes (mean_asc / mean_desc)
@@ -28,8 +28,8 @@ Sort <- function(criterion, desc = FALSE) {
 
   function(parsed) {
     # Validate structure
-    if (base::is.null(parsed) || !base::is.list(parsed)) return(parsed)
-    if (base::is.null(parsed$headers) || base::is.null(parsed$rows)) return(parsed)
+    if (is.null(parsed) || !is.list(parsed)) return(parsed)
+    if (is.null(parsed$headers) || is.null(parsed$rows)) return(parsed)
     if (base::identical(criterion, "default")) return(parsed)
 
     # Only 'mean' is supported for now
@@ -45,13 +45,13 @@ Sort <- function(criterion, desc = FALSE) {
     # Compute numeric keys for ordering; treat non-numeric as NA
     key_vals <- base::vapply(rows, function(r) {
       val <- NA_real_
-      if (!base::is.null(r) && base::length(r) >= mean_idx) {
+      if (!is.null(r) && base::length(r) >= mean_idx) {
         base::suppressWarnings({ val <- base::as.numeric(r[[mean_idx]]) })
       }
       val
     }, base::numeric(1))
 
-    ord <- base::order(key_vals, decreasing = base::isTRUE(desc), na.last = TRUE)
+    ord <- base::order(key_vals, decreasing = isTRUE(desc), na.last = TRUE)
     parsed$rows <- rows[ord]
     parsed
   }

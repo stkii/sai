@@ -14,7 +14,7 @@
 #
 Describe <- function(x, na.rm=TRUE){
   # If x is a list, convert to data.frame
-  if (base::is.list(x) && !base::is.data.frame(x)) x <- base::as.data.frame(x)
+  if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
 
   # Calculate descriptive statistics column-wise
   stats <- base::rbind(
@@ -42,7 +42,7 @@ DescribeParsed <- function(x, na.rm=TRUE){
 
   headers <- c("Variable", "Mean", "SD", "Min", "Max")
   vars <- base::rownames(stats)
-  if (base::is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(stats)))
+  if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(stats)))
 
   rows <- base::lapply(base::seq_len(base::nrow(stats)), function(i) {
     c(vars[[i]],
@@ -52,7 +52,7 @@ DescribeParsed <- function(x, na.rm=TRUE){
       base::unname(stats[i, "Max"]))
   })
 
-  return(base::list(headers=headers, rows=rows))
+  return(list(headers=headers, rows=rows))
 }
 
 # High-level runner used by CLI dispatcher
@@ -66,16 +66,16 @@ DescribeParsed <- function(x, na.rm=TRUE){
 # - ParsedTable-like list(headers, rows)
 #
 RunDescriptive <- function(x, options = NULL) {
-  if (base::is.null(options)) options <- base::list()
+  if (is.null(options)) options <- list()
   ord <- base::tryCatch({
     o <- options$order
-    if (base::is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
+    if (is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
   }, error = function(e) 'default')
 
   parsed <- DescribeParsed(x)
 
   # Optional sorting using Sort() utility when available
-  if (base::exists("Sort") && base::is.function(base::get("Sort"))) {
+  if (base::exists("Sort") && is.function(base::get("Sort"))) {
     sorter <- Sort(ord)
     parsed <- sorter(parsed)
   }
