@@ -3,19 +3,19 @@
 
 GetAnalysesRegistry <- function(r_dir) {
   # Source modules so that handlers are available
-  src_desc <- file.path(r_dir, "descriptive.R")
-  src_corr <- file.path(r_dir, "correlation.R")
-  src_rel  <- file.path(r_dir, "reliability.R")
-  if (!file.exists(src_desc)) stop("descriptive.R not found under src-r/R")
-  if (!file.exists(src_corr)) stop("correlation.R not found under src-r/R")
-  if (!file.exists(src_rel))  stop("reliability.R not found under src-r/R")
+  src_desc <- base::file.path(r_dir, "descriptive.R")
+  src_corr <- base::file.path(r_dir, "correlation.R")
+  src_rel  <- base::file.path(r_dir, "reliability.R")
+  if (!base::file.exists(src_desc)) base::stop("descriptive.R not found under src-r/R")
+  if (!base::file.exists(src_corr)) base::stop("correlation.R not found under src-r/R")
+  if (!base::file.exists(src_rel))  base::stop("reliability.R not found under src-r/R")
 
-  source(src_desc, local = FALSE)
-  source(src_corr, local = FALSE)
-  source(src_rel,  local = FALSE)
+  base::source(src_desc, local = FALSE)
+  base::source(src_corr, local = FALSE)
+  base::source(src_rel,  local = FALSE)
 
   # Build registry
-  list(
+  base::list(
     descriptive = RunDescriptive,
     correlation = RunCorrelation,
     reliability = RunReliability

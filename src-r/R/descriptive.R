@@ -14,21 +14,21 @@
 #
 Describe <- function(x, na.rm=TRUE){
   # If x is a list, convert to data.frame
-  if (is.list(x) && !is.data.frame(x)) x <- as.data.frame(x)
+  if (base::is.list(x) && !base::is.data.frame(x)) x <- base::as.data.frame(x)
 
   # Calculate descriptive statistics column-wise
-  stats <- rbind(
-    mean = colMeans(x, na.rm=na.rm),
-    sd   = apply(x, 2, sd, na.rm=na.rm),
-    min  = apply(x, 2, min, na.rm=na.rm),
-    max  = apply(x, 2, max, na.rm=na.rm)
+  stats <- base::rbind(
+    mean = base::colMeans(x, na.rm=na.rm),
+    sd   = base::apply(x, 2, stats::sd, na.rm=na.rm),
+    min  = base::apply(x, 2, base::min, na.rm=na.rm),
+    max  = base::apply(x, 2, base::max, na.rm=na.rm)
   )
 
   # Transpose so that rows = variables, columns = statistics
-  stats <- t(stats)
+  stats <- base::t(stats)
 
   # Set column names
-  colnames(stats) <- c("Mean", "SD", "Min", "Max")
+  base::colnames(stats) <- c("Mean", "SD", "Min", "Max")
 
   return (stats)
 }
@@ -41,18 +41,18 @@ DescribeParsed <- function(x, na.rm=TRUE){
   stats <- Describe(x, na.rm=na.rm)
 
   headers <- c("Variable", "Mean", "SD", "Min", "Max")
-  vars <- rownames(stats)
-  if (is.null(vars)) vars <- paste0("V", seq_len(nrow(stats)))
+  vars <- base::rownames(stats)
+  if (base::is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(stats)))
 
-  rows <- lapply(seq_len(nrow(stats)), function(i) {
+  rows <- base::lapply(base::seq_len(base::nrow(stats)), function(i) {
     c(vars[[i]],
-      unname(stats[i, "Mean"]),
-      unname(stats[i, "SD"]),
-      unname(stats[i, "Min"]),
-      unname(stats[i, "Max"]))
+      base::unname(stats[i, "Mean"]),
+      base::unname(stats[i, "SD"]),
+      base::unname(stats[i, "Min"]),
+      base::unname(stats[i, "Max"]))
   })
 
-  return(list(headers=headers, rows=rows))
+  return(base::list(headers=headers, rows=rows))
 }
 
 # High-level runner used by CLI dispatcher
@@ -66,16 +66,16 @@ DescribeParsed <- function(x, na.rm=TRUE){
 # - ParsedTable-like list(headers, rows)
 #
 RunDescriptive <- function(x, options = NULL) {
-  if (is.null(options)) options <- list()
-  ord <- tryCatch({
+  if (base::is.null(options)) options <- base::list()
+  ord <- base::tryCatch({
     o <- options$order
-    if (is.null(o) || !nzchar(o)) 'default' else as.character(o)
+    if (base::is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
   }, error = function(e) 'default')
 
   parsed <- DescribeParsed(x)
 
   # Optional sorting using Sort() utility when available
-  if (exists("Sort") && is.function(get("Sort"))) {
+  if (base::exists("Sort") && base::is.function(base::get("Sort"))) {
     sorter <- Sort(ord)
     parsed <- sorter(parsed)
   }
