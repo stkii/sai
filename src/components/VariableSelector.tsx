@@ -1,4 +1,4 @@
-import { useMemo, useState, type FC, type ChangeEvent } from 'react';
+import { type ChangeEvent, type FC, useMemo, useState } from 'react';
 
 import BaseButton from './BaseButton';
 

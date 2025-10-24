@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type FC } from 'react';
-import { createRoot } from 'react-dom/client';
-
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { save } from '@tauri-apps/plugin-dialog';
+import { type FC, useCallback, useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 
 import BaseButton from '../components/BaseButton';
 import DataTable from '../components/DataTable';
@@ -21,25 +20,33 @@ type AnalysisEntry = {
   result: ParsedTable;
 };
 
+type ResultPayload = {
+  token?: string;
+  analysis?: string;
+  path?: string;
+  sheet?: string;
+  variables?: string[];
+  params?: unknown;
+  dataset?: Record<string, Array<number | null>>;
+};
+
 const ResultPage: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const [entries, setEntries] = useState<AnalysisEntry[]>([]);
   const consumedTokensRef = useRef<Set<string>>(new Set());
   const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const sessionIdRef = useRef<string>(Math.random().toString(16).slice(2) + '-' + Date.now().toString(36));
-
-  // URL依存の単発読み込みは廃止（イベント経由のみ）
+  const sessionIdRef = useRef<string>(`${Math.random().toString(16).slice(2)}-${Date.now().toString(36)}`);
 
   // 共通ハンドラ
-  async function handlePayload(p: Record<string, unknown>) {
-    const token = String(p['token'] || '');
-    const analysis = String(p['analysis'] || '');
-    const path = String(p['path'] || '');
-    const sheet = String(p['sheet'] || '');
-    const variables = (p['variables'] as string[]) || [];
-    const params = p['params'];
-    const dataset = p['dataset'] as Record<string, Array<number | null>> | undefined;
+  const handlePayload = useCallback(async (p: ResultPayload) => {
+    const token = String(p.token || '');
+    const analysis = String(p.analysis || '');
+    const path = String(p.path || '');
+    const sheet = String(p.sheet || '');
+    const variables = p.variables || [];
+    const params = p.params;
+    const dataset = p.dataset;
     if (!token) return;
     try {
       if (consumedTokensRef.current.has(token)) return;
@@ -84,14 +91,14 @@ const ResultPage: FC = () => {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }
+  }, []);
 
   // 初回マウント時に Analysis 側が置いたペンディングペイロードを確認
   useEffect(() => {
     try {
       const raw = localStorage.getItem('sai:pending-result-payload');
       if (raw) {
-        const p = JSON.parse(raw) as Record<string, unknown>;
+        const p = JSON.parse(raw) as ResultPayload;
         // 一度取り出したら消す（多重処理防止）
         localStorage.removeItem('sai:pending-result-payload');
         void handlePayload(p);
@@ -99,7 +106,7 @@ const ResultPage: FC = () => {
     } catch {
       // 読み取り失敗は無視（イベントに委ねる）
     }
-  }, []);
+  }, [handlePayload]);
 
   // result:load イベントでの追記
   useEffect(() => {
@@ -107,7 +114,7 @@ const ResultPage: FC = () => {
     let unlisten: (() => void) | null = null;
     (async () => {
       unlisten = await win.listen('result:load', async (ev: { payload: unknown }) => {
-        const p = (ev.payload as Record<string, unknown> | null) ?? null;
+        const p = (ev.payload as ResultPayload | null) ?? null;
         if (!p) return;
         await handlePayload(p);
       });
@@ -115,7 +122,7 @@ const ResultPage: FC = () => {
     return () => {
       if (unlisten) unlisten();
     };
-  }, []);
+  }, [handlePayload]);
 
   const formatTime = (ms: number) => {
     const d = new Date(ms);
@@ -160,7 +167,7 @@ const ResultPage: FC = () => {
           </button>
           <h1 className="text-xl font-semibold m-0">結果ビューア</h1>
         </div>
-        <BaseButton onClick={onExport} label={<>⬇ エクスポート</>} />
+        <BaseButton onClick={onExport} label="⬇ エクスポート" />
       </div>
       {error && <p className="text-[#b00020] px-3 py-1 border-b border-[#E0E0E0]">エラー: {error}</p>}
       <div
@@ -176,6 +183,7 @@ const ResultPage: FC = () => {
               )}
               {entries.map((e, idx) => (
                 <button
+                  type="button"
                   key={e.id}
                   className="w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-50"
                   onClick={() => {

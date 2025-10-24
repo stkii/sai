@@ -1,8 +1,7 @@
-import { useState, type FC } from 'react';
-
 import { open } from '@tauri-apps/plugin-dialog';
+import { type FC, useState } from 'react';
 
-import { type ParsedTable } from '../dto';
+import type { ParsedTable } from '../dto';
 import tauriIPC from '../ipc';
 import BaseButton from './BaseButton';
 
@@ -81,7 +80,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
         widthGroup="ribbon"
         onClick={pickFile}
         disabled={loading}
-        label={<>{filePath ? '別のファイルを選択' : 'ファイルを選択'}</>}
+        label={filePath ? '別のファイルを選択' : 'ファイルを選択'}
       />
 
       {filePath && sheetNames && (
@@ -124,7 +123,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
             widthGroup="ribbon"
             onClick={loadSelectedSheet}
             disabled={!selectedSheet || loading}
-            label={<>読み込む</>}
+            label="読み込む"
           />
         </>
       )}

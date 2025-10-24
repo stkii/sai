@@ -1,9 +1,9 @@
-import { useState, type FC } from 'react';
+import { type FC, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import DataTable from '../components/DataTable';
 import TableBar from '../components/TableBar';
-import { type ParsedTable } from '../dto';
+import type { ParsedTable } from '../dto';
 import '../globals.css';
 
 const TablePage: FC = () => {

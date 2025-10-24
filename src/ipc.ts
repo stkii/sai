@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 
-import { type ParsedTable } from './dto';
+import type { ParsedTable } from './dto';
 
 class TauriIPC {
   async buildNumericDataset(

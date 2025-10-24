@@ -1,12 +1,12 @@
 import {
+  type FC,
+  type MouseEventHandler,
+  type ReactNode,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type FC,
-  type MouseEventHandler,
-  type ReactNode,
 } from 'react';
 
 type Props = {
@@ -36,7 +36,7 @@ const BaseButton: FC<Props> = ({ onClick, disabled, label, title, className, wid
     const rect = el.getBoundingClientRect();
     setNaturalWidth(rect.width);
     el.style.width = prevWidth;
-  }, [label]);
+  });
 
   // グループ内での幅を同期
   useEffect(() => {
@@ -49,7 +49,9 @@ const BaseButton: FC<Props> = ({ onClick, disabled, label, title, className, wid
     // このボタンの幅がグループ最大なら全体に通知
     if (naturalWidth && naturalWidth > info.width) {
       info.width = naturalWidth;
-      info.subs.forEach((fn) => fn());
+      info.subs.forEach((fn) => {
+        fn();
+      });
     } else if (info.width > 0) {
       setGroupWidth(info.width);
     }

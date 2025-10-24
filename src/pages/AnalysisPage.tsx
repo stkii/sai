@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState, type FC } from 'react';
-import { createRoot } from 'react-dom/client';
-
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { type FC, useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 
 import RunField from '../components/RunField';
 import '../globals.css';
 import tauriIPC from '../ipc';
 import { ANALYSIS_REGISTRY, type AnalysisType } from '../registry';
-import type { DescriptiveOrder } from '../types';
-import type { CorrOptionValue } from '../types';
+import type { CorrOptionValue, DescriptiveOrder } from '../types';
 
 const AnalysisPage: FC = () => {
   const query = useMemo(() => new URLSearchParams(window.location.search || ''), []);

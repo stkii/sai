@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 
 import CorrOption from '../../components/CorrOption';
 import VariableSelector from '../../components/VariableSelector';
@@ -52,7 +52,7 @@ const CorrAnalysisPage: FC<Props> = ({ path, sheet, onSelectionChange }) => {
 
   useEffect(() => {
     onSelectionChange?.(selected, options);
-  }, [options]);
+  }, [options, selected, onSelectionChange]);
 
   return (
     <section className="flex flex-1 min-h-0 flex-col">

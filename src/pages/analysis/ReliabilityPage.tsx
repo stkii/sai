@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 
 import VariableSelector from '../../components/VariableSelector';
 import type { ParsedTable } from '../../dto';
