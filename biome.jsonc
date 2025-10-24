@@ -8,6 +8,14 @@
   "files": {
     "includes": ["src/**/*"]
   },
+  "assist": {
+	"enabled": true,
+	"actions": {
+	  "source": {
+		"organizeImports": "on"
+	  }
+	}
+  },
   "formatter": {
 	"enabled": true,
 	"indentStyle": "space",
@@ -20,18 +28,21 @@
 	  "recommended": true
 	}
   },
+  "css": {
+	"formatter": {
+	  "quoteStyle": "single"
+	}
+  },
   "javascript": {
 	"formatter": {
 	  "quoteStyle": "single",
 	  "trailingCommas": "es5"
 	}
   },
-  "assist": {
-	"enabled": true,
-	"actions": {
-	  "source": {
-		"organizeImports": "on"
-	  }
+  "json": {
+	"formatter": {
+	  "indentStyle": "space",
+	  "indentWidth": 2
 	}
   }
 }
