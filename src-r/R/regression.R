@@ -55,23 +55,7 @@ LinearRegression <- function(data,
   return(fit)
 }
 
-FormatNum <- function(x) {
-  if (is.na(x)) return("")
-  base::sprintf("%.3f", base::as.numeric(x))
-}
-
-FormatDf <- function(x) {
-  if (is.na(x)) return("")
-  base::as.character(base::as.integer(base::round(x)))
-}
-
-FormatPval <- function(p) {
-  if (is.na(p)) return("")
-  p <- base::as.numeric(p)
-  if (!is.finite(p)) return("")
-  if (p < 0.001) return("<.001")
-  base::sprintf("%.3f", p)
-}
+## Formatting helpers are provided by utils.R: FormatNum, FormatDf, FormatPval
 
 # Calculate Variance Inflation Factors (VIF) per coefficient column
 # - Uses model.matrix(fit) columns (excluding intercept)

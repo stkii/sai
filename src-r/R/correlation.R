@@ -137,15 +137,7 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
     use = use                  # missing value handling method
   )
 
-  # Round to N decimal places
-  RoundMatrix <- function(mtx, digits = 4) {
-    if (is.null(mtx)) return(NULL)
-    scale <- 10^digits
-    return(base::sign(mtx) * base::floor(base::abs(mtx) * scale + 0.5) / scale)
-  }
-
-  # intermediate data is not rounded, keep the original values
-  # rounding is done in CorrParsed
+  # 中間データは丸めずそのまま保持し、丸めはCorrParsedで表示直前に行う
 
   return (res)
 }
@@ -153,7 +145,7 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
 # Wrapper to return ParsedTable-compatible structure for UI
 # - Shows an upper-triangular correlation matrix with significance stars
 # - headers: c("Variable", varnames)
-# - cells: diagonal = "1.000"; upper triangle = sprintf("%.3f%s", r, stars); lower triangle = ""
+# - cells: diagonal = FormatNum(1.0); upper triangle = paste0(FormatNum(r), stars); lower triangle = ""
 CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
   res <- CorrTest(x, method=method, use=use, alternative=alternative)
   corr <- res$corr
@@ -182,14 +174,14 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
       if (j < i) {
         row_vals[[j + 1]] <- "" # lower triangle blank
       } else if (j == i) {
-        row_vals[[j + 1]] <- sprintf("%.3f", 1.0) # diagonal
+        row_vals[[j + 1]] <- FormatNum(1.0) # diagonal
       } else {
         r <- corr[i, j]
         p <- pval[i, j]
         if (is.na(r)) {
-          row_vals[[j + 1]] <- "1.000"
+          row_vals[[j + 1]] <- FormatNum(1.0)
         } else {
-          row_vals[[j + 1]] <- base::paste0(sprintf("%.3f", r), stars_for_p(p))
+          row_vals[[j + 1]] <- base::paste0(FormatNum(r), stars_for_p(p))
         }
       }
     }
@@ -207,21 +199,11 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
       if (j < i) {
         row_vals[[j + 1]] <- "" # lower triangle blank
       } else if (j == i) {
-        # diagonal p-value undefined -> represent as "-"
+        # 対角のp値は未定義 -> "-"
         row_vals[[j + 1]] <- "-"
       } else {
         p <- pval[i, j]
-        if (is.na(p)) {
-          row_vals[[j + 1]] <- "NULL"
-        } else {
-          # half-up rounding to 3 decimal places
-          p3 <- base::sign(p) * base::floor(base::abs(p) * 1000 + 0.5) / 1000
-          if (p > 0 && p3 == 0) {
-            row_vals[[j + 1]] <- "<.001"
-          } else {
-            row_vals[[j + 1]] <- sprintf("%.3f", p3)
-          }
-        }
+        row_vals[[j + 1]] <- FormatPval(p)
       }
     }
     row_vals

@@ -40,7 +40,7 @@ ReliabilityParsed <- function(x, model='alpha') {
   headers <- c("Statistic", "Value")
   if (base::identical(model, 'alpha')) {
     val <- CronbachAlpha(base::as.matrix(x))
-    rows <- list(c("Cronbach's alpha", sprintf("%.3f", val)))
+    rows <- list(c("Cronbach's alpha", FormatNum(val)))
   } else {
     rows <- list(c("Omega", "未実装"))
   }
