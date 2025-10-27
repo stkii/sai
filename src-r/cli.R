@@ -85,11 +85,25 @@ if (is.null(handler) || !is.function(handler)) {
 # ------------------------
 # Read input JSON
 # ------------------------
-dat <- if (exists("ReadJsonFile")) ReadJsonFile(input_path) else {
+raw_obj <- if (exists("ReadJsonFile")) ReadJsonFile(input_path) else {
   txt <- paste(readLines(input_path, warn = FALSE), collapse = "\n")
   jsonlite::fromJSON(txt)
 }
-if (is.list(dat) && !is.data.frame(dat)) dat <- as.data.frame(dat)
+
+# Preserve column order using optional "__order" hint when provided by the caller.
+dat <- raw_obj
+ord <- NULL
+if (is.list(raw_obj) && !is.data.frame(raw_obj) && !is.null(raw_obj[["__data"]])) {
+  dat <- raw_obj[["__data"]]
+  if (!is.null(raw_obj[["__order"]])) ord <- as.character(raw_obj[["__order"]])
+}
+if (is.list(dat) && !is.data.frame(dat)) dat <- as.data.frame(dat, check.names = FALSE, stringsAsFactors = FALSE)
+if (!is.null(ord) && is.data.frame(dat)) {
+  cols <- colnames(dat)
+  ord2 <- ord[ord %in% cols]
+  rest <- cols[!cols %in% ord2]
+  dat <- dat[, c(ord2, rest), drop = FALSE]
+}
 
 # ------------------------
 # Build options and run

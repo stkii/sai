@@ -90,14 +90,16 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
         </thead>
         <tbody>
           {rows.map((row, rIdx) => {
-            const rowKey = row.map((v) => String(v ?? '')).join('|');
+            // Use row index for a stable, collision-free key to preserve order
+            const rowKey = `row:${rIdx}`;
             return (
-              <tr key={`row:${rowKey}`}>
+              <tr key={rowKey}>
                 <td className={cx(cellBaseCls, rownumCellExtraCls)} key="rownum">
                   {rIdx + 1} {/* 行番号を表示 */}
                 </td>
                 {Array.from({ length: colCount }, (_, cIdx) => {
-                  const colKey = `cell:${displayHeaders[cIdx]}:${rowKey}`;
+                  // Compose cell key from row/col index to avoid collisions
+                  const colKey = `cell:${rIdx}:${cIdx}`;
                   return (
                     <td className={cx(cellBaseCls)} key={colKey}>
                       {String(row[cIdx] ?? '')} {/* フォールバックは boolean のため */}

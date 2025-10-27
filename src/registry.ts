@@ -47,7 +47,12 @@ const descriptiveDef: AnalysisDefinition = {
       },
     }),
   buildParamsForPayload: (state) => ({ order: state.order }),
-  buildOptionsJson: (state) => JSON.stringify({ order: state.order }),
+  buildOptionsJson: (state) =>
+    JSON.stringify({
+      order: state.order,
+      // 明示列順（Excelヘッダー順=選択変数の順）をR入力ヒントとして渡す
+      columns: state.selectedVars,
+    }),
 };
 
 const correlationDef: AnalysisDefinition = {
@@ -85,7 +90,7 @@ const correlationDef: AnalysisDefinition = {
       alt: string;
       use: string;
     };
-    return JSON.stringify(p);
+    return JSON.stringify({ ...p, columns: state.selectedVars });
   },
 };
 

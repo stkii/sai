@@ -32,9 +32,13 @@ enum AnalysisOptions {
         alt: String,
         #[serde(rename = "use")]
         r#use: String,
+        #[serde(default)]
+        columns: Vec<String>,
     },
     Descriptive {
         order: String,
+        #[serde(default)]
+        columns: Vec<String>,
     },
 }
 
@@ -143,7 +147,28 @@ pub fn run_r_analysis_with_dataset(
 ) -> Result<ParsedTable, String> {
     // 一時ファイル（入力/出力、自動クリーンアップ）
     let mut in_tf = NamedTempFile::new().map_err(|e| format!("一時ファイルの作成に失敗しました: {e}"))?;
-    serde_json::to_writer(&mut in_tf, dataset).map_err(|e| e.to_string())?;
+
+    // 列順ヒント: options_json に columns があれば優先、それ以外は dataset のキー順
+    let mut order: Vec<String> = dataset.keys().cloned().collect();
+    if let Some(raw) = options_json {
+        if !raw.is_empty() {
+            if let Ok(opts) = serde_json::from_str::<AnalysisOptions>(raw) {
+                match opts {
+                    AnalysisOptions::Correlation { columns, .. }
+                    | AnalysisOptions::Descriptive { columns, .. } => {
+                        if !columns.is_empty() {
+                            order = columns;
+                        }
+                    },
+                }
+            }
+        }
+    }
+    let root = serde_json::json!({
+        "__order": order,
+        "__data": dataset,
+    });
+    serde_json::to_writer(&mut in_tf, &root).map_err(|e| e.to_string())?;
     in_tf.flush().ok();
     let out_tf = NamedTempFile::new().map_err(|e| format!("一時ファイルの作成に失敗しました: {e}"))?;
 
@@ -169,12 +194,14 @@ pub fn run_r_analysis_with_dataset(
     if let Some(raw) = options_json {
         if !raw.is_empty() {
             match serde_json::from_str::<AnalysisOptions>(raw) {
-                Ok(AnalysisOptions::Descriptive { order }) => {
+                Ok(AnalysisOptions::Descriptive { order, .. }) => {
                     if !order.trim().is_empty() {
                         cmd.arg(order);
                     }
                 },
-                Ok(AnalysisOptions::Correlation { methods, alt, r#use }) => {
+                Ok(AnalysisOptions::Correlation {
+                    methods, alt, r#use, ..
+                }) => {
                     // 正規化してから JSON で渡す
                     let opts = serde_json::json!({
                         "methods": methods,
