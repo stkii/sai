@@ -5,3 +5,6 @@
 .Rhistory
 .Rproj.user
 src-r.Rproj
+
+# Datasets for development
+datasets/

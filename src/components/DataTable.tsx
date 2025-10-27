@@ -1,10 +1,11 @@
-import { useMemo, type FC } from 'react';
+import { type FC, useMemo } from 'react';
 
-import { type ParsedTable } from '../dto';
+import type { ParsedTable } from '../dto';
 
 type Props = {
   data: ParsedTable | null;
   className?: string;
+  fluid?: boolean;
 };
 
 // Merge and sort class names lexicographically
@@ -15,12 +16,9 @@ const cx = (...parts: Array<string | null | undefined | false>): string =>
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     .join(' ');
 
-const DataTable: FC<Props> = ({ data, className }) => {
-  if (!data || data.rows.length === 0) {
-    return null;
-  }
-
-  const { headers, rows } = data;
+const DataTable: FC<Props> = ({ data, className, fluid }) => {
+  const headers = data?.headers ?? [];
+  const rows = data?.rows ?? [];
 
   const colCount = useMemo(() => {
     const maxRowLength = rows.reduce((max, row) => Math.max(max, row.length), 0);
@@ -30,6 +28,10 @@ const DataTable: FC<Props> = ({ data, className }) => {
     return Array.from({ length: colCount }, (_, i) => headers[i] ?? `列${i + 1}`); // 不足しているヘッダーは自動生成
   }, [headers, colCount]);
 
+  const headerItems = useMemo(() => {
+    return displayHeaders.map((h, i) => ({ h, key: `head:${h}:${i}` }));
+  }, [displayHeaders]);
+
   const wrapCls = cx(
     className,
     'bg-white',
@@ -38,7 +40,7 @@ const DataTable: FC<Props> = ({ data, className }) => {
     'max-h-[90vh]',
     'my-2.5',
     'overflow-auto',
-    'w-[calc(100vw-5vh)]'
+    fluid ? 'w-full' : 'w-[calc(100vw-5vh)]'
   );
 
   const tableCls = cx('border-separate', 'border-spacing-0', 'w-full');
@@ -67,6 +69,10 @@ const DataTable: FC<Props> = ({ data, className }) => {
 
   const rownumCellExtraCls = cx('text-gray-600', 'text-right', 'w-16');
 
+  if (!data || rows.length === 0) {
+    return null;
+  }
+
   return (
     <div className={wrapCls}>
       <table className={tableCls}>
@@ -75,28 +81,34 @@ const DataTable: FC<Props> = ({ data, className }) => {
             <th className={cx(headerCellCls, rownumCellExtraCls)} key="rownum">
               {/* 行番号列のヘッダー（空欄）*/}
             </th>
-            {displayHeaders.map((h, idx) => (
-              <th className={cx(headerCellCls)} key={idx} title={h}>
-                {h} {/* データ列のヘッダーを表示 */}
+            {headerItems.map((item) => (
+              <th className={cx(headerCellCls)} key={item.key} title={item.h}>
+                {item.h} {/* データ列のヘッダーを表示 */}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, rIdx) => (
-            <tr key={rIdx}>
-              <td className={cx(cellBaseCls, rownumCellExtraCls)} key="rownum">
-                {rIdx + 1} {/* 行番号を表示 */}
-              </td>
-              {Array.from({ length: colCount }, (_, cIdx) => {
-                return (
-                  <td className={cx(cellBaseCls)} key={cIdx}>
-                    {String(row[cIdx] ?? '')} {/* フォールバックは boolean のため */}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+          {rows.map((row, rIdx) => {
+            // Use row index for a stable, collision-free key to preserve order
+            const rowKey = `row:${rIdx}`;
+            return (
+              <tr key={rowKey}>
+                <td className={cx(cellBaseCls, rownumCellExtraCls)} key="rownum">
+                  {rIdx + 1} {/* 行番号を表示 */}
+                </td>
+                {Array.from({ length: colCount }, (_, cIdx) => {
+                  // Compose cell key from row/col index to avoid collisions
+                  const colKey = `cell:${rIdx}:${cIdx}`;
+                  return (
+                    <td className={cx(cellBaseCls)} key={colKey}>
+                      {String(row[cIdx] ?? '')} {/* フォールバックは boolean のため */}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

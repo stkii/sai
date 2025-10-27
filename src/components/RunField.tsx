@@ -1,4 +1,4 @@
-import { type FC } from 'react';
+import type { FC } from 'react';
 
 import BaseButton from './BaseButton';
 
@@ -17,13 +17,13 @@ const RunField: FC<Props> = ({ onRun, onClose, running, disabled, className }) =
         widthGroup="analysis-primary"
         onClick={onRun}
         disabled={disabled}
-        label={<>{running ? '実行中…' : '実行'}</>}
+        label={running ? '実行中…' : '実行'}
       />
       <BaseButton
         widthGroup="analysis-secondary"
         onClick={onClose}
         className="text-red-600 hover:bg-red-50"
-        label={<>✕ 終了</>}
+        label="✕ 終了"
       />
     </div>
   );

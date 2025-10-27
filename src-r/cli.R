@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Unified CLI entry for analyses (descriptive, correlation)
+# Unified CLI entry for analyses (descriptive, correlation, reliability, regression)
 # - Resolve project root (env-var first, then script-relative fallback)
 # - Load registry and utilities
 # - Read JSON input, dispatch to analysis, write JSON to an output file
@@ -8,13 +8,15 @@
 # Usage:
 #   cli.R descriptive <input_json_path> <output_json_path> [order]
 #   cli.R correlation <input_json_path> <output_json_path> [options_json]
+#   cli.R reliability <input_json_path> <output_json_path>
+#   cli.R regression  <input_json_path> <output_json_path> [options_json]
 
 # ------------------------
 # Args parsing
 # ------------------------
 args_trailing <- commandArgs(trailingOnly = TRUE)
 if (length(args_trailing) < 3) {
-  stop("Usage: cli.R <descriptive|correlation> <input_json_path> <output_json_path> [extra]")
+  stop("Usage: cli.R <descriptive|correlation|reliability|regression> <input_json_path> <output_json_path> [extra]")
 }
 analysis <- args_trailing[[1]]
 input_path <- args_trailing[[2]]
@@ -83,11 +85,25 @@ if (is.null(handler) || !is.function(handler)) {
 # ------------------------
 # Read input JSON
 # ------------------------
-dat <- if (exists("ReadJsonFile")) ReadJsonFile(input_path) else {
+raw_obj <- if (exists("ReadJsonFile")) ReadJsonFile(input_path) else {
   txt <- paste(readLines(input_path, warn = FALSE), collapse = "\n")
   jsonlite::fromJSON(txt)
 }
-if (is.list(dat) && !is.data.frame(dat)) dat <- as.data.frame(dat)
+
+# Preserve column order using optional "__order" hint when provided by the caller.
+dat <- raw_obj
+ord <- NULL
+if (is.list(raw_obj) && !is.data.frame(raw_obj) && !is.null(raw_obj[["__data"]])) {
+  dat <- raw_obj[["__data"]]
+  if (!is.null(raw_obj[["__order"]])) ord <- as.character(raw_obj[["__order"]])
+}
+if (is.list(dat) && !is.data.frame(dat)) dat <- as.data.frame(dat, check.names = FALSE, stringsAsFactors = FALSE)
+if (!is.null(ord) && is.data.frame(dat)) {
+  cols <- colnames(dat)
+  ord2 <- ord[ord %in% cols]
+  rest <- cols[!cols %in% ord2]
+  dat <- dat[, c(ord2, rest), drop = FALSE]
+}
 
 # ------------------------
 # Build options and run
@@ -100,6 +116,10 @@ if (identical(analysis, "descriptive")) {
   }, error = function(e) 'default')
   options_list$order <- ord
 } else if (identical(analysis, "correlation")) {
+  options_list <- tryCatch({
+    if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
+  }, error = function(e) list())
+} else if (identical(analysis, "regression")) {
   options_list <- tryCatch({
     if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
   }, error = function(e) list())

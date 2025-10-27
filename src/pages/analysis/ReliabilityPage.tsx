@@ -1,29 +1,22 @@
 import { type FC, useEffect, useMemo, useState } from 'react';
 
-import CorrOption from '../../components/CorrOption';
 import VariableSelector from '../../components/VariableSelector';
 import type { ParsedTable } from '../../dto';
 import tauriIPC from '../../ipc';
-import type { CorrOptionValue } from '../../types';
 
 type Props = {
   path: string;
   sheet: string;
-  onSelectionChange?: (selectedVariables: string[], options: CorrOptionValue) => void;
+  onSelectionChange?: (selectedVariables: string[]) => void;
 };
 
-const CorrAnalysisPage: FC<Props> = ({ path, sheet, onSelectionChange }) => {
+const ReliabilityPage: FC<Props> = ({ path, sheet, onSelectionChange }) => {
   const [table, setTable] = useState<ParsedTable | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const headers = useMemo(() => table?.headers ?? [], [table]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [options, setOptions] = useState<CorrOptionValue>({
-    methods: { pearson: true, kendall: false, spearman: false },
-    alt: 'two.sided',
-    use: 'all.obs',
-  });
 
   useEffect(() => {
     if (!path || !sheet) return;
@@ -47,12 +40,8 @@ const CorrAnalysisPage: FC<Props> = ({ path, sheet, onSelectionChange }) => {
 
   const applySelection = (next: string[]) => {
     setSelected(next);
-    onSelectionChange?.(next, options);
+    onSelectionChange?.(next);
   };
-
-  useEffect(() => {
-    onSelectionChange?.(selected, options);
-  }, [options, selected, onSelectionChange]);
 
   return (
     <section className="flex flex-1 min-h-0 flex-col">
@@ -66,11 +55,10 @@ const CorrAnalysisPage: FC<Props> = ({ path, sheet, onSelectionChange }) => {
             value={selected}
             onChange={applySelection}
           />
-          <CorrOption className="w-1/2" value={options} onChange={setOptions} />
         </div>
       )}
     </section>
   );
 };
 
-export default CorrAnalysisPage;
+export default ReliabilityPage;

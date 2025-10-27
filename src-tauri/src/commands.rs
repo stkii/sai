@@ -70,11 +70,9 @@ pub fn open_or_reuse_window(
     payload: Option<serde_json::Value>,
 ) -> Result<(), String> {
     let is_analysis = label.as_str() == "analysis";
-    let is_result = label.as_str() == "result";
-    // 分析パネルと結果ビューアは毎回新規作成。既存があれば閉じる。
-    // 結果ビューアはURLのクエリ（token）に依存するため、再利用だとURLが更新されず
-    // 古いtokenを参照してしまう。MVPでは毎回作り直して安全側に倒す。
-    if is_analysis || is_result {
+    // 分析パネルは毎回新規作成。既存があれば閉じる。
+    // 結果ビューアは蓄積ビューのため再利用し、payload をイベントで渡す。
+    if is_analysis {
         if let Some(win) = handle.get_webview_window(&label) {
             let _ = win.close();
         }
@@ -101,13 +99,16 @@ pub fn open_or_reuse_window(
     let mut builder = WebviewWindowBuilder::new(&handle, &label, WebviewUrl::App(url.into()));
     match label.as_str() {
         "analysis" => {
-            builder = builder.title("SAI - (Analysis Panel)");
-            builder = builder.inner_size(720.0, 540.0);
-            // builder = builder.resizable(false);
+            builder = builder
+                .title("SAI - (Analysis Panel)")
+                .inner_size(720.0, 540.0)
+                .min_inner_size(700.0, 520.0);
         },
         "result" => {
-            builder = builder.title("SAI - (Result Viewer)");
-            builder = builder.inner_size(800.0, 600.0);
+            builder = builder
+                .title("SAI - (Result Viewer)")
+                .inner_size(800.0, 600.0)
+                .min_inner_size(700.0, 520.0);
         },
         _ => {
             // デフォルト: タイトルのみ指定（サイズは既定に委ねる）
@@ -146,4 +147,54 @@ pub fn issue_result_token(result: ParsedTable) -> Result<String, String> {
 pub fn consume_result_token(token: String) -> Result<ParsedTable, String> {
     let val = temp_store::consume(&token)?;
     serde_json::from_value::<ParsedTable>(val).map_err(|e| e.to_string())
+}
+
+// ----- File export / Logging -----
+
+#[tauri::command]
+pub fn save_text_file(
+    path: String,
+    contents: String,
+) -> Result<(), String> {
+    use std::io::Write;
+    use std::path::Path;
+
+    let path = Path::new(&path);
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let mut f = std::fs::File::create(path).map_err(|e| e.to_string())?;
+    f.write_all(contents.as_bytes()).map_err(|e| e.to_string())?;
+    f.flush().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn append_analysis_log(
+    app: tauri::AppHandle,
+    entry: serde_json::Value,
+) -> Result<(), String> {
+    use std::fs::{
+        self,
+        OpenOptions,
+    };
+    use std::io::Write;
+    // Resolve app-local data dir
+    let base_dir = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| format!("failed to resolve app_local_data_dir: {}", e))?;
+    let logs_dir = base_dir.join("analysis-logs");
+    fs::create_dir_all(&logs_dir).map_err(|e| e.to_string())?;
+
+    let log_file = logs_dir.join("analysis-log.jsonl");
+    let mut f = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file)
+        .map_err(|e| e.to_string())?;
+
+    let line = serde_json::to_string(&entry).map_err(|e| e.to_string())?;
+    f.write_all(line.as_bytes()).map_err(|e| e.to_string())?;
+    f.write_all(b"\n").map_err(|e| e.to_string())?;
+    f.flush().map_err(|e| e.to_string())
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FC } from 'react';
+import { type FC, useEffect, useMemo, useState } from 'react';
 
 import DescriptiveOption from '../../components/DescriptiveOption';
 import VariableSelector from '../../components/VariableSelector';
@@ -48,7 +48,7 @@ const DescriptiveStatsPanel: FC<Props> = ({ path, sheet, onSelectionChange }) =>
 
   useEffect(() => {
     onSelectionChange?.(selected, order);
-  }, [order]);
+  }, [order, selected, onSelectionChange]);
 
   return (
     <section className="flex flex-1 min-h-0 flex-col">
