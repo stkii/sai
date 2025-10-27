@@ -99,13 +99,16 @@ pub fn open_or_reuse_window(
     let mut builder = WebviewWindowBuilder::new(&handle, &label, WebviewUrl::App(url.into()));
     match label.as_str() {
         "analysis" => {
-            builder = builder.title("SAI - (Analysis Panel)");
-            builder = builder.inner_size(720.0, 540.0);
-            // builder = builder.resizable(false);
+            builder = builder
+                .title("SAI - (Analysis Panel)")
+                .inner_size(720.0, 540.0)
+                .min_inner_size(700.0, 520.0);
         },
         "result" => {
-            builder = builder.title("SAI - (Result Viewer)");
-            builder = builder.inner_size(800.0, 600.0);
+            builder = builder
+                .title("SAI - (Result Viewer)")
+                .inner_size(800.0, 600.0)
+                .min_inner_size(700.0, 520.0);
         },
         _ => {
             // デフォルト: タイトルのみ指定（サイズは既定に委ねる）
