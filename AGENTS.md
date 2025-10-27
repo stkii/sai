@@ -32,3 +32,8 @@
 ## Security & Configuration Tips
 - Do not commit secrets. Restore R deps with `R -q -e "renv::restore()"`.
 - For device debugging, set `TAURI_DEV_HOST` (see `vite.config.ts`).
+
+## Agent Communication Policy
+- Thinking (internal reasoning, planning, notes) may be in Japanese or English.
+- Conversation (responses to users, comments, explanations) must be in Japanese.
+- Exception: Error messages and log excerpts may be quoted verbatim without translation.
