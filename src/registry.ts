@@ -2,10 +2,11 @@ import { createElement, type ReactNode } from 'react';
 
 import CorrAnalysisPage from './pages/analysis/CorrAnalysisPage';
 import DescriptiveStatsPage from './pages/analysis/DescriptiveStatsPage';
+import RegressionAnalysisPage from './pages/analysis/RegressionAnalysisPage';
 import ReliabilityPage from './pages/analysis/ReliabilityPage';
 import type { CorrOptionValue, DescriptiveOrder } from './types';
 
-export type AnalysisType = 'descriptive' | 'correlation' | 'reliability';
+export type AnalysisType = 'descriptive' | 'correlation' | 'reliability' | 'regression';
 
 export type AnalysisLocalState = {
   selectedVars: string[];
@@ -103,5 +104,30 @@ export const ANALYSIS_REGISTRY: Record<AnalysisType, AnalysisDefinition> = {
     // 現状パラメータはなし（既定で Cronbach の α）。
     buildParamsForPayload: () => undefined,
     buildOptionsJson: () => undefined,
+  },
+  regression: {
+    id: 'regression',
+    label: '回帰',
+    renderEditor: ({ path, sheet, setSelectedVars }) =>
+      createElement(RegressionAnalysisPage, {
+        path,
+        sheet,
+        onSelectionChange: (dep, indep) => {
+          const arr = [dep, ...indep].filter((v): v is string => !!v && v.length > 0);
+          setSelectedVars(arr);
+        },
+      }),
+    buildParamsForPayload: (state) => {
+      const [dep, ...rest] = state.selectedVars || [];
+      if (!dep || rest.length === 0) return undefined;
+      return { dependent: dep, independents: rest };
+    },
+    buildOptionsJson: (state) => {
+      const p = ANALYSIS_REGISTRY.regression.buildParamsForPayload(state) as
+        | { dependent: string; independents: string[] }
+        | undefined;
+      if (!p) return undefined;
+      return JSON.stringify(p);
+    },
   },
 };

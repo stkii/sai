@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 
 import BaseButton from '../components/BaseButton';
 import DataTable from '../components/DataTable';
+import MultiBlockTable from '../components/MultiBlockTable';
 import type { ParsedTable } from '../dto';
 import '../globals.css';
 import tauriIPC from '../ipc';
@@ -223,7 +224,11 @@ const ResultPage: FC = () => {
                     {e.variables?.length ? ` / 変数: ${e.variables.length}` : ''}
                   </div>
                 </div>
-                <DataTable data={e.result} fluid />
+                {e.analysis === 'regression' ? (
+                  <MultiBlockTable data={e.result} fluid />
+                ) : (
+                  <DataTable data={e.result} fluid />
+                )}
               </div>
             ))}
             {entries.length === 0 && (

@@ -67,7 +67,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
     try {
       await tauriIPC.openOrReuseWindow('analysis', url);
       onAnalyze?.({ filePath, sheet: selectedSheet });
-      // 分析パネルを開いた後は分析種類の選択をリセット（再選択できるようにする）
+      // 分析パネルを開いた後は分析種類の選択をリセット
       setTimeout(() => setAnalysisType(''), 0);
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
@@ -117,6 +117,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
             <option value="descriptive">記述統計</option>
             <option value="correlation">相関分析</option>
             <option value="reliability">信頼性分析</option>
+            <option value="regression">回帰分析</option>
           </select>
 
           <BaseButton
