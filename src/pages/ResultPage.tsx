@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import BaseButton from '../components/BaseButton';
 import DataTable from '../components/DataTable';
 import MultiBlockTable from '../components/MultiBlockTable';
+import CorrelationTables from '../components/CorrelationTables';
 import type { ParsedTable } from '../dto';
 import '../globals.css';
 import tauriIPC from '../ipc';
@@ -226,6 +227,8 @@ const ResultPage: FC = () => {
                 </div>
                 {e.analysis === 'regression' ? (
                   <MultiBlockTable data={e.result} fluid />
+                ) : e.analysis === 'correlation' ? (
+                  <CorrelationTables data={e.result} fluid />
                 ) : (
                   <DataTable data={e.result} fluid />
                 )}
