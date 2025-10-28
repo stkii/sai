@@ -137,8 +137,6 @@
     use = use                  # missing value handling method
   )
 
-  # 中間データは丸めずそのまま保持し、丸めはCorrParsedで表示直前に行う
-
   return (res)
 }
 
@@ -153,15 +151,6 @@
 
   vars <- base::colnames(corr)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::ncol(corr)))
-
-  # Significance stars helper
-  stars_for_p <- function(p) {
-    if (is.na(p)) return("")
-    if (p < 0.001) return("***")
-    if (p < 0.01)  return("**")
-    if (p < 0.05)  return("*")
-    return("")
-  }
 
   headers <- c("Variable", vars)
   n <- base::length(vars)
@@ -181,7 +170,7 @@
         if (is.na(r)) {
           row_vals[[j + 1]] <- FormatNum(1.0)
         } else {
-          row_vals[[j + 1]] <- base::paste0(FormatNum(r), stars_for_p(p))
+          row_vals[[j + 1]] <- base::paste0(FormatNum(r), StarsForPval(p))
         }
       }
     }
