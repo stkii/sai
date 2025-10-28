@@ -12,7 +12,7 @@
 #   - min: minimum value
 #   - max: maximum value
 #
-Describe <- function(x, na.rm=TRUE){
+.Describe <- function(x, na.rm=TRUE){
   # If x is a list, convert to data.frame
   if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
 
@@ -37,8 +37,8 @@ Describe <- function(x, na.rm=TRUE){
 # Returns:
 # - list(headers=[..], rows=[[..], ...])
 #
-DescribeParsed <- function(x, na.rm=TRUE){
-  stats <- Describe(x, na.rm=na.rm)
+.DescribeParsed <- function(x, na.rm=TRUE){
+  stats <- .Describe(x, na.rm=na.rm)
 
   headers <- c("Variable", "Mean", "SD", "Min", "Max")
   vars <- base::rownames(stats)
@@ -72,7 +72,7 @@ RunDescriptive <- function(x, options = NULL) {
     if (is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
   }, error = function(e) 'default')
 
-  parsed <- DescribeParsed(x)
+  parsed <- .DescribeParsed(x)
 
   # Optional sorting using Sort() utility when available
   if (base::exists("Sort") && is.function(base::get("Sort"))) {

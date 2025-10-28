@@ -10,7 +10,7 @@
 #
 # Returns:
 # - stats::lm object
-LinearRegression <- function(data,
+.LinearRegression <- function(data,
                              dependent,
                              independents,
                              intercept = TRUE,
@@ -62,7 +62,7 @@ LinearRegression <- function(data,
 # - For each column j, regress x_j on the remaining columns with intercept
 #   and compute VIF_j = 1 / (1 - R^2_j)
 # - Respects weights(fit) when present
-CalculateVIF <- function(fit) {
+.CalculateVIF <- function(fit) {
   mm <- base::tryCatch(stats::model.matrix(fit), error = function(e) NULL)
   if (is.null(mm)) return(stats::setNames(numeric(0), character(0)))
   cn <- base::colnames(mm)
@@ -109,13 +109,13 @@ CalculateVIF <- function(fit) {
 # - Model Summary (1-row summary)
 # - Coefficients (Term/Estimate/Std. Error/t value/Pr(>|t|))
 # - ANOVA (Regression/Residuals/Total)
-LinearRegressionParsed <- function(data,
+.LinearRegressionParsed <- function(data,
                                    dependent,
                                    independents,
                                    intercept = TRUE,
                                    weights = NULL,
                                    na_action = "na.omit") {
-  fit <- LinearRegression(data,
+  fit <- .LinearRegression(data,
                           dependent = dependent,
                           independents = independents,
                           intercept = intercept,
@@ -178,7 +178,7 @@ LinearRegressionParsed <- function(data,
   sdy <- w_sd(y_vec, w_vec)
 
   # Precompute VIFs (numeric, no rounding here)
-  vif_map <- CalculateVIF(fit)
+  vif_map <- .CalculateVIF(fit)
 
   if (!is.null(coefs) && base::nrow(coefs) > 0) {
     rn <- base::rownames(coefs)
@@ -315,7 +315,7 @@ RunRegression <- function(x, options = NULL) {
     if (is.null(w)) NULL else base::as.numeric(w)
   }, error = function(e) NULL)
 
-  LinearRegressionParsed(x,
+  .LinearRegressionParsed(x,
                          dependent = dep,
                          independents = indep,
                          intercept = intercept,
