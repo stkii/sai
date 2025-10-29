@@ -73,4 +73,3 @@ const CorrelationTables: FC<Props> = ({ data, className, fluid }) => {
 };
 
 export default CorrelationTables;
-

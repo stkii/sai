@@ -4,9 +4,9 @@ import { type FC, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import BaseButton from '../components/BaseButton';
+import CorrelationTables from '../components/CorrelationTables';
 import DataTable from '../components/DataTable';
 import MultiBlockTable from '../components/MultiBlockTable';
-import CorrelationTables from '../components/CorrelationTables';
 import type { ParsedTable } from '../dto';
 import '../globals.css';
 import tauriIPC from '../ipc';
