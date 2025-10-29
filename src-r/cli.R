@@ -25,7 +25,7 @@ extra_arg <- if (length(args_trailing) >= 4) args_trailing[[4]] else NA_characte
 if (!file.exists(input_path)) stop(paste0("Input file not found: ", input_path))
 
 # ------------------------
-# Resolve project root and R dir
+# Resolve project root and R dir (src-r/R only)
 # ------------------------
 ResolveScriptPath <- function() {
   args_full <- commandArgs(trailingOnly = FALSE)
@@ -35,24 +35,11 @@ ResolveScriptPath <- function() {
   stop("Failed to resolve CLI script path")
 }
 
-root <- Sys.getenv("R_PROJECT_ROOT", unset = NA_character_)
-if (is.na(root) || !nzchar(root)) {
-  script_path <- ResolveScriptPath()
-  # script is expected at <repo>/src-r/cli.R
-  cli_dir <- dirname(script_path)
-  root <- cli_dir
-}
-root <- normalizePath(root)
+# script is expected at <repo>/src-r/cli.R
+script_path <- ResolveScriptPath()
+root <- normalizePath(dirname(script_path))
 r_dir <- file.path(root, "R")
-if (!dir.exists(r_dir)) {
-  alt1 <- file.path("src-r", "R")
-  alt2 <- file.path("..", "src-r", "R")
-  alt3 <- file.path("../..", "src-r", "R")
-  for (alt in c(alt1, alt2, alt3)) {
-    if (dir.exists(alt)) { r_dir <- alt; break }
-  }
-}
-if (!dir.exists(r_dir)) stop("R directory not found (expected at src-r/R)")
+if (!dir.exists(r_dir)) stop("R directory not found: expected 'src-r/R' next to cli.R")
 
 # ------------------------
 # Optional renv activation
