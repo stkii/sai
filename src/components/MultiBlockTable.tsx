@@ -2,6 +2,7 @@ import { type FC, useMemo } from 'react';
 
 import type { ParsedTable } from '../dto';
 import DataTable from './DataTable';
+import LazyBlock from './LazyBlock';
 
 type Props = {
   data: ParsedTable | null;
@@ -49,6 +50,8 @@ const mapHeaderToJa = (_title: string, h: string): string => {
 };
 
 const MultiBlockTable: FC<Props> = ({ data, className, fluid }) => {
+  const ROW_HEIGHT = 32;
+  const HEADER_HEIGHT = 36;
   const blocks = useMemo<Block[]>(() => {
     if (!data || !data.rows?.length) return [];
     const rows = data.rows;
@@ -96,7 +99,9 @@ const MultiBlockTable: FC<Props> = ({ data, className, fluid }) => {
                   ? '分散分析'
                   : b.title}
           </div>
-          <DataTable data={b.table} fluid={fluid} />
+          <LazyBlock estimatedHeight={(b.table.rows.length + 1) * ROW_HEIGHT + HEADER_HEIGHT}>
+            <DataTable data={b.table} fluid={fluid} />
+          </LazyBlock>
         </div>
       ))}
     </div>
