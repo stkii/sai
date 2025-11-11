@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Rust-de6543.svg?logo=rust&logoColor=white&style=flat" alt="Rust-Badge">
 </p>
 
-## クイックスタート
+## クイックスタート（開発中）
 
 ```bash
 git clone https://github.com/stkii/sai.git
@@ -17,7 +17,7 @@ cd src-r/ && Rscript -e 'renv::restore()'
 
 cd ../
 
-RENV_PROJECT="$PWD/src-r" PATH="/usr/local/bin:$PATH" pnpm tauri dev
+RENV_PROFILE=default RENV_PROJECT="$PWD/src-r" PATH="/usr/local/bin:$PATH" pnpm tauri dev
 ```
 
 ## ライセンス
