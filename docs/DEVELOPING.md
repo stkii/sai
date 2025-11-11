@@ -2,6 +2,20 @@
 
 > このドキュメントはベータ版開発中の内容を反映しています。内容が大きく変更されることがあります。
 
+## `src-r`（Rプロジェクト）
+
+開発で用いるライブラリや依存関係が、本番環境の `renv/` や `renv/lock` に混入しないように、以下のコマンドで環境を切り替えることができます。詳細は以下の URL を参照してください。
+
+- https://rstudio.github.io/renv/articles/profiles.html
+
+```bash
+# 開発環境
+renv::activate(profile = "dev")
+
+# 本番環境
+renv::activate(profile = "default")
+```
+
 ## Git
 
 ### ブランチ戦略
@@ -43,21 +57,23 @@
 
 ### コミットルール
 
-**必ずフォーマッターを実行してから push してください**。
+**必ずリンターとフォーマッターを実行してから push してください**。
 
 ```bash
-# TypeScript
-# Format files in src/ directory
-pnpm prettier src/ --write
+# ---------- TypeScript ----------
+# Check problems
+pnpm check
 
-# Rust
-# nightly is required
+# Lint and Format files in src/ directory
+pnpm lint
+pnpm format
+
+# ---------- Rust ----------
+# build check
+cargo check
+
+# Format (nightly is required)
 cargo +nightly fmt
-
-# All-in-One
-pnpm prettier src/ --write \
-  && cd src-tauri/ \
-  && cargo +nightly fmt
 ```
 
 コミットメッセージは `.github/.gitmessage` にある[テンプレート](https://github.com/stkii/sai/blob/main/.github/.gitmessage)に従って作成してください。必要に応じて、以下のコマンドでコミットメッセージ作成時にテンプレートを表示することができます。
@@ -74,5 +90,6 @@ rust-analyzer の一部の設定（e.g., proc-macro）は、開発環境やメ�
 `src-r/` の開発について、以下の手順から `RStudio` で作業することができます。`RStudio` 本体はインストールされており使用可能であることを前提としています。
 
 - RStudio を起動し `src-r/` を既存のプロジェクトとして開く
+- `renv::restore()` を実行
 - `renv::status()` を実行して状態確認
   - `No issues found -- the project is in a consistent state` と出力されればOK
