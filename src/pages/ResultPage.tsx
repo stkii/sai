@@ -7,7 +7,7 @@ import BaseButton from '../components/BaseButton';
 import CorrelationTables from '../components/CorrelationTables';
 import DataTable from '../components/DataTable';
 import MultiBlockTable from '../components/MultiBlockTable';
-import type { ParsedTable } from '../dto';
+import { type ParsedTable, zParsedTable, zResultPayload } from '../dto';
 import '../globals.css';
 import tauriIPC from '../ipc';
 
@@ -42,13 +42,19 @@ const ResultPage: FC = () => {
 
   // 共通ハンドラ
   const handlePayload = useCallback(async (p: ResultPayload) => {
-    const token = String(p.token || '');
-    const analysis = String(p.analysis || '');
-    const path = String(p.path || '');
-    const sheet = String(p.sheet || '');
-    const variables = p.variables || [];
-    const params = p.params;
-    const dataset = p.dataset;
+    // 受信ペイロードのruntime検証
+    const parsed = zResultPayload.safeParse(p);
+    if (!parsed.success) {
+      throw new Error(`結果ペイロードのスキーマ不一致: ${parsed.error.message}`);
+    }
+    const pdata = parsed.data;
+    const token = String(pdata.token || '');
+    const analysis = String(pdata.analysis || '');
+    const path = String(pdata.path || '');
+    const sheet = String(pdata.sheet || '');
+    const variables = pdata.variables || [];
+    const params = pdata.params;
+    const dataset = pdata.dataset;
     if (!token) return;
     try {
       if (consumedTokensRef.current.has(token)) return;
@@ -56,12 +62,23 @@ const ResultPage: FC = () => {
       let result: ParsedTable | null = null;
       try {
         const raw = sessionStorage.getItem(cacheKey);
-        if (raw) result = JSON.parse(raw) as ParsedTable;
+        if (raw) {
+          const json = JSON.parse(raw);
+          const ok = zParsedTable.safeParse(json);
+          if (ok.success) {
+            result = ok.data as ParsedTable;
+          }
+        }
       } catch {
-        void 0;
+        // 破損していれば読み捨て
       }
       if (!result) {
-        result = await tauriIPC.consumeResultToken(token);
+        const r = await tauriIPC.consumeResultToken(token);
+        const ok = zParsedTable.safeParse(r);
+        if (!ok.success) {
+          throw new Error(`結果テーブルのスキーマ不一致: ${ok.error.message}`);
+        }
+        result = ok.data as ParsedTable;
         try {
           sessionStorage.setItem(cacheKey, JSON.stringify(result));
         } catch {
@@ -100,10 +117,17 @@ const ResultPage: FC = () => {
     try {
       const raw = localStorage.getItem('sai:pending-result-payload');
       if (raw) {
-        const p = JSON.parse(raw) as ResultPayload;
-        // 一度取り出したら消す（多重処理防止）
-        localStorage.removeItem('sai:pending-result-payload');
-        void handlePayload(p);
+        const json = JSON.parse(raw);
+        const ok = zResultPayload.safeParse(json);
+        if (ok.success) {
+          const p = ok.data as ResultPayload;
+          // 一度取り出したら消す（多重処理防止）
+          localStorage.removeItem('sai:pending-result-payload');
+          void handlePayload(p);
+        } else {
+          // 壊れたペイロードは捨てる
+          localStorage.removeItem('sai:pending-result-payload');
+        }
       }
     } catch {
       // 読み取り失敗は無視（イベントに委ねる）

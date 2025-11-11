@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 import RunField from '../components/RunField';
 import '../globals.css';
+import { zParsedTable } from '../dto';
 import tauriIPC from '../ipc';
 import { ANALYSIS_REGISTRY, type AnalysisType } from '../registry';
 import type { CorrOptionValue, DescriptiveOrder } from '../types';
@@ -47,7 +48,12 @@ const AnalysisPage: FC = () => {
       const def = ANALYSIS_REGISTRY[analysisType];
       if (!def) throw new Error(`未対応の分析種別: ${type}`);
       const optionsJson = def.buildOptionsJson({ selectedVars, order, corrOptions }) ?? undefined;
-      const result = await tauriIPC.runRAnalysisWithDataset(analysisType, dataset, 30_000, optionsJson);
+      const rawResult = await tauriIPC.runRAnalysisWithDataset(analysisType, dataset, 30_000, optionsJson);
+      const validated = zParsedTable.safeParse(rawResult);
+      if (!validated.success) {
+        throw new Error(`R結果のスキーマ不一致: ${validated.error.message}`);
+      }
+      const result = validated.data;
 
       // 3) トークンを発行し、payload で結果ビューへ渡す（URLクエリ依存を排除）
       const token = await tauriIPC.issueResultToken(result);

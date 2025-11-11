@@ -240,6 +240,7 @@ pub fn run_r_analysis_with_dataset(
                 .map_err(|e| format!("R出力ファイルの読み取りに失敗しました: {e}"))?;
             let parsed: ParsedTable = serde_json::from_str(&json_txt)
                 .map_err(|e| format!("R出力のJSONパースに失敗しました: {}\n出力: {}", e, json_txt))?;
+            parsed.validate()?;
             Ok(parsed)
         },
         None => {
