@@ -17,7 +17,7 @@
 #   - alternative (character): alternative hypothesis
 #   - use (character): missing value handling method
 #
-CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
+.CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
   # Convert list to data.frame if necessary
   if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
   if (!is.data.frame(x) && !is.matrix(x)) stop("x must be a data.frame or matrix")
@@ -137,8 +137,6 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
     use = use                  # missing value handling method
   )
 
-  # 中間データは丸めずそのまま保持し、丸めはCorrParsedで表示直前に行う
-
   return (res)
 }
 
@@ -146,22 +144,13 @@ CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided"
 # - Shows an upper-triangular correlation matrix with significance stars
 # - headers: c("Variable", varnames)
 # - cells: diagonal = FormatNum(1.0); upper triangle = paste0(FormatNum(r), stars); lower triangle = ""
-CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
-  res <- CorrTest(x, method=method, use=use, alternative=alternative)
+.CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
+  res <- .CorrTest(x, method=method, use=use, alternative=alternative)
   corr <- res$corr
   pval <- res$p
 
   vars <- base::colnames(corr)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::ncol(corr)))
-
-  # Significance stars helper
-  stars_for_p <- function(p) {
-    if (is.na(p)) return("")
-    if (p < 0.001) return("***")
-    if (p < 0.01)  return("**")
-    if (p < 0.05)  return("*")
-    return("")
-  }
 
   headers <- c("Variable", vars)
   n <- base::length(vars)
@@ -181,7 +170,7 @@ CorrParsed <- function(x, method="pearson", use="all.obs", alternative="two.side
         if (is.na(r)) {
           row_vals[[j + 1]] <- FormatNum(1.0)
         } else {
-          row_vals[[j + 1]] <- base::paste0(FormatNum(r), stars_for_p(p))
+          row_vals[[j + 1]] <- base::paste0(FormatNum(r), StarsForPval(p))
         }
       }
     }
@@ -251,7 +240,7 @@ RunCorrelation <- function(x, options = NULL) {
   rows_all <- list()
   for (i in base::seq_along(methods)) {
     m <- methods[[i]]
-    res <- CorrParsed(x, method = m, use = use, alternative = alt_r)
+    res <- .CorrParsed(x, method = m, use = use, alternative = alt_r)
     if (is.null(headers)) headers <- res$headers
     if (i > 1) {
       sep <- c(base::paste0('--- ', m, ' ---'), base::rep('', base::length(headers) - 1L))

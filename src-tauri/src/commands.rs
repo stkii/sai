@@ -16,6 +16,30 @@ use crate::{
     temp_store,
 };
 
+#[derive(serde::Deserialize)]
+struct ResultPayloadCheck {
+    #[allow(dead_code)]
+    token: Option<String>,
+    #[allow(dead_code)]
+    analysis: Option<String>,
+    #[allow(dead_code)]
+    path: Option<String>,
+    #[allow(dead_code)]
+    sheet: Option<String>,
+    #[allow(dead_code)]
+    variables: Option<Vec<String>>,
+    #[allow(dead_code)]
+    params: Option<serde_json::Value>,
+    #[allow(dead_code)]
+    dataset: Option<IndexMap<String, Vec<Option<f64>>>>,
+}
+
+fn validate_result_payload(v: &serde_json::Value) -> Result<(), String> {
+    serde_json::from_value::<ResultPayloadCheck>(v.clone())
+        .map(|_| ())
+        .map_err(|e| format!("result payload invalid: {}", e))
+}
+
 // ----- Excel -----
 
 #[tauri::command]
@@ -29,7 +53,9 @@ pub fn parse_excel(
     sheet: String,
 ) -> Result<ParsedTable, String> {
     let rows = excel::read_excel_sheet_rows(&path, &sheet)?;
-    excel::create_parsed_table(rows)
+    let table = excel::create_parsed_table(rows)?;
+    table.validate()?;
+    Ok(table)
 }
 
 // ----- R analysis -----
@@ -51,13 +77,15 @@ pub fn run_r_analysis_with_dataset(
     options_json: Option<String>,
     timeout_ms: u64,
 ) -> Result<ParsedTable, String> {
-    r::run_r_analysis_with_dataset(
+    let table = r::run_r_analysis_with_dataset(
         &app,
         &analysis,
         &dataset,
         options_json.as_deref(),
         Duration::from_millis(timeout_ms),
-    )
+    )?;
+    table.validate()?;
+    Ok(table)
 }
 
 // ----- Window -----
@@ -82,11 +110,19 @@ pub fn open_or_reuse_window(
         match label.as_str() {
             "result" => {
                 if let Some(data) = payload {
+                    // 受信ペイロードの簡易バリデーション（型崩れを早期検出）
+                    if let Err(e) = validate_result_payload(&data) {
+                        return Err(e);
+                    }
                     win.emit("result:load", data).map_err(|e| e.to_string())?;
                 }
             },
             "analysis" => {
                 if let Some(data) = payload {
+                    // 分析パネル用の受信ペイロード検証（緩め）
+                    if let Err(e) = validate_result_payload(&data) {
+                        return Err(e);
+                    }
                     win.emit("analysis:load", data).map_err(|e| e.to_string())?;
                 }
             },
@@ -122,9 +158,15 @@ pub fn open_or_reuse_window(
     if let Some(data) = payload {
         match label.as_str() {
             "result" => {
+                if let Err(e) = validate_result_payload(&data) {
+                    return Err(e);
+                }
                 win.emit("result:load", data).map_err(|e| e.to_string())?;
             },
             "analysis" => {
+                if let Err(e) = validate_result_payload(&data) {
+                    return Err(e);
+                }
                 win.emit("analysis:load", data).map_err(|e| e.to_string())?;
             },
             _ => {},
@@ -139,6 +181,7 @@ pub fn open_or_reuse_window(
 #[tauri::command]
 pub fn issue_result_token(result: ParsedTable) -> Result<String, String> {
     let ttl = std::time::Duration::from_secs(300); // 5 minutes
+    result.validate()?;
     let val = serde_json::to_value(result).map_err(|e| e.to_string())?;
     Ok(temp_store::issue(val, ttl))
 }
@@ -146,7 +189,9 @@ pub fn issue_result_token(result: ParsedTable) -> Result<String, String> {
 #[tauri::command]
 pub fn consume_result_token(token: String) -> Result<ParsedTable, String> {
     let val = temp_store::consume(&token)?;
-    serde_json::from_value::<ParsedTable>(val).map_err(|e| e.to_string())
+    let table = serde_json::from_value::<ParsedTable>(val).map_err(|e| e.to_string())?;
+    table.validate()?;
+    Ok(table)
 }
 
 // ----- File export / Logging -----

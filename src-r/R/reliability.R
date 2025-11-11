@@ -8,7 +8,7 @@
 # Returns:
 # - alpha (numeric): The Cronbach's alpha coefficient of the input dataset.
 #
-CronbachAlpha <- function(x) {
+.CronbachAlpha <- function(x) {
   # Get the number of items
   n_cols <- base::ncol(x)
   if (n_cols < 2) {
@@ -29,7 +29,7 @@ CronbachAlpha <- function(x) {
 
 # Wrapper: return ParsedTable-compatible structure for UI
 # - model: 'alpha' | 'omega'
-ReliabilityParsed <- function(x, model='alpha') {
+.ReliabilityParsed <- function(x, model='alpha') {
   # Coerce to data.frame matrix of numeric only
   if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
   if (!is.data.frame(x) && !is.matrix(x)) stop("x must be a data.frame or matrix")
@@ -39,7 +39,7 @@ ReliabilityParsed <- function(x, model='alpha') {
 
   headers <- c("Statistic", "Value")
   if (base::identical(model, 'alpha')) {
-    val <- CronbachAlpha(base::as.matrix(x))
+    val <- .CronbachAlpha(base::as.matrix(x))
     rows <- list(c("Cronbach's alpha", FormatNum(val)))
   } else {
     rows <- list(c("Omega", "未実装"))
@@ -61,5 +61,5 @@ RunReliability <- function(x, options = NULL) {
     m <- options$model
     if (is.null(m) || !base::nzchar(m)) 'alpha' else base::as.character(m)
   }, error = function(e) 'alpha')
-  ReliabilityParsed(x, model = model)
+  .ReliabilityParsed(x, model = model)
 }

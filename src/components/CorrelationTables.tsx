@@ -2,6 +2,7 @@ import { type FC, useMemo } from 'react';
 
 import type { ParsedTable } from '../dto';
 import DataTable from './DataTable';
+import LazyBlock from './LazyBlock';
 
 type Props = {
   data: ParsedTable | null;
@@ -27,6 +28,8 @@ const mapHeader = (h: string): string => {
 };
 
 const CorrelationTables: FC<Props> = ({ data, className, fluid }) => {
+  const ROW_HEIGHT = 32;
+  const HEADER_HEIGHT = 36;
   const sections = useMemo<Section[]>(() => {
     if (!data || !data.rows?.length) return [];
 
@@ -63,9 +66,13 @@ const CorrelationTables: FC<Props> = ({ data, className, fluid }) => {
         <div key={`${s.title ?? 'corr'}:${idx}`} className={idx > 0 ? 'mt-6' : ''}>
           {s.title && <div className="text-sm text-gray-600 px-1 py-1">{s.title}</div>}
           <div className="text-sm text-gray-600 px-1 py-1">相関係数</div>
-          <DataTable data={{ headers, rows: s.corr }} fluid={fluid} />
+          <LazyBlock estimatedHeight={(s.corr.length + 1) * ROW_HEIGHT + HEADER_HEIGHT}>
+            <DataTable data={{ headers, rows: s.corr }} fluid={fluid} />
+          </LazyBlock>
           <div className="text-sm text-gray-600 px-1 py-1 mt-3">p値</div>
-          <DataTable data={{ headers, rows: s.p }} fluid={fluid} />
+          <LazyBlock estimatedHeight={(s.p.length + 1) * ROW_HEIGHT + HEADER_HEIGHT}>
+            <DataTable data={{ headers, rows: s.p }} fluid={fluid} />
+          </LazyBlock>
         </div>
       ))}
     </div>
@@ -73,4 +80,3 @@ const CorrelationTables: FC<Props> = ({ data, className, fluid }) => {
 };
 
 export default CorrelationTables;
-

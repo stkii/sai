@@ -74,11 +74,10 @@ pub fn create_parsed_table(rows_data: Vec<Vec<Data>>) -> Result<ParsedTable, Str
                                 serde_json::Value::String("Inf!".to_string())
                             }
                         } else {
-                            // 通常の値
+                            // 通常の値（JSON数値へ）。失敗時は仕様に従い null。
                             serde_json::Number::from_f64(f)
                                 .map(serde_json::Value::Number)
-                                // パース失敗 (NA!; Not Available)
-                                .unwrap_or_else(|| serde_json::Value::String("NA!".to_string()))
+                                .unwrap_or(serde_json::Value::Null)
                         }
                     },
 

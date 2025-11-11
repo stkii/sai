@@ -8,3 +8,7 @@ src-r.Rproj
 
 # Datasets for development
 datasets/
+
+# Dev Environment
+renv/profiles/dev/
+profile

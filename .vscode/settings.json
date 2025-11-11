@@ -12,6 +12,10 @@
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.inlayHints.enabled": "off"
   },
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
   "editor.formatOnSave": true,
   "eslint.enable": true,
   "files.insertFinalNewline": true,

@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* biome-ignore lint/suspicious/noUnknownAtRules: @source is a Tailwind CSS directive.*/
+@source not "../docs/llms-txt/**/*";
 
 :root {
   background-color: #f6f6f6;
