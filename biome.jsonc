@@ -17,6 +17,7 @@
 	}
   },
   "formatter": {
+	// These options apply to all languages.
 	"enabled": true,
 	"indentStyle": "space",
 	"indentWidth": 2,
@@ -28,6 +29,7 @@
 	  "recommended": true
 	}
   },
+  // Language-specific formatting options below
   "css": {
 	"formatter": {
 	  "quoteStyle": "single"
@@ -37,12 +39,6 @@
 	"formatter": {
 	  "quoteStyle": "single",
 	  "trailingCommas": "es5"
-	}
-  },
-  "json": {
-	"formatter": {
-	  "indentStyle": "space",
-	  "indentWidth": 2
 	}
   }
 }

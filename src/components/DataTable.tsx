@@ -23,31 +23,35 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
     return displayHeaders.map((h, i) => ({ h, key: `head:${h}:${i}` }));
   }, [displayHeaders]);
 
-  const wrapCls =
-    `${className ?? ''} bg-white border border-gray-300 max-h-[90vh] my-2.5 overflow-auto ${fluid ? 'w-full' : 'w-[calc(100vw-5vh)]'}`.trim();
-
-  const tableCls = 'border-separate border-spacing-0 w-full';
-
-  const cellBaseCls = 'border-b border-gray-100 border-r px-2.5 py-1.5 text-left text-sm whitespace-nowrap';
-
-  const headerCellCls = `${cellBaseCls} bg-gray-50 font-semibold sticky top-0 z-[1] border-b-gray-300`;
-
-  const rownumCellExtraCls = 'text-gray-600 text-right w-16';
-
   if (!data || rows.length === 0) {
     return null;
   }
 
   return (
-    <div className={wrapCls}>
-      <table className={tableCls}>
+    <div
+      className={`${className ?? ''} bg-white border border-gray-300 max-h-[90vh] my-2.5 overflow-auto ${fluid ? 'w-full' : 'w-[calc(100vw-5vh)]'}`.trim()}
+    >
+      <table className="border-separate border-spacing-0 w-full">
         <thead>
           <tr>
-            <th className={`${headerCellCls} ${rownumCellExtraCls}`} key="rownum">
+            <th
+              className="
+                border-b border-gray-100 border-r px-2.5 py-1.5 text-left text-sm whitespace-nowrap
+                bg-gray-50 font-semibold sticky top-0 z-[1] border-b-gray-300 text-gray-600 w-16
+              "
+              key="rownum"
+            >
               {/* 行番号列のヘッダー（空欄）*/}
             </th>
             {headerItems.map((item) => (
-              <th className={headerCellCls} key={item.key} title={item.h}>
+              <th
+                className="
+                  border-b border-gray-100 border-r px-2.5 py-1.5 text-left text-sm whitespace-nowrap
+                  bg-gray-50 font-semibold sticky top-0 z-[1] border-b-gray-300
+                "
+                key={item.key}
+                title={item.h}
+              >
                 {item.h} {/* データ列のヘッダーを表示 */}
               </th>
             ))}
@@ -59,14 +63,20 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
             const rowKey = `row:${rIdx}`;
             return (
               <tr key={rowKey}>
-                <td className={`${cellBaseCls} ${rownumCellExtraCls}`} key="rownum">
+                <td
+                  className="border-b border-gray-100 border-r px-2.5 py-1.5 text-left text-sm whitespace-nowrap text-gray-600 w-16"
+                  key="rownum"
+                >
                   {rIdx + 1} {/* 行番号を表示 */}
                 </td>
                 {Array.from({ length: colCount }, (_, cIdx) => {
                   // Compose cell key from row/col index to avoid collisions
                   const colKey = `cell:${rIdx}:${cIdx}`;
                   return (
-                    <td className={cellBaseCls} key={colKey}>
+                    <td
+                      className="border-b border-gray-100 border-r px-2.5 py-1.5 text-left text-sm whitespace-nowrap"
+                      key={colKey}
+                    >
                       {String(row[cIdx] ?? '')} {/* フォールバックは boolean のため */}
                     </td>
                   );
