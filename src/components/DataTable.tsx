@@ -2,7 +2,6 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ParsedTable } from '../dto';
-import { useMeasuredColumnWidth } from '../hooks/useMeasuredColumnWidth';
 
 type Props = {
   data: ParsedTable | null;
@@ -14,7 +13,7 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
   const rows = data?.rows ?? [];
   // 仮想化用の設定（行・列）
   const ROW_HEIGHT = 32; // px（概ねの高さ。セルのpaddingとline-heightに合わせる）
-  const DEFAULT_COL_WIDTH = 160; // px（概ねの幅。測定で上書き）
+  const DEFAULT_COL_WIDTH = 140; // px（固定幅。実測は廃止）
   const ROW_OVERSCAN = 10;
   const COL_OVERSCAN = 5;
   const MIN_COL_WIDTH = 100; // UIが崩れない最小幅
@@ -42,15 +41,8 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
     return displayHeaders.map((h, i) => ({ h, key: `head:${h}:${i}` }));
   }, [displayHeaders]);
 
-  // 列幅の測定（全列統一幅）
-  const measuredColWidth = useMeasuredColumnWidth(displayHeaders, rows as Array<Array<unknown>>, {
-    defaultWidth: DEFAULT_COL_WIDTH,
-    min: 100,
-    max: 200,
-    round: 4,
-    fudge: 6,
-  });
-  const COL_WIDTH = measuredColWidth;
+  // 列幅は固定（実測は廃止）。少列時はフィットモードで均等配分。
+  const COL_WIDTH = DEFAULT_COL_WIDTH;
 
   // 行・列の仮想化
   const rowVirtualizer = useVirtualizer({
@@ -213,9 +205,10 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
                   const colKey = `cell:${rIdx}:${cIdx}`;
                   return (
                     <td
-                      className="border-b border-gray-100 border-r px-2.5 py-1 text-left text-sm whitespace-nowrap"
+                      className="border-b border-gray-100 border-r px-2.5 py-1 text-left text-sm whitespace-nowrap overflow-hidden text-ellipsis"
                       key={colKey}
                       style={{ width: fitMode ? fittedColWidth : vc.size }}
+                      title={row[cIdx] == null ? '' : String(row[cIdx])}
                     >
                       {String(row[cIdx] ?? '')}
                     </td>
