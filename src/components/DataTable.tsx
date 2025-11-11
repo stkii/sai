@@ -7,15 +7,6 @@ type Props = {
   className?: string;
   fluid?: boolean;
 };
-
-// Merge and sort class names lexicographically
-const cx = (...parts: Array<string | null | undefined | false>): string =>
-  parts
-    .flatMap((p) => (typeof p === 'string' ? p.trim().split(/\s+/) : []))
-    .filter(Boolean)
-    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    .join(' ');
-
 const DataTable: FC<Props> = ({ data, className, fluid }) => {
   const headers = data?.headers ?? [];
   const rows = data?.rows ?? [];
@@ -32,42 +23,16 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
     return displayHeaders.map((h, i) => ({ h, key: `head:${h}:${i}` }));
   }, [displayHeaders]);
 
-  const wrapCls = cx(
-    className,
-    'bg-white',
-    'border',
-    'border-gray-300',
-    'max-h-[90vh]',
-    'my-2.5',
-    'overflow-auto',
-    fluid ? 'w-full' : 'w-[calc(100vw-5vh)]'
-  );
+  const wrapCls =
+    `${className ?? ''} bg-white border border-gray-300 max-h-[90vh] my-2.5 overflow-auto ${fluid ? 'w-full' : 'w-[calc(100vw-5vh)]'}`.trim();
 
-  const tableCls = cx('border-separate', 'border-spacing-0', 'w-full');
+  const tableCls = 'border-separate border-spacing-0 w-full';
 
-  const cellBaseCls = cx(
-    'border-b',
-    'border-gray-100',
-    'border-r',
-    'px-2.5',
-    'py-1.5',
-    'text-left',
-    'text-sm',
-    'whitespace-nowrap'
-  );
+  const cellBaseCls = 'border-b border-gray-100 border-r px-2.5 py-1.5 text-left text-sm whitespace-nowrap';
 
-  const headerCellCls = cx(
-    cellBaseCls,
-    'bg-gray-50',
-    'font-semibold',
-    'sticky',
-    'top-0',
-    'z-[1]',
-    // Heavier bottom border for header
-    'border-b-gray-300'
-  );
+  const headerCellCls = `${cellBaseCls} bg-gray-50 font-semibold sticky top-0 z-[1] border-b-gray-300`;
 
-  const rownumCellExtraCls = cx('text-gray-600', 'text-right', 'w-16');
+  const rownumCellExtraCls = 'text-gray-600 text-right w-16';
 
   if (!data || rows.length === 0) {
     return null;
@@ -78,11 +43,11 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
       <table className={tableCls}>
         <thead>
           <tr>
-            <th className={cx(headerCellCls, rownumCellExtraCls)} key="rownum">
+            <th className={`${headerCellCls} ${rownumCellExtraCls}`} key="rownum">
               {/* 行番号列のヘッダー（空欄）*/}
             </th>
             {headerItems.map((item) => (
-              <th className={cx(headerCellCls)} key={item.key} title={item.h}>
+              <th className={headerCellCls} key={item.key} title={item.h}>
                 {item.h} {/* データ列のヘッダーを表示 */}
               </th>
             ))}
@@ -94,14 +59,14 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
             const rowKey = `row:${rIdx}`;
             return (
               <tr key={rowKey}>
-                <td className={cx(cellBaseCls, rownumCellExtraCls)} key="rownum">
+                <td className={`${cellBaseCls} ${rownumCellExtraCls}`} key="rownum">
                   {rIdx + 1} {/* 行番号を表示 */}
                 </td>
                 {Array.from({ length: colCount }, (_, cIdx) => {
                   // Compose cell key from row/col index to avoid collisions
                   const colKey = `cell:${rIdx}:${cIdx}`;
                   return (
-                    <td className={cx(cellBaseCls)} key={colKey}>
+                    <td className={cellBaseCls} key={colKey}>
                       {String(row[cIdx] ?? '')} {/* フォールバックは boolean のため */}
                     </td>
                   );
