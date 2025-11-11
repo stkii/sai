@@ -70,40 +70,36 @@ Sort <- function(criterion, desc = FALSE) {
   base::sign(x) * base::floor(base::abs(x) * s + 0.5) / s
 }
 
-# Format a numeric to 3 decimal places (half-up), applied only after calculations.
+# Format a numeric to 3 decimal places (half-up), aligned to DTO rules.
 # Args:
 # - x (numeric): value to format
-# - na (character): placeholder for NA or non-finite values
-# Returns a character scalar.
-FormatNum <- function(x, na = "") {
+# - na (character or NA): placeholder for NA (missing) values; default NA -> JSON null
+FormatNum <- function(x, na = NA_character_) {
   if (is.null(x) || base::length(x) == 0L) return(na)
-  if (base::is.na(x)) return(na)
-  v <- .round_half_up(base::as.numeric(x), digits = 3L)
+  xv <- base::as.numeric(x)
+  if (base::is.na(xv)) return(na)                 # 欠損は null
+  if (base::is.nan(xv)) return("NaN!")           # NaN は "NaN!"
+  if (!base::is.finite(xv)) {
+    if (xv > 0) return("Inf!") else return("-Inf!")  # ±Inf は表記へ
+  }
+  v <- .round_half_up(xv, digits = 3L)
   base::sprintf("%.3f", v)
 }
 
-# Format degrees of freedom or counts as an integer string (0-decimal half-up).
-# Args:
-# - x (numeric): value to format
-# - na (character): placeholder for NA or non-finite values
-# Returns a character scalar.
-FormatDf <- function(x, na = "") {
+# Format degrees of freedom or counts as integer string. Non-finite -> NA.
+FormatDf <- function(x, na = NA_character_) {
   if (is.null(x) || base::length(x) == 0L) return(na)
-  if (base::is.na(x)) return(na)
-  v <- .round_half_up(base::as.numeric(x), digits = 0L)
+  xv <- base::as.numeric(x)
+  if (base::is.na(xv) || !base::is.finite(xv)) return(na)
+  v <- .round_half_up(xv, digits = 0L)
   base::as.character(base::as.integer(v))
 }
 
-# Format p-values to 3 decimal places (half-up) with <.001 threshold.
-# Args:
-# - p (numeric): p-value
-# - na (character): placeholder for NA or non-finite values
-# Returns a character scalar, e.g., "0.023" or "<.001".
-FormatPval <- function(p, na = "") {
+# Format p-values to 3 decimals with <.001 rule. Missing->NA (null), non-finite->NA.
+FormatPval <- function(p, na = NA_character_) {
   if (is.null(p) || base::length(p) == 0L) return(na)
-  if (base::is.na(p)) return(na)
   pv <- base::as.numeric(p)
-  if (!base::is.finite(pv)) return(na)
+  if (base::is.na(pv) || !base::is.finite(pv)) return(na)
   pr <- .round_half_up(pv, digits = 3L)
   if (pv > 0 && pr == 0) return("<.001")
   base::sprintf("%.3f", pr)
