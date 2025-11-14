@@ -63,7 +63,6 @@ const AnalysisPage: FC = () => {
         path,
         sheet,
         variables: selectedVars,
-        dataset,
       };
       payload.params = def.buildParamsForPayload({ selectedVars, order, corrOptions });
 

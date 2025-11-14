@@ -47,6 +47,5 @@ export const zResultPayload = z.object({
   sheet: z.string().optional(),
   variables: z.array(z.string()).optional(),
   params: z.unknown().optional(),
-  dataset: z.record(z.string(), z.array(z.number().nullable())).optional(),
 });
 export type ResultPayload = z.infer<typeof zResultPayload>;

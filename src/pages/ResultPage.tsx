@@ -28,7 +28,6 @@ type ResultPayload = {
   sheet?: string;
   variables?: string[];
   params?: unknown;
-  dataset?: Record<string, Array<number | null>>;
 };
 
 const ResultPage: FC = () => {
