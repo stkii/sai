@@ -18,7 +18,6 @@ type AnalysisEntry = {
   source: { filePath: string; sheet: string };
   variables: string[];
   params?: unknown;
-  dataset?: Record<string, Array<number | null>>;
   result: ParsedTable;
 };
 
@@ -29,7 +28,6 @@ type ResultPayload = {
   sheet?: string;
   variables?: string[];
   params?: unknown;
-  dataset?: Record<string, Array<number | null>>;
 };
 
 const ResultPage: FC = () => {
@@ -54,7 +52,6 @@ const ResultPage: FC = () => {
     const sheet = String(pdata.sheet || '');
     const variables = pdata.variables || [];
     const params = pdata.params;
-    const dataset = pdata.dataset;
     if (!token) return;
     try {
       if (consumedTokensRef.current.has(token)) return;
@@ -94,7 +91,6 @@ const ResultPage: FC = () => {
         source: { filePath: path, sheet },
         variables,
         params,
-        dataset,
         result,
       };
       setEntries((cur) => [...cur, entry]);
