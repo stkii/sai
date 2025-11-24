@@ -13,9 +13,9 @@ flowchart TD
     A -->|"5. Update UI and<br/>display result"| D["User"]
 ```
 
-## シーケンス図（ハッピーパス）
+## シーケンス図
 
-ユーザー操作から結果表示までの具体的なIPCのやり取り。
+ユーザー操作から結果表示までの具体的な IPC のやり取り。
 
 ```mermaid
 sequenceDiagram
@@ -40,19 +40,22 @@ sequenceDiagram
     S-->>T: token
     T-->>F: token
 
-    F->>T: invoke open_or_reuse_window("result", "pages/result.html?analysis=...&token=...")
+    Note over F: token/metadataをpayloadにまとめる（localStorageにもバックアップ）
 
-    Note over F,V: 結果ウィンドウが開く（URLにtoken）
-    V->>T: invoke consume_result_token(token)
+    F->>T: invoke open_or_reuse_window("result", "pages/result.html", payload)
+    T-->>F: emit("result:load", payload)
+
+    Note over F,V: payload経由で結果ウィンドウを初期化
+    V->>T: invoke consume_result_token(payload.token)
     T->>S: consume(token) -> result
     S-->>T: ParsedTable
     T-->>V: ParsedTable
     V-->>U: テーブル表示
 ```
 
-## シーケンス図（タイムアウト分岐）
+## シーケンス図（タイムアウト）
 
-R実行が所定時間内に終わらない場合の分岐。分析パネルは閉じず、エラーを表示して待機します。
+R 実行が所定時間内に終わらない場合の分岐。分析パネルは閉じず、エラーを表示して待機します。
 
 ```mermaid
 sequenceDiagram
@@ -66,7 +69,7 @@ sequenceDiagram
     T-->>F: dataset
 
     F->>T: invoke run_r_analysis_with_dataset(analysis, dataset, timeoutMs, optionsJson?)
-    T->>R: Rscript --vanilla cli.R analysis in.json out.json [order]
+    T->>R: Rscript --vanilla cli.R analysis in.json out.json [extra]
 
     alt R実行がタイムアウト
       T-->>F: Err("R 実行がタイムアウトしました: <timeout>")
@@ -77,18 +80,16 @@ sequenceDiagram
 
 注記:
 
-- タイムアウト値はフロントから `timeoutMs`（ミリ秒）で渡され、Rust側で `Duration` に変換して待機します。
+- タイムアウト値はフロントから `timeoutMs`（ミリ秒）で渡され、Rust 側で `Duration` に変換して待機します。
 - タイムアウト時は `issue_result_token` や `open_or_reuse_window` は呼ばれないため、結果ビューは開きません。
+- `run_r_analysis_with_dataset` は分析種別ごとに CLI に渡す追加引数が異なります。代表例: 記述統計は `order` 文字列、相関/回帰は JSON 文字列（メソッド・片側検定・変数順など）を [extra] に与えます。
 
 ## セル値の特別表現と解釈
 
-表示用テーブル（ParsedTable）のセルには、統計・Excel由来の特殊値を表す文字列が含まれることがあります。UI は基本的に素の文字列をそのまま表示します。
+表示用テーブル（ParsedTable）のセルには、統計・Excel 由来の特殊値を表す文字列が含まれることがあります。UI は基本的に素の文字列をそのまま表示します。
 
 - 欠損: `null`
 - NaN: `"NaN!"`
 - 無限大: `"Inf!"` / `"-Inf!"`
-- Excelエラー: `"#DIV/0!"`, `"#N/A"`, `"#NAME?"`, `"#NULL!"`, `"#NUM!"`, `"#REF!"`, `"#VALUE!"`, `"#GETTING"`
+- Excel エラー: `"#DIV/0!"`, `"#N/A"`, `"#NAME?"`, `"#NULL!"`, `"#NUM!"`, `"#REF!"`, `"#VALUE!"`, `"#GETTING"`
 - 相関分析 p 値の対角成分（未定義）: `"-"`
-
-注:
-- これらは表示のための表記です。再計算やフィルタなど機械処理を行う場合は、用途に応じた変換・判定が必要です。

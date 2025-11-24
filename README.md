@@ -6,6 +6,8 @@
   <img src="https://img.shields.io/badge/Rust-de6543.svg?logo=rust&logoColor=white&style=flat" alt="Rust-Badge">
 </p>
 
+**SAI**は、心理学研究のために設計された、GUI ベースの統計分析ソフトウェアです。コマンド入力を必要とせず、クリック操作だけでスムーズに高度なデータ分析を行うことができます。
+
 ## クイックスタート（開発中）
 
 ```bash
@@ -13,7 +15,7 @@ git clone https://github.com/stkii/sai.git
 
 cd sai/ && pnpm install
 
-cd src-r/ && Rscript -e 'renv::restore()'
+cd src-r/ && RENV_PROFILE=default Rscript -e 'renv::restore()'
 
 cd ../
 

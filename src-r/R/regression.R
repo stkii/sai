@@ -137,15 +137,16 @@
   p_f <- if (!is.na(f_val) && !is.na(df1) && !is.na(df2) && df1 > 0 && df2 > 0) stats::pf(f_val, df1, df2, lower.tail = FALSE) else NA_real_
 
   rows_summary <- list(
-    c("--- Model Summary ---", "", "", "", "", ""),
-    c("R-squared", "Adj. R-squared", "Residual Std. Error", "Residual DF", "F-statistic", "Pr(>F)"),
+    c("--- Model Summary ---", "", "", "", "", "", ""),
+    c("R-squared", "Adj. R-squared", "Residual Std. Error", "Residual DF", "F-statistic", "Pr(>F)", ""),
     c(
       FormatNum(r2),
       FormatNum(adjr2),
       FormatNum(sigma),
       FormatDf(df_resid),
       FormatNum(f_val),
-      FormatPval(p_f)
+      FormatPval(p_f),
+      ""
     )
   )
 
@@ -265,10 +266,10 @@
 
   rows_anova <- list(
     c("--- ANOVA ---", "", "", "", "", "", ""),
-    c("Source", "Sum Sq", "Df", "Mean Sq", "F value", "Pr(>F)"),
-    c("Regression", FormatNum(ssr), FormatDf(df_reg), FormatNum(msr), FormatNum(f_anova), FormatPval(p_anova)),
-    c("Residuals", FormatNum(sse), FormatDf(df_res), FormatNum(mse), "", ""),
-    c("Total", FormatNum(sst), FormatDf(df_total), "", "", "")
+    c("Source", "Sum Sq", "Df", "Mean Sq", "F value", "Pr(>F)", ""),
+    c("Regression", FormatNum(ssr), FormatDf(df_reg), FormatNum(msr), FormatNum(f_anova), FormatPval(p_anova), ""),
+    c("Residuals", FormatNum(sse), FormatDf(df_res), FormatNum(mse), "", "", ""),
+    c("Total", FormatNum(sst), FormatDf(df_total), "", "", "", "")
   )
 
   # ---- Combine into single table ----
