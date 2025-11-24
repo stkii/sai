@@ -17,7 +17,6 @@
     "source.fixAll.biome": "explicit"
   },
   "editor.formatOnSave": true,
-  "eslint.enable": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
