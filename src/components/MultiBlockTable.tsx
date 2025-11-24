@@ -49,6 +49,19 @@ const mapHeaderToJa = (_title: string, h: string): string => {
   return dict[h] ?? h;
 };
 
+const mapTitleToJa = (title: string): string => {
+  switch (title) {
+    case 'Model Summary':
+      return 'モデル要約';
+    case 'Coefficients':
+      return '係数';
+    case 'ANOVA':
+      return '分散分析';
+    default:
+      return title;
+  }
+};
+
 const MultiBlockTable: FC<Props> = ({ data, className, fluid }) => {
   const ROW_HEIGHT = 32;
   const HEADER_HEIGHT = 36;
@@ -70,15 +83,39 @@ const MultiBlockTable: FC<Props> = ({ data, className, fluid }) => {
         .replace(/^---\s*/, '')
         .replace(/\s*---$/, '');
       // Next row expected to be headers for this block
-      const headerRow = rows[i + 1] ?? [];
-      const headers = headerRow.map((v) => mapHeaderToJa(title, String(v ?? '')));
-      const blockRows: string[][] = [];
+      const headerRowRaw = rows[i + 1] ?? [];
+      const headerRow = headerRowRaw.map((v) => mapHeaderToJa(title, String(v ?? '')));
+      const blockRowsRaw: string[][] = [];
       i += 2;
       // Accumulate until next section or end
       while (i < rows.length && !isSectionLabel(rows[i]?.[0])) {
-        blockRows.push((rows[i] ?? []).map((v) => (v == null ? '' : String(v))));
+        blockRowsRaw.push((rows[i] ?? []).map((v) => (v == null ? '' : String(v))));
         i += 1;
       }
+      const isTrailingEmpty = (col: number): boolean => {
+        const headerEmpty = (headerRow[col] ?? '').trim() === '';
+        if (!headerEmpty) return false;
+        return blockRowsRaw.every((r) => (r[col] ?? '').trim() === '');
+      };
+      let width = headerRow.length;
+      while (width > 0 && isTrailingEmpty(width - 1)) {
+        width -= 1;
+      }
+      if (width === 0) {
+        width = Math.max(0, ...blockRowsRaw.map((r) => r.length));
+      }
+      let headers = headerRow.slice(0, width);
+      if (headers.length < width) {
+        headers = headers.concat(
+          Array.from({ length: width - headers.length }, (_, idx) => `列${headers.length + idx + 1}`)
+        );
+      }
+      const blockRows = blockRowsRaw.map((row) => {
+        if (row.length >= width) {
+          return row.slice(0, width);
+        }
+        return row.concat(Array.from({ length: width - row.length }, () => ''));
+      });
       blocks.push({ title, table: { headers, rows: blockRows } });
     }
     return blocks;
@@ -90,17 +127,8 @@ const MultiBlockTable: FC<Props> = ({ data, className, fluid }) => {
     <div className={className}>
       {blocks.map((b, idx) => (
         <div key={`${b.title}:${idx}`} className={idx > 0 ? 'mt-4' : ''}>
-          <div className="text-sm text-gray-600 px-1 py-1">
-            {b.title === 'Model Summary'
-              ? 'モデル要約'
-              : b.title === 'Coefficients'
-                ? '係数'
-                : b.title === 'ANOVA'
-                  ? '分散分析'
-                  : b.title}
-          </div>
           <LazyBlock estimatedHeight={(b.table.rows.length + 1) * ROW_HEIGHT + HEADER_HEIGHT}>
-            <DataTable data={b.table} fluid={fluid} />
+            <DataTable data={b.table} fluid={fluid} caption={mapTitleToJa(b.title)} />
           </LazyBlock>
         </div>
       ))}

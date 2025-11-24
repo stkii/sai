@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ParsedTable } from '../dto';
 
@@ -7,8 +7,9 @@ type Props = {
   data: ParsedTable | null;
   className?: string;
   fluid?: boolean;
+  caption?: ReactNode;
 };
-const DataTable: FC<Props> = ({ data, className, fluid }) => {
+const DataTable: FC<Props> = ({ data, className, fluid, caption }) => {
   const headers = data?.headers ?? [];
   const rows = data?.rows ?? [];
   // 仮想化用の設定（行・列）
@@ -125,6 +126,11 @@ const DataTable: FC<Props> = ({ data, className, fluid }) => {
               className="min-w-full border-separate border-spacing-0 divide-y divide-gray-200"
               style={{ width: Math.max(containerWidth, rowNumColWidth + effectiveTotalColWidth) }}
             >
+              {caption ? (
+                <caption className="caption-top text-left text-sm font-semibold text-gray-600 px-6 py-2">
+                  {caption}
+                </caption>
+              ) : null}
               <thead>
                 <tr>
                   <th
