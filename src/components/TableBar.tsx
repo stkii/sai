@@ -15,7 +15,7 @@ type Props = {
 const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) => {
   const [loading, setLoading] = useState(false);
   const [filePath, setFilePath] = useState<string | null>(null);
-  const [sheetNames, setSheetNames] = useState<string[] | null>(null);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [analysisType, setAnalysisType] = useState<string>('');
 
@@ -33,7 +33,7 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
       if (!selected) return;
       const path = Array.isArray(selected) ? selected[0] : selected;
       setFilePath(path);
-      setSheetNames(null);
+      setSheetNames([]);
       setSelectedSheet('');
 
       const names = await tauriIPC.getSheets(path);
@@ -56,6 +56,19 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
       onError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function openDesign() {
+    const params = new URLSearchParams();
+    if (filePath) params.set('path', filePath);
+    if (selectedSheet) params.set('sheet', selectedSheet);
+    const qs = params.toString();
+    const url = qs ? `pages/design.html?${qs}` : 'pages/design.html';
+    try {
+      await tauriIPC.openOrReuseWindow('design', url);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -83,51 +96,49 @@ const TableBar: FC<Props> = ({ onTableLoaded, onError, onAnalyze, className }) =
         label={filePath ? '別のファイルを選択' : 'ファイルを選択'}
       />
 
-      {filePath && sheetNames && (
-        <>
-          <select
-            className="border rounded px-2 py-1"
-            value={selectedSheet}
-            onChange={(e) => setSelectedSheet(e.currentTarget.value)}
-            disabled={loading}
-          >
-            <option value="" disabled>
-              シートを選択
-            </option>
-            {sheetNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+      <select
+        className="border rounded px-2 py-1"
+        value={selectedSheet}
+        onChange={(e) => setSelectedSheet(e.currentTarget.value)}
+        disabled={loading || !filePath || sheetNames.length === 0}
+      >
+        <option value="" disabled>
+          シートを選択
+        </option>
+        {sheetNames.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
 
-          <select
-            className="border rounded px-2 py-1"
-            value={analysisType}
-            onChange={(e) => {
-              const kind = e.currentTarget.value;
-              setAnalysisType(kind);
-              if (kind) void openAnalysis(kind);
-            }}
-            disabled={loading || !selectedSheet}
-          >
-            <option value="" disabled>
-              分析を選択
-            </option>
-            <option value="descriptive">記述統計</option>
-            <option value="correlation">相関分析</option>
-            <option value="reliability">信頼性分析</option>
-            <option value="regression">回帰分析</option>
-          </select>
+      <BaseButton widthGroup="ribbon" onClick={openDesign} disabled={loading} label="設計" />
 
-          <BaseButton
-            widthGroup="ribbon"
-            onClick={loadSelectedSheet}
-            disabled={!selectedSheet || loading}
-            label="読み込む"
-          />
-        </>
-      )}
+      <select
+        className="border rounded px-2 py-1"
+        value={analysisType}
+        onChange={(e) => {
+          const kind = e.currentTarget.value;
+          setAnalysisType(kind);
+          if (kind) void openAnalysis(kind);
+        }}
+        disabled={loading || !selectedSheet}
+      >
+        <option value="" disabled>
+          分析を選択
+        </option>
+        <option value="descriptive">記述統計</option>
+        <option value="correlation">相関分析</option>
+        <option value="reliability">信頼性分析</option>
+        <option value="regression">回帰分析</option>
+      </select>
+
+      <BaseButton
+        widthGroup="ribbon"
+        onClick={loadSelectedSheet}
+        disabled={!selectedSheet || loading}
+        label="読み込む"
+      />
     </div>
   );
 };

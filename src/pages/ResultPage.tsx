@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import BaseButton from '../components/BaseButton';
 import CorrelationTables from '../components/CorrelationTables';
 import DataTable from '../components/DataTable';
+import DesignResultTable from '../components/DesignResultTable';
 import MultiBlockTable from '../components/MultiBlockTable';
 import { type ParsedTable, zParsedTable, zResultPayload } from '../dto';
 import '../globals.css';
@@ -237,7 +238,17 @@ const ResultPage: FC = () => {
               >
                 <div className="flex items-baseline justify-between">
                   <h2 className="text-base font-semibold m-0">
-                    #{idx + 1} {e.analysis}
+                    #{idx + 1}{' '}
+                    {e.analysis === 'design'
+                      ? (() => {
+                          const p = e.params as Record<string, unknown> | undefined;
+                          const label =
+                            p && typeof p === 'object' && typeof p.testLabel === 'string'
+                              ? (p.testLabel as string)
+                              : '検出力設計';
+                          return label;
+                        })()
+                      : e.analysis}
                     <span className="text-gray-500 text-xs ml-2">{formatTime(e.createdAt)}</span>
                   </h2>
                   <div className="text-xs text-gray-500">
@@ -245,13 +256,38 @@ const ResultPage: FC = () => {
                     {e.variables?.length ? ` / 変数: ${e.variables.length}` : ''}
                   </div>
                 </div>
-                {e.analysis === 'regression' ? (
-                  <MultiBlockTable data={e.result} fluid />
-                ) : e.analysis === 'correlation' ? (
-                  <CorrelationTables data={e.result} fluid />
-                ) : (
-                  <DataTable data={e.result} fluid />
+                {e.analysis === 'design' && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {(() => {
+                      const p = e.params as Record<string, unknown> | undefined;
+                      const alpha =
+                        p && typeof p === 'object' && typeof p.alpha === 'number'
+                          ? (p.alpha as number)
+                          : undefined;
+                      const power =
+                        p && typeof p === 'object' && typeof p.power === 'number'
+                          ? (p.power as number)
+                          : undefined;
+                      const descParts: string[] = [];
+                      if (typeof alpha === 'number') descParts.push(`α=${alpha}`);
+                      if (typeof power === 'number') descParts.push(`検出力=${power}`);
+                      return descParts.length > 0 ? descParts.join(' / ') : '';
+                    })()}
+                  </div>
                 )}
+                {(() => {
+                  const tableData: ParsedTable = e.analysis === 'design' ? e.result : e.result;
+                  if (e.analysis === 'design') {
+                    return <DesignResultTable entry={{ params: e.params, result: e.result }} />;
+                  }
+                  if (e.analysis === 'regression') {
+                    return <MultiBlockTable data={tableData} fluid />;
+                  }
+                  if (e.analysis === 'correlation') {
+                    return <CorrelationTables data={tableData} fluid />;
+                  }
+                  return <DataTable data={tableData} fluid />;
+                })()}
               </div>
             ))}
             {entries.length === 0 && (

@@ -140,6 +140,12 @@ pub fn open_or_reuse_window(
                 .inner_size(720.0, 540.0)
                 .min_inner_size(700.0, 520.0);
         },
+        "design" => {
+            builder = builder
+                .title("SAI - (Design Panel)")
+                .inner_size(720.0, 540.0)
+                .min_inner_size(700.0, 520.0);
+        },
         "result" => {
             builder = builder
                 .title("SAI - (Result Viewer)")
