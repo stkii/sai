@@ -5,6 +5,7 @@ node_modules/
 
 # Docs
 docs/llms-txt/
+docs/third-party/
 
 # Editor
 .cursor/

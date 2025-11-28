@@ -15,6 +15,7 @@ export default defineConfig(async () => ({
     rollupOptions: {
       input: {
         analysis: resolve(__dirname, 'pages/analysis.html'),
+        design: resolve(__dirname, 'pages/design.html'),
         result: resolve(__dirname, 'pages/result.html'),
         table: resolve(__dirname, 'pages/table.html'),
       },

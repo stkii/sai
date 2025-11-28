@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Unified CLI entry for analyses (descriptive, correlation, reliability, regression)
+# Unified CLI entry for analyses (descriptive, correlation, reliability, regression, design)
 # - Resolve project root (env-var first, then script-relative fallback)
 # - Load registry and utilities
 # - Read JSON input, dispatch to analysis, write JSON to an output file
@@ -10,6 +10,7 @@
 #   cli.R correlation <input_json_path> <output_json_path> [options_json]
 #   cli.R reliability <input_json_path> <output_json_path>
 #   cli.R regression  <input_json_path> <output_json_path> [options_json]
+#   cli.R design      <input_json_path> <output_json_path> [options_json]
 
 # ------------------------
 # Args parsing
@@ -107,6 +108,10 @@ if (identical(analysis, "descriptive")) {
     if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
   }, error = function(e) list())
 } else if (identical(analysis, "regression")) {
+  options_list <- tryCatch({
+    if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
+  }, error = function(e) list())
+} else if (identical(analysis, "design")) {
   options_list <- tryCatch({
     if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
   }, error = function(e) list())
