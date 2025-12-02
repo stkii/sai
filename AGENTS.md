@@ -25,7 +25,7 @@ Additional documentation for Tauri can be found in `.dev/docs/llms-txt/tauri-llm
   - 2-space indent, line width 110, single quotes, ES5 trailing commas.
   - Components `PascalCase.tsx`; pages `*Page.tsx`; prefer explicit types (`strict: true`).
 - Rust: Format with `cargo +nightly fmt` using `src-tauri/rustfmt.toml` (edition 2024, 4 spaces, vertical imports). Idiomatic `snake_case` for items.
-- R: See `docs/rules/styleguide-r.md`. Functions `UpperCamelCase`, other identifiers `snake_case`, always qualify calls (`pkg::fn`).
+- R: Functions `UpperCamelCase`, other identifiers `snake_case`. As a general rule, qualify calls (`pkg::fn`).
 
 ## Testing Guidelines
 
