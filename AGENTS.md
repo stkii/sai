@@ -8,7 +8,7 @@ This is a desktop application named "SAI" for statistical analysis. It is built 
 - **Backend:** The backend is written in [Rust](https://www.rust-lang.org/) and uses the [Tauri](https://tauri.app/) framework to create a cross-platform desktop application.
 - **Analysis Engine:** Statistical computations are performed by an [R](https://www.r-project.org/) engine. The Rust backend communicates with the R engine by executing R scripts.
 
-Additional documentation for Tauri can be found in `docs/llms-txt/tauri-llms.txt`. The data flow is documented in `docs/ARCHITECTURE.md`.
+Additional documentation for Tauri can be found in `.dev/docs/llms-txt/tauri-llms.txt`.
 
 ## Commands
 
