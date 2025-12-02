@@ -4,7 +4,7 @@ import CorrAnalysisPage from './pages/analysis/CorrAnalysisPage';
 import DescriptiveStatsPage from './pages/analysis/DescriptiveStatsPage';
 import RegressionAnalysisPage from './pages/analysis/RegressionAnalysisPage';
 import ReliabilityPage from './pages/analysis/ReliabilityPage';
-import type { CorrOptionValue, DescriptiveOrder } from './types';
+import type { CorrOptionValue, DescriptiveOrder, RegressionInteraction } from './types';
 
 export type AnalysisType = 'descriptive' | 'correlation' | 'reliability' | 'regression';
 
@@ -12,6 +12,8 @@ export type AnalysisLocalState = {
   selectedVars: string[];
   order: DescriptiveOrder;
   corrOptions: CorrOptionValue | null;
+  regressionInteractions?: RegressionInteraction[];
+  regressionCenter?: boolean;
 };
 
 export type EditorContext = {
@@ -21,6 +23,8 @@ export type EditorContext = {
   setSelectedVars: (v: string[]) => void;
   setOrder: (v: DescriptiveOrder) => void;
   setCorrOptions: (v: CorrOptionValue) => void;
+  setRegressionInteractions?: (v: RegressionInteraction[]) => void;
+  setRegressionCenter?: (v: boolean) => void;
 };
 
 export type AnalysisDefinition = {
@@ -113,10 +117,14 @@ export const ANALYSIS_REGISTRY: Record<AnalysisType, AnalysisDefinition> = {
   regression: {
     id: 'regression',
     label: '回帰',
-    renderEditor: ({ path, sheet, setSelectedVars }) =>
+    renderEditor: ({ path, sheet, state, setSelectedVars, setRegressionInteractions, setRegressionCenter }) =>
       createElement(RegressionAnalysisPage, {
         path,
         sheet,
+        regressionInteractions: state.regressionInteractions,
+        regressionCenter: state.regressionCenter ?? false,
+        onInteractionsChange: (ints) => setRegressionInteractions?.(ints),
+        onCenterChange: (flag) => setRegressionCenter?.(flag),
         onSelectionChange: (dep, indep) => {
           const arr = [dep, ...indep].filter((v): v is string => !!v && v.length > 0);
           setSelectedVars(arr);
@@ -125,11 +133,21 @@ export const ANALYSIS_REGISTRY: Record<AnalysisType, AnalysisDefinition> = {
     buildParamsForPayload: (state) => {
       const [dep, ...rest] = state.selectedVars || [];
       if (!dep || rest.length === 0) return undefined;
-      return { dependent: dep, independents: rest };
+      return {
+        dependent: dep,
+        independents: rest,
+        interactions: state.regressionInteractions ?? [],
+        center: state.regressionCenter ?? false,
+      };
     },
     buildOptionsJson: (state) => {
       const p = ANALYSIS_REGISTRY.regression.buildParamsForPayload(state) as
-        | { dependent: string; independents: string[] }
+        | {
+            dependent: string;
+            independents: string[];
+            interactions: RegressionInteraction[];
+            center: boolean;
+          }
         | undefined;
       if (!p) return undefined;
       return JSON.stringify(p);

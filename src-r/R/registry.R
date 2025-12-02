@@ -13,17 +13,20 @@ GetAnalysesRegistry <- function(r_dir) {
   src_rel  <- base::file.path(r_dir, "reliability.R")
   src_reg  <- base::file.path(r_dir, "regression.R")
   src_desn <- base::file.path(r_dir, "design.R")
+  src_center <- base::file.path(r_dir, "centering.R")
   if (!base::file.exists(src_desc)) stop("descriptive.R not found under src-r/R")
   if (!base::file.exists(src_corr)) stop("correlation.R not found under src-r/R")
   if (!base::file.exists(src_rel))  stop("reliability.R not found under src-r/R")
   if (!base::file.exists(src_reg))  stop("regression.R not found under src-r/R")
   if (!base::file.exists(src_desn)) stop("design.R not found under src-r/R")
+  if (!base::file.exists(src_center)) stop("centering.R not found under src-r/R")
 
   base::source(src_desc, local = FALSE)
   base::source(src_corr, local = FALSE)
   base::source(src_rel,  local = FALSE)
   base::source(src_reg,  local = FALSE)
   base::source(src_desn, local = FALSE)
+  base::source(src_center, local = FALSE)
 
   # Build registry
   list(
