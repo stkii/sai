@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Rust-de6543.svg?logo=rust&logoColor=white&style=flat" alt="Rust-Badge">
 </p>
 
-**SAI**は、心理学研究のために設計された、GUI ベースの統計分析ソフトウェアです。コマンド入力を必要とせず、クリック操作だけでデータ分析を行うことができます。
+心理学研究のために設計された、GUI ベースの統計分析ソフトウェアです。コマンド入力を必要とせず、クリック操作だけでデータ分析を行うことができます。
 
 ## クイックスタート（開発中）
 

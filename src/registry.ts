@@ -133,10 +133,12 @@ export const ANALYSIS_REGISTRY: Record<AnalysisType, AnalysisDefinition> = {
     buildParamsForPayload: (state) => {
       const [dep, ...rest] = state.selectedVars || [];
       if (!dep || rest.length === 0) return undefined;
+      const interactions = state.regressionInteractions ?? [];
+      const interactionTerms = interactions.map((it) => `${it.left}:${it.right}`);
       return {
         dependent: dep,
-        independents: rest,
-        interactions: state.regressionInteractions ?? [],
+        independents: [...rest, ...interactionTerms],
+        interactions,
         center: state.regressionCenter ?? false,
       };
     },

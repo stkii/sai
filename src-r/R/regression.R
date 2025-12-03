@@ -30,14 +30,20 @@
   # Column existence check
   vars <- base::colnames(data)
   if (is.null(vars)) stop("data has no column names")
-  missing_cols <- base::setdiff(c(dep, indep), vars)
+  # independents may contain interaction terms like "x1:x2".
+  # For column existence, require that the underlying base variables exist.
+  indep_base <- base::unique(base::unlist(base::strsplit(indep, ":", fixed = TRUE)))
+  indep_base <- indep_base[base::nzchar(indep_base)]
+  needed_cols <- base::unique(c(dep, indep_base))
+  missing_cols <- base::setdiff(needed_cols, vars)
   if (length(missing_cols) > 0L) {
     stop(base::sprintf("Columns not found in data: %s", base::paste(missing_cols, collapse = ", ")))
   }
 
   # Optionally center independent variables (and interaction terms) only
   if (isTRUE(center)) {
-    center_cols <- base::intersect(indep, vars)
+    # Center only base variables that actually exist as columns
+    center_cols <- base::intersect(indep_base, vars)
     if (base::length(center_cols) > 0L && exists("CenterVariables") && is.function(get("CenterVariables"))) {
       data <- CenterVariables(data, columns = center_cols, na_rm = TRUE)
     }
@@ -294,11 +300,12 @@
 #
 # options (list) expects:
 # - dependent (character len=1)
-# - independents (character)
+# - independents (character): main effects and interaction terms
+#   (e.g., "x1:x2") to be used directly in the lm() formula
 # - intercept (logical, optional)
 # - naAction (character, optional): 'na.omit' | 'na.exclude' | 'na.fail'
 # - weights (numeric vector or NULL, optional)
-# - center (logical, optional): whether to mean-center independent variables (and interactions)
+# - center (logical, optional): whether to mean-center independent variables
 RunRegression <- function(x, options = NULL) {
   if (is.null(options)) stop("options must include 'dependent' and 'independents'")
 
@@ -334,65 +341,11 @@ RunRegression <- function(x, options = NULL) {
     if (is.null(cflag)) FALSE else base::isTRUE(cflag)
   }, error = function(e) FALSE)
 
-  # 交互作用項の自動生成
-  # options$interactions は list / data.frame を想定し、
-  # 各要素は left, right, label を含む。
-  ints <- base::tryCatch(options$interactions, error = function(e) NULL)
-  if (!is.null(ints)) {
-    # data.frame の場合も list-of-list として扱えるように統一
-    items <- if (base::is.data.frame(ints)) {
-      split(ints, seq_len(nrow(ints)))
-    } else if (base::is.list(ints)) {
-      ints
-    } else {
-      list()
-    }
-
-    if (!base::is.data.frame(x)) {
-      x <- base::as.data.frame(x, check.names = FALSE, stringsAsFactors = FALSE)
-    }
-    cols <- base::colnames(x)
-    interaction_labels <- character(0)
-
-    for (it in items) {
-      if (is.null(it)) next
-      left <- base::tryCatch(base::as.character(it$left), error = function(e) character(0))
-      right <- base::tryCatch(base::as.character(it$right), error = function(e) character(0))
-      lab <- base::tryCatch(it$label, error = function(e) NULL)
-      if (length(left) < 1L || length(right) < 1L) next
-      left <- left[[1L]]
-      right <- right[[1L]]
-      if (!nzchar(left) || !nzchar(right) || base::identical(left, right)) next
-      if (!left %in% cols || !right %in% cols) {
-        stop(base::sprintf("Interaction columns not found: %s, %s", left, right))
-      }
-      label_chr <- base::tryCatch({
-        if (is.null(lab) || !nzchar(base::as.character(lab))) {
-          base::paste0(left, "*", right)
-        } else {
-          base::as.character(lab)[[1L]]
-        }
-      }, error = function(e) base::paste0(left, "*", right))
-
-      # 既に同名列が存在する場合は上書きせずスキップ
-      if (label_chr %in% base::colnames(x)) next
-
-      lx <- base::as.numeric(x[[left]])
-      rx <- base::as.numeric(x[[right]])
-      x[[label_chr]] <- lx * rx
-      interaction_labels <- c(interaction_labels, label_chr)
-    }
-
-    if (length(interaction_labels) > 0L) {
-      indep <- c(indep, interaction_labels)
-    }
-  }
-
   .LinearRegressionParsed(x,
                          dependent = dep,
                          independents = indep,
                          intercept = intercept,
-                          weights = weights,
+                         weights = weights,
                          na_action = na_action,
                          center = center)
 }
