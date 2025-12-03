@@ -7,6 +7,7 @@
 # - intercept (logical): include intercept term (default TRUE)
 # - weights (numeric or NULL): optional weights vector (same length as nrow(data))
 # - na_action (character): 'na.omit' | 'na.exclude' | 'na.fail'
+# - center (logical): whether to mean-center independent variables before fitting
 #
 # Returns:
 # - stats::lm object
@@ -15,7 +16,8 @@
                              independents,
                              intercept = TRUE,
                              weights = NULL,
-                             na_action = "na.omit") {
+                             na_action = "na.omit",
+                             center = FALSE) {
   if (is.null(data)) stop("data is NULL")
   if (!is.data.frame(data)) data <- base::as.data.frame(data)
 
@@ -28,9 +30,23 @@
   # Column existence check
   vars <- base::colnames(data)
   if (is.null(vars)) stop("data has no column names")
-  missing_cols <- base::setdiff(c(dep, indep), vars)
+  # independents may contain interaction terms like "x1:x2".
+  # For column existence, require that the underlying base variables exist.
+  indep_base <- base::unique(base::unlist(base::strsplit(indep, ":", fixed = TRUE)))
+  indep_base <- indep_base[base::nzchar(indep_base)]
+  needed_cols <- base::unique(c(dep, indep_base))
+  missing_cols <- base::setdiff(needed_cols, vars)
   if (length(missing_cols) > 0L) {
     stop(base::sprintf("Columns not found in data: %s", base::paste(missing_cols, collapse = ", ")))
+  }
+
+  # Optionally center independent variables (and interaction terms) only
+  if (isTRUE(center)) {
+    # Center only base variables that actually exist as columns
+    center_cols <- base::intersect(indep_base, vars)
+    if (base::length(center_cols) > 0L && exists("CenterVariables") && is.function(get("CenterVariables"))) {
+      data <- CenterVariables(data, columns = center_cols, na_rm = TRUE)
+    }
   }
 
   rhs <- base::paste(indep, collapse = " + ")
@@ -114,13 +130,15 @@
                                    independents,
                                    intercept = TRUE,
                                    weights = NULL,
-                                   na_action = "na.omit") {
+                                   na_action = "na.omit",
+                                   center = FALSE) {
   fit <- .LinearRegression(data,
                           dependent = dependent,
                           independents = independents,
                           intercept = intercept,
                           weights = weights,
-                          na_action = na_action)
+                          na_action = na_action,
+                          center = center)
 
   sm <- base::summary(fit)
 
@@ -282,10 +300,12 @@
 #
 # options (list) expects:
 # - dependent (character len=1)
-# - independents (character)
+# - independents (character): main effects and interaction terms
+#   (e.g., "x1:x2") to be used directly in the lm() formula
 # - intercept (logical, optional)
 # - naAction (character, optional): 'na.omit' | 'na.exclude' | 'na.fail'
 # - weights (numeric vector or NULL, optional)
+# - center (logical, optional): whether to mean-center independent variables
 RunRegression <- function(x, options = NULL) {
   if (is.null(options)) stop("options must include 'dependent' and 'independents'")
 
@@ -316,10 +336,16 @@ RunRegression <- function(x, options = NULL) {
     if (is.null(w)) NULL else base::as.numeric(w)
   }, error = function(e) NULL)
 
+  center <- base::tryCatch({
+    cflag <- options$center
+    if (is.null(cflag)) FALSE else base::isTRUE(cflag)
+  }, error = function(e) FALSE)
+
   .LinearRegressionParsed(x,
                          dependent = dep,
                          independents = indep,
                          intercept = intercept,
                          weights = weights,
-                         na_action = na_action)
+                         na_action = na_action,
+                         center = center)
 }

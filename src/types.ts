@@ -15,3 +15,9 @@ export type CorrOptionValue = {
 export type CorrUse = 'all.obs' | 'complete.obs' | 'pairwise.complete.obs';
 
 export type DescriptiveOrder = 'default' | 'mean_asc' | 'mean_desc';
+
+export type RegressionInteraction = {
+  left: string;
+  right: string;
+  label: string;
+};

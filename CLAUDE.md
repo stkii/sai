@@ -41,9 +41,9 @@ cargo +nightly fmt          # format src-tauri directory
 
 ## Document
 
-Additional documentation is available in the `docs/` directory:
+Additional documentation is available in the `.dev` and `docs/` directory:
 
-- `llms-txt/` - Framework and library specifications (e.g., `tauri-llms.txt`) - **refer to these when working with specific frameworks**
+- `.dev/docs/llms-txt/` - Framework and library specifications (e.g., `tauri-llms.txt`) - **refer to these when working with specific frameworks**
 - `ARCHITECTURE.md` - High-level project architecture overview
 - `DEVELOPING.md` - Development setup and workflow
 

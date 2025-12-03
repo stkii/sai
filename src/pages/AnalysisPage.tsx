@@ -7,7 +7,7 @@ import '../globals.css';
 import { zParsedTable } from '../dto';
 import tauriIPC from '../ipc';
 import { ANALYSIS_REGISTRY, type AnalysisType } from '../registry';
-import type { CorrOptionValue, DescriptiveOrder } from '../types';
+import type { CorrOptionValue, DescriptiveOrder, RegressionInteraction } from '../types';
 
 const AnalysisPage: FC = () => {
   const query = useMemo(() => new URLSearchParams(window.location.search || ''), []);
@@ -20,6 +20,8 @@ const AnalysisPage: FC = () => {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [corrOptions, setCorrOptions] = useState<CorrOptionValue | null>(null);
+  const [regressionInteractions, setRegressionInteractions] = useState<RegressionInteraction[]>([]);
+  const [regressionCenter, setRegressionCenter] = useState(false);
 
   useEffect(() => {
     const win = getCurrentWebviewWindow();
@@ -47,7 +49,14 @@ const AnalysisPage: FC = () => {
       const analysisType: AnalysisType = (type as AnalysisType) || 'descriptive';
       const def = ANALYSIS_REGISTRY[analysisType];
       if (!def) throw new Error(`未対応の分析種別: ${type}`);
-      const optionsJson = def.buildOptionsJson({ selectedVars, order, corrOptions }) ?? undefined;
+      const optionsJson =
+        def.buildOptionsJson({
+          selectedVars,
+          order,
+          corrOptions,
+          regressionInteractions,
+          regressionCenter,
+        }) ?? undefined;
       const rawResult = await tauriIPC.runRAnalysisWithDataset(analysisType, dataset, 30_000, optionsJson);
       const validated = zParsedTable.safeParse(rawResult);
       if (!validated.success) {
@@ -64,7 +73,13 @@ const AnalysisPage: FC = () => {
         sheet,
         variables: selectedVars,
       };
-      payload.params = def.buildParamsForPayload({ selectedVars, order, corrOptions });
+      payload.params = def.buildParamsForPayload({
+        selectedVars,
+        order,
+        corrOptions,
+        regressionInteractions,
+        regressionCenter,
+      });
 
       // 新規ウィンドウ作成直後はJSリスナー未登録の可能性があるため、
       // ローカルストレージへペンディングペイロードを格納して受け渡しの保険をかける
@@ -103,10 +118,12 @@ const AnalysisPage: FC = () => {
           return def.renderEditor({
             path,
             sheet,
-            state: { selectedVars, order, corrOptions },
+            state: { selectedVars, order, corrOptions, regressionInteractions, regressionCenter },
             setSelectedVars,
             setOrder,
             setCorrOptions: (v) => setCorrOptions(v),
+            setRegressionInteractions,
+            setRegressionCenter,
           });
         })()}
       </div>
