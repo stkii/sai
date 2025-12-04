@@ -1,8 +1,8 @@
 # Execute descriptive statistics
 #
 # Args:
-# - x (data.frame or list): Dataset containing only numeric values
-# - na.rm (logical): Whether to ignore NA values
+# - df (data.frame): Dataset containing only numeric values
+# - na_ig (logical): Whether to ignore NA values (default TRUE)
 #
 # Returns:
 # - stats (data.frame): A data.frame where each row corresponds to a variable (column) in x,
@@ -12,16 +12,17 @@
 #   - min: minimum value
 #   - max: maximum value
 #
-.Describe <- function(x, na.rm=TRUE){
-  # If x is a list, convert to data.frame
-  if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
+.Describe <- function(df, na_ig=TRUE){
+  # Receive raw data.
+  # Input dataset must be a data frame
+  IsDataFrame(df)
 
   # Calculate descriptive statistics column-wise
   stats <- base::rbind(
-    mean = base::colMeans(x, na.rm=na.rm),
-    sd   = base::apply(x, 2, stats::sd, na.rm=na.rm),
-    min  = base::apply(x, 2, base::min, na.rm=na.rm),
-    max  = base::apply(x, 2, base::max, na.rm=na.rm)
+    mean = base::colMeans(df, na.rm=na_ig),
+    sd   = base::apply(df, 2, stats::sd, na.rm=na_ig),
+    min  = base::apply(df, 2, base::min, na.rm=na_ig),
+    max  = base::apply(df, 2, base::max, na.rm=na_ig)
   )
 
   # Transpose so that rows = variables, columns = statistics
@@ -34,12 +35,14 @@
 }
 
 # Wrapper to return ParsedTable-compatible structure
+#
+# Args:
+# - stats (data.frame): Calculated descriptive statistics from .Describe()
+#
 # Returns:
 # - list(headers=[..], rows=[[..], ...])
 #
-.DescribeParsed <- function(x, na.rm=TRUE){
-  stats <- .Describe(x, na.rm=na.rm)
-
+.DescribeParsed <- function(stats){
   headers <- c("Variable", "Mean", "SD", "Min", "Max")
   vars <- base::rownames(stats)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(stats)))
@@ -55,29 +58,28 @@
   return(list(headers=headers, rows=rows))
 }
 
-# High-level runner used by CLI dispatcher
+# Runner used by CLI dispatcher
 #
 # Arguments:
-# - x (data.frame): numeric dataset
-# - options (list):
-#     - order (character): 'default' | 'mean' | 'mean_asc' | 'mean_desc'
+# - df (data.frame): numeric dataset
+# - order (character): 'default' | 'mean' | 'mean_asc' | 'mean_desc'
+# - na_ig (logical): whether to ignore NA values (default TRUE)
 #
 # Returns:
 # - ParsedTable-like list(headers, rows)
 #
-RunDescriptive <- function(x, options = NULL) {
-  if (is.null(options)) options <- list()
+RunDescriptive <- function(df, order = 'default', na_ig = TRUE) {
   ord <- base::tryCatch({
-    o <- options$order
+    o <- order
     if (is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
   }, error = function(e) 'default')
 
-  parsed <- .DescribeParsed(x)
+  stats <- .Describe(df, na_ig = na_ig)
+  parsed <- .DescribeParsed(stats)
 
-  # Optional sorting using Sort() utility when available
-  if (base::exists("Sort") && is.function(base::get("Sort"))) {
-    sorter <- Sort(ord)
-    parsed <- sorter(parsed)
-  }
+  # Sorting using Sort() utility
+  sorter <- Sort(ord)
+  parsed <- sorter(parsed)
+
   parsed
 }
