@@ -8,7 +8,7 @@
 - Rust: `src-tauri/src/excel.rs`, `src-tauri/src/r.rs`, `src-tauri/src/dto.rs`, `src-tauri/src/commands.rs`
 - R: `src-r/cli.R`, `src-r/R/*.R`
 - フロント: `src/ipc.ts`, `src/dto.ts`, `src/pages/AnalysisPage.tsx`, 各分析ページ
-- 既存ドキュメント: `docs/ARCHITECTURE.md`, `IO.md`
+- 既存ドキュメント: `docs/ARCHITECTURE.md`
 
 ---
 
@@ -28,7 +28,7 @@
 - `rows[i].length === headers.length` が必須（Rust 側で `validate()`）。
 - 値の表現ルールは `src/dto.ts` を唯一の仕様とする（`b6efc2f` で統一）。
   - `NA` / 欠損: JSON では `null`
-  - `NaN`, `Inf`, Excel 由来の特殊値: 表示用の特定文字列（詳細は `IO.md` / `src/dto.ts`）
+  - `NaN`, `Inf`, Excel 由来の特殊値: 表示用の特定文字列（詳細は `src/dto.ts`）
 
 ### 1-2. 数値データセット（R 入力専用）
 
