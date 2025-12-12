@@ -1,34 +1,63 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 /**
- * useInView
+ * React hook that tells you if a DOM element is inside a viewport
+ * using the IntersectionObserver API.
  *
- * 目的: DOM要素がビューポート（または指定root）内に入ったかを検知する再利用可能なロジック。
- * 引数:
- * - root: 交差判定の基準となる要素/Document/未指定(null/undefined)
- * - rootMargin: CSSのmargin指定形式（例: '0px', '600px 0px'）
- * - threshold: 0..1 もしくは閾値配列
- * - once: trueなら一度でも可視になった時点で監視を停止
- * 返り値:
- * - ref: 監視対象にアタッチするref
- * - inView: 可視ならtrue
- * フォールバック:
- * - IntersectionObserverが未定義の環境では即座にinView=trueを返す（SSR/テスト/Tauri以外の互換性確保）
+ * Use this for lazy loading, scroll based animations,
+ * or delaying heavy work until an element comes close to view.
+ *
+ * @param root Element used as the viewport for intersection checks.
+ *             Defaults to null, which means the browser viewport.
+ * @param rootMargin Margin around the root, same syntax as CSS margin.
+ *                   For example: '0px' or '600px 0px'. Defaults to '0px'.
+ * @param threshold Visibility threshold from 0 to 1, or an array of numbers.
+ *                  The observer is intersecting when this ratio is reached.
+ *                  Defaults to 0 so any overlap counts as visible.
+ * @param once If true, stop observing after the element becomes visible
+ *             and keep inView as true afterwards.
+ *             If false, inView becomes false again when it leaves view.
+ *
+ * @returns An object with:
+ *          - ref: React ref to attach to the observed element
+ *          - inView: boolean that says if the element is in view
+ *
+ * Fallback behavior:
+ * When IntersectionObserver is not available, for example in SSR or tests,
+ * the hook always reports inView as true for compatibility.
+ *
+ * @example
+ * ```tsx
+ * const MyComponent = () => {
+ *   const { ref, inView } = useInView<HTMLDivElement>({
+ *     rootMargin: '600px 0px',
+ *     threshold: 0,
+ *     once: false,
+ *   });
+ *
+ *   return (
+ *     <div ref={ref}>
+ *       {inView ? <HeavyContent /> : <Placeholder />}
+ *     </div>
+ *   );
+ * };
+ * ```
  */
-export function useInView<T extends Element>(
+export const useInView = <T extends Element>(
   params: {
     root?: Element | Document | null;
     rootMargin?: string;
     threshold?: number | number[];
     once?: boolean;
   } = {}
-) {
+) => {
   const { root = null, rootMargin = '0px', threshold = 0, once = false } = params;
   const ref = useRef<T | null>(null);
   const [inView, setInView] = useState(false);
 
   const supportsIO = typeof IntersectionObserver !== 'undefined';
 
+  // IntersectionObserver configuration derived from the hook parameters
   const ioInit = useMemo<IntersectionObserverInit>(
     () => ({ root: (root as Element | null) ?? null, rootMargin, threshold }),
     [root, rootMargin, threshold]
@@ -39,7 +68,7 @@ export function useInView<T extends Element>(
     if (!el) return;
 
     if (!supportsIO) {
-      // 環境フォールバック: 監視できない環境では可視扱いにする
+      // Fallback: treat the element as visible when IntersectionObserver is unavailable
       setInView(true);
       return;
     }
@@ -48,7 +77,7 @@ export function useInView<T extends Element>(
       for (const e of entries) {
         const visible = e.isIntersecting;
         if (visible) setInView(true);
-        else if (!once) setInView(false);
+        else if (!once) setInView(false); // Only reset to false when `once` is disabled
         if (visible && once) {
           obs.disconnect();
         }
@@ -60,4 +89,4 @@ export function useInView<T extends Element>(
   }, [ioInit, once, supportsIO]);
 
   return { ref, inView } as const;
-}
+};

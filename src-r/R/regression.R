@@ -298,46 +298,56 @@
 
 # High-level runner to align with CLI dispatch pattern
 #
-# options (list) expects:
+# High-level runner used by CLI dispatcher
+#
+# Arguments:
+# - x (data.frame): numeric dataset
 # - dependent (character len=1)
-# - independents (character): main effects and interaction terms
-#   (e.g., "x1:x2") to be used directly in the lm() formula
+# - independents (character): main effects and interaction terms (e.g., "x1:x2")
 # - intercept (logical, optional)
-# - naAction (character, optional): 'na.omit' | 'na.exclude' | 'na.fail'
+# - na_action (character, optional): 'na.omit' | 'na.exclude' | 'na.fail'
 # - weights (numeric vector or NULL, optional)
 # - center (logical, optional): whether to mean-center independent variables
-RunRegression <- function(x, options = NULL) {
-  if (is.null(options)) stop("options must include 'dependent' and 'independents'")
+RunRegression <- function(x,
+                          dependent = NULL,
+                          independents = NULL,
+                          intercept = NULL,
+                          na_action = NULL,
+                          weights = NULL,
+                          center = NULL) {
+  if (is.null(dependent) || is.null(independents)) {
+    stop("dependent and independents must be provided")
+  }
 
   dep <- base::tryCatch({
-    d <- options$dependent
+    d <- dependent
     if (is.null(d) || !nzchar(base::as.character(d))) stop("dependent is missing") else base::as.character(d)
   }, error = function(e) stop("Invalid 'dependent'"))
 
   indep <- base::tryCatch({
-    iv <- options$independents
+    iv <- independents
     if (is.null(iv)) character(0) else base::as.character(iv)
   }, error = function(e) character(0))
   if (length(indep) < 1L) stop("'independents' must contain at least one variable name")
 
   intercept <- base::tryCatch({
-    ic <- options$intercept
+    ic <- intercept
     if (is.null(ic)) TRUE else base::isTRUE(ic)
   }, error = function(e) TRUE)
 
   na_action <- base::tryCatch({
-    na <- options$naAction
+    na <- na_action
     if (is.null(na) || !nzchar(base::as.character(na))) "na.omit" else base::as.character(na)
   }, error = function(e) "na.omit")
 
   weights <- base::tryCatch({
-    w <- options$weights
+    w <- weights
     # Either NULL or numeric vector of length nrow(x)
     if (is.null(w)) NULL else base::as.numeric(w)
   }, error = function(e) NULL)
 
   center <- base::tryCatch({
-    cflag <- options$center
+    cflag <- center
     if (is.null(cflag)) FALSE else base::isTRUE(cflag)
   }, error = function(e) FALSE)
 

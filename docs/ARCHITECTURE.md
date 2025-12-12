@@ -6,11 +6,14 @@
 
 ```mermaid
 flowchart TD
-    A["Frontend<br/>(React UI)"] -->|"1. Analysis Request<br/>(with data)"| B["Backend<br/>(Tauri/Rust)"]
-    B -->|"2. Execute R script<br/>as external command"| C["Analysis Engine<br/>(R)"]
-    C -->|"3. Output analysis result<br/>as JSON"| B
-    B -->|"4. Return result<br/>to frontend"| A
-    A -->|"5. Update UI and<br/>display result"| D["User"]
+    D["User"] -->|"Select file/sheet<br/>and variables"| A["Frontend<br/>(React UI)"]
+    A -->|"1. Request dataset<br/>(path, sheet, variables)"| B["Backend<br/>(Tauri/Rust)"]
+    B -->|"2. Read Excel & build<br/>numeric dataset (headers preserved)"| A
+    A -->|"3. Request analysis<br/>(dataset, options)"| B
+    B -->|"4. Execute R script<br/>as external command"| C["Analysis Engine<br/>(R/cli.R)"]
+    C -->|"5. Output analysis result<br/>as JSON (ParsedTable)"| B
+    B -->|"6. Return result<br/>to frontend (ParsedTable)"| A
+    A -->|"7. Update UI and<br/>display result"| D
 ```
 
 ## シーケンス図
@@ -81,15 +84,9 @@ sequenceDiagram
 注記:
 
 - タイムアウト値はフロントから `timeoutMs`（ミリ秒）で渡され、Rust 側で `Duration` に変換して待機します。
-- タイムアウト時は `issue_result_token` や `open_or_reuse_window` は呼ばれないため、結果ビューは開きません。
-- `run_r_analysis_with_dataset` は分析種別ごとに CLI に渡す追加引数が異なります。代表例: 記述統計は `order` 文字列、相関/回帰は JSON 文字列（メソッド・片側検定・変数順など）を [extra] に与えます。
+- タイムアウト時は結果ウィンドウを開かず、分析パネルにエラーを表示して待機します。
 
-## セル値の特別表現と解釈
+## 詳細仕様
 
-表示用テーブル（ParsedTable）のセルには、統計・Excel 由来の特殊値を表す文字列が含まれることがあります。UI は基本的に素の文字列をそのまま表示します。
-
-- 欠損: `null`
-- NaN: `"NaN!"`
-- 無限大: `"Inf!"` / `"-Inf!"`
-- Excel エラー: `"#DIV/0!"`, `"#N/A"`, `"#NAME?"`, `"#NULL!"`, `"#NUM!"`, `"#REF!"`, `"#VALUE!"`, `"#GETTING"`
-- 相関分析 p 値の対角成分（未定義）: `"-"`
+本ドキュメントは全体の構造とIPCの流れに限定します。  
+データ表現（`ParsedTable` / 数値dataset / ヘッダ一貫性）、値表現の規約、分析オプション JSON の渡し方などの詳細は `docs/DATA_ENGINE_POLICY.md` を参照してください。

@@ -3,6 +3,7 @@ import { type FC, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import RunField from '../components/RunField';
+import WarningDialog from '../components/WarningDialog';
 import '../globals.css';
 import { zParsedTable } from '../dto';
 import tauriIPC from '../ipc';
@@ -22,6 +23,7 @@ const AnalysisPage: FC = () => {
   const [corrOptions, setCorrOptions] = useState<CorrOptionValue | null>(null);
   const [regressionInteractions, setRegressionInteractions] = useState<RegressionInteraction[]>([]);
   const [regressionCenter, setRegressionCenter] = useState(false);
+  const [warningDialog, setWarningDialog] = useState<{ title?: string; message: string } | null>(null);
 
   useEffect(() => {
     const win = getCurrentWebviewWindow();
@@ -39,6 +41,7 @@ const AnalysisPage: FC = () => {
 
   async function executeAnalysis() {
     if (!path || !sheet || selectedVars.length === 0) return;
+    const analysisType: AnalysisType = (type as AnalysisType) || 'descriptive';
     setError(null);
     setRunning(true);
     let closed = false;
@@ -46,7 +49,6 @@ const AnalysisPage: FC = () => {
       // 1) Excelから数値データセットを抽出
       const dataset = await tauriIPC.buildNumericDataset(path, sheet, selectedVars);
       // 2) レジストリ経由でオプションを構築し、Rで実行
-      const analysisType: AnalysisType = (type as AnalysisType) || 'descriptive';
       const def = ANALYSIS_REGISTRY[analysisType];
       if (!def) throw new Error(`未対応の分析種別: ${type}`);
       const optionsJson =
@@ -96,7 +98,32 @@ const AnalysisPage: FC = () => {
       await current.close();
       closed = true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.startsWith('ERR-')) {
+        setWarningDialog({
+          title: '入力エラー',
+          message: msg,
+        });
+        return;
+      }
+      if (analysisType === 'correlation') {
+        if (msg === 'CORR_NON_NUMERIC_COLUMNS') {
+          setWarningDialog({
+            title: '入力エラー',
+            message: '投入した変数に数値でない値が含まれています。データを確認してください。',
+          });
+        } else if (msg === 'CORR_NEED_TWO_NUMERIC_COLUMNS') {
+          setWarningDialog({
+            title: '入力エラー',
+            message:
+              '相関分析には少なくとも 2 つの数値変数が必要です。選択した変数のデータを確認してください。',
+          });
+        } else {
+          setError(msg);
+        }
+      } else {
+        setError(msg);
+      }
     } finally {
       if (!closed) setRunning(false);
     }
@@ -134,6 +161,13 @@ const AnalysisPage: FC = () => {
         onClose={() => getCurrentWebviewWindow().close()}
         running={running}
         disabled={running || !path || !sheet || selectedVars.length === 0}
+      />
+
+      <WarningDialog
+        isOpen={!!warningDialog}
+        title={warningDialog?.title}
+        message={warningDialog?.message ?? ''}
+        onClose={() => setWarningDialog(null)}
       />
     </main>
   );

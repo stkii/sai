@@ -1,4 +1,21 @@
+# =================
 # Utility Functions
+#==================
+
+# Check if x is a data frame or matrix
+#
+# Args:
+# - x (any): The object to check
+#
+# Returns:
+# - TRUE if x is a data frame otherwise stop with warning
+#
+IsDataFrame <- function(x) {
+  if (!base::is.data.frame(x)) {
+    StopWithErrCode("ERR-810")
+  }
+  return(TRUE)
+}
 
 # Create a sorter for ParsedTable-like objects produced by DescribeParsed().
 #
@@ -64,7 +81,7 @@ Sort <- function(criterion, desc = FALSE) {
 # - x (numeric): input value(s)
 # - digits (integer): number of decimal places
 # Returns numeric of the same length with half-up rounding applied.
-.round_half_up <- function(x, digits) {
+.RoundHalfUp <- function(x, digits) {
   if (is.null(x)) return(NA_real_)
   s <- 10^base::as.integer(digits)
   base::sign(x) * base::floor(base::abs(x) * s + 0.5) / s
@@ -82,7 +99,7 @@ FormatNum <- function(x, na = NA_character_) {
   if (!base::is.finite(xv)) {
     if (xv > 0) return("Inf!") else return("-Inf!")  # ±Inf は表記へ
   }
-  v <- .round_half_up(xv, digits = 3L)
+  v <- .RoundHalfUp(xv, digits = 3L)
   base::sprintf("%.3f", v)
 }
 
@@ -91,7 +108,7 @@ FormatDf <- function(x, na = NA_character_) {
   if (is.null(x) || base::length(x) == 0L) return(na)
   xv <- base::as.numeric(x)
   if (base::is.na(xv) || !base::is.finite(xv)) return(na)
-  v <- .round_half_up(xv, digits = 0L)
+  v <- .RoundHalfUp(xv, digits = 0L)
   base::as.character(base::as.integer(v))
 }
 
@@ -100,7 +117,7 @@ FormatPval <- function(p, na = NA_character_) {
   if (is.null(p) || base::length(p) == 0L) return(na)
   pv <- base::as.numeric(p)
   if (base::is.na(pv) || !base::is.finite(pv)) return(na)
-  pr <- .round_half_up(pv, digits = 3L)
+  pr <- .RoundHalfUp(pv, digits = 3L)
   if (pv > 0 && pr == 0) return("<.001")
   base::sprintf("%.3f", pr)
 }
@@ -117,4 +134,19 @@ StarsForPval <- function(p) {
   if (pv < 0.01)  return("**")
   if (pv < 0.05)  return("*")
   return("")
+}
+
+# Replace ONLY special numeric values to match DTO rules, while preserving
+# finite numbers as-is (to avoid changing legacy rendering behavior).
+# - NA stays NA (-> JSON null)
+# - NaN -> "NaN!"
+# - +Inf / -Inf -> "Inf!" / "-Inf!"
+ReplaceSpecialNum <- function(v) {
+  xv <- base::as.numeric(v)
+  if (base::is.na(xv)) return(xv)
+  if (base::is.nan(xv)) return("NaN!")
+  if (!base::is.finite(xv)) {
+    if (xv > 0) return("Inf!") else return("-Inf!")
+  }
+  v
 }
