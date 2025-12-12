@@ -135,3 +135,18 @@ StarsForPval <- function(p) {
   if (pv < 0.05)  return("*")
   return("")
 }
+
+# Replace only special numeric values to match DTO rules, while preserving
+# finite numbers as-is (to avoid changing legacy rendering behavior).
+# - NA stays NA (-> JSON null)
+# - NaN -> "NaN!"
+# - +Inf / -Inf -> "Inf!" / "-Inf!"
+ReplaceSpecialNum <- function(v) {
+  xv <- base::as.numeric(v)
+  if (base::is.na(xv)) return(xv)
+  if (base::is.nan(xv)) return("NaN!")
+  if (!base::is.finite(xv)) {
+    if (xv > 0) return("Inf!") else return("-Inf!")
+  }
+  v
+}

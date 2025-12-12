@@ -43,28 +43,16 @@
 # - list(headers=[..], rows=[[..], ...])
 #
 .DescribeParsed <- function(stats){
-  # Preserve existing finite-number rendering while aligning special values
-  # (NaN/Inf) to the DTO rules used across analyses.
-  .FormatSpecialNum <- function(v) {
-    xv <- base::as.numeric(v)
-    if (base::is.na(xv)) return(xv) # keep NA -> null
-    if (base::is.nan(xv)) return("NaN!")
-    if (!base::is.finite(xv)) {
-      if (xv > 0) return("Inf!") else return("-Inf!")
-    }
-    v
-  }
-
   headers <- c("Variable", "Mean", "SD", "Min", "Max")
   vars <- base::rownames(stats)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(stats)))
 
   rows <- base::lapply(base::seq_len(base::nrow(stats)), function(i) {
     c(vars[[i]],
-      .FormatSpecialNum(base::unname(stats[i, "Mean"])),
-      .FormatSpecialNum(base::unname(stats[i, "SD"])),
-      .FormatSpecialNum(base::unname(stats[i, "Min"])),
-      .FormatSpecialNum(base::unname(stats[i, "Max"])))
+      ReplaceSpecialNum(base::unname(stats[i, "Mean"])),
+      ReplaceSpecialNum(base::unname(stats[i, "SD"])),
+      ReplaceSpecialNum(base::unname(stats[i, "Min"])),
+      ReplaceSpecialNum(base::unname(stats[i, "Max"])))
   })
 
   return(list(headers=headers, rows=rows))
