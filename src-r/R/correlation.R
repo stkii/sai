@@ -1,7 +1,7 @@
 # Execute correlation analysis
 #
 # Args:
-# - x (data.frame or matrix): numeric variables in columns. Non-numeric columns are dropped.
+# - x (data.frame or matrix): numeric variables in columns. Non-numeric columns are not allowed.
 # - mehod (character): "pearson" (default), "spearman", "kendall".
 # - use (character): "all.obs" (default), "complete.obs", "pairwise.complete.obs".
 # - alternative (character): "two.sided" (default), "greater", or "less" for the correlation test.
@@ -18,17 +18,21 @@
 #   - use (character): missing value handling method
 #
 .CorrTest <- function(x, method="pearson", use="all.obs", alternative="two.sided") {
-  # Convert list to data.frame if necessary
-  if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
-  if (!is.data.frame(x) && !is.matrix(x)) stop("x must be a data.frame or matrix")
+  # Receive raw data.
+  # Input dataset must be a data frame
+  IsDataFrame(x)
 
-  # Keep only numeric columns
+  # Validation (if stop is called, frontend displays WarningDialog)
+  # Check if all columns are numeric
   is_num <- if (is.data.frame(x)) base::vapply(x, is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(x))
+  # 1. Reject non-numeric columns
   if (base::any(!is_num)) {
-    x <- x[, is_num, drop = FALSE]  # Non-numeric columns are dropped
-    warning("Non-numeric columns were dropped")
+    StopWithErrCode("ERR-811")
   }
-  if (base::ncol(x) < 2) stop("Need at least two numeric columns")
+  # 2. Ensure at least two columns for correlation
+  if (base::ncol(x) < 2) {
+    StopWithErrCode("ERR-831")
+  }
 
   # For speed, work in matrix form and preserve column names
   x_mat <- base::as.matrix(x)
@@ -71,7 +75,21 @@
     }
   }
 
-  corr_mtx <- stats::cor(x_work, method=method, use=use)
+  corr_mtx <- base::tryCatch(
+    stats::cor(x_work, method = method, use = use),
+    error = function(e) {
+      msg <- base::conditionMessage(e)
+      if (base::grepl(
+        "missing observations in cov/cor|not enough finite observations|NA/NaN/Inf in foreign function call",
+        msg,
+        perl = TRUE
+      )) {
+        StopWithErrCode("ERR-832")
+      }
+      # Re-throw with minimal noise for non-user errors
+      base::stop(msg, call. = FALSE)
+    }
+  )
 
   if (use == "all.obs") {
     # If there are missing values, cor() will error
@@ -206,31 +224,28 @@
 #
 # Arguments:
 # - x (data.frame): numeric dataset
-# - options (list):
-#     - methods (character[]): correlation methods
-#     - alt (character): 'two.sided'|'greater'|'less'|'one.sided'
-#     - use (character): 'all.obs'|'complete.obs'|'pairwise.complete.obs'
+# - methods (character[]): correlation methods (NULL or empty -> default "pearson")
+# - alt (character): 'two.sided'|'greater'|'less'|'one.sided' (NULL/empty -> 'two.sided')
+# - use (character): 'all.obs'|'complete.obs'|'pairwise.complete.obs' (NULL/empty -> 'all.obs')
 #
 # Returns ParsedTable-like list(headers, rows)
-RunCorrelation <- function(x, options = NULL) {
-  if (is.null(options)) options <- list()
-
-  # Validate/normalize options
+RunCorrelation <- function(x, methods = NULL, alt = NULL, use = NULL) {
+  # Validate/normalize options passed as individual arguments
   methods <- base::tryCatch({
-    m <- options$methods
+    m <- methods
     if (is.null(m)) base::character(0) else base::as.character(m)
   }, error = function(e) base::character(0))
   if (base::length(methods) == 0) methods <- c("pearson")
 
   alt <- base::tryCatch({
-    a <- options$alt
+    a <- alt
     if (is.null(a) || !base::nzchar(a)) "two.sided" else base::as.character(a)
   }, error = function(e) "two.sided")
   alt_r <- if (base::identical(alt, "one.sided")) "greater" else alt
   if (!alt_r %in% c("two.sided", "greater", "less")) alt_r <- "two.sided"
 
   use <- base::tryCatch({
-    u <- options$use
+    u <- use
     if (is.null(u) || !base::nzchar(u)) "all.obs" else base::as.character(u)
   }, error = function(e) "all.obs")
   if (!use %in% c("all.obs", "complete.obs", "pairwise.complete.obs")) use <- "all.obs"

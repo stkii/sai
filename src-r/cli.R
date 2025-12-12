@@ -6,7 +6,7 @@
 # - Read JSON input, dispatch to analysis, write JSON to an output file
 #
 # Usage:
-#   cli.R descriptive <input_json_path> <output_json_path> [order]
+#   cli.R descriptive <input_json_path> <output_json_path> [options_json]
 #   cli.R correlation <input_json_path> <output_json_path> [options_json]
 #   cli.R reliability <input_json_path> <output_json_path>
 #   cli.R regression  <input_json_path> <output_json_path> [options_json]
@@ -96,28 +96,46 @@ if (!is.null(ord) && is.data.frame(dat)) {
 # ------------------------
 # Build options and run
 # ------------------------
-options_list <- list()
-if (identical(analysis, "descriptive")) {
-  ord <- tryCatch({
-    o <- extra_arg
-    if (is.null(o) || is.na(o) || !nzchar(o)) 'default' else as.character(o)
-  }, error = function(e) 'default')
-  options_list$order <- ord
-} else if (identical(analysis, "correlation")) {
-  options_list <- tryCatch({
-    if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
-  }, error = function(e) list())
-} else if (identical(analysis, "regression")) {
-  options_list <- tryCatch({
-    if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
-  }, error = function(e) list())
-} else if (identical(analysis, "design")) {
-  options_list <- tryCatch({
-    if (is.null(extra_arg) || is.na(extra_arg) || !nzchar(extra_arg)) list() else jsonlite::fromJSON(extra_arg)
-  }, error = function(e) list())
+parse_options <- function(extra) {
+  if (is.null(extra) || is.na(extra) || !nzchar(extra)) return(list())
+  out <- tryCatch(jsonlite::fromJSON(extra), error = function(e) NULL)
+  if (is.null(out) || !is.list(out)) return(list())
+  out
 }
 
-out <- handler(dat, options_list)
+options_list <- parse_options(extra_arg)
+
+out <- if (identical(analysis, "descriptive")) {
+  handler(dat, options_list$order, options_list$na_ig)
+} else if (identical(analysis, "correlation")) {
+  handler(dat, options_list$methods, options_list$alt, options_list$use)
+} else if (identical(analysis, "reliability")) {
+  handler(dat, options_list$model)
+} else if (identical(analysis, "regression")) {
+  handler(
+    dat,
+    options_list$dependent,
+    options_list$independents,
+    options_list$intercept,
+    options_list$naAction,
+    options_list$weights,
+    options_list$center
+  )
+} else if (identical(analysis, "design")) {
+  handler(
+    dat,
+    options_list$test,
+    options_list$sig_level,
+    options_list$power,
+    options_list$t_type,
+    options_list$alternative,
+    options_list$k,
+    options_list$categories,
+    options_list$u
+  )
+} else {
+  handler(dat, options_list)
+}
 
 # ------------------------
 # Write JSON to output file

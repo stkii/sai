@@ -194,10 +194,8 @@ pub fn run_r_analysis_with_dataset(
     if let Some(raw) = options_json {
         if !raw.is_empty() {
             match serde_json::from_str::<AnalysisOptions>(raw) {
-                Ok(AnalysisOptions::Descriptive { order, .. }) => {
-                    if !order.trim().is_empty() {
-                        cmd.arg(order);
-                    }
+                Ok(AnalysisOptions::Descriptive { .. }) => {
+                    cmd.arg(raw);
                 },
                 Ok(AnalysisOptions::Correlation {
                     methods, alt, r#use, ..
@@ -229,10 +227,43 @@ pub fn run_r_analysis_with_dataset(
             let output = child.wait_with_output().map_err(|e| e.to_string())?;
             if !status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
+                let stderr_trimmed = stderr.trim();
+
+                // R 側の StopWithErrCode("ERR-xxx") をユーザー向けエラーとして抽出して返す。
+                // まず "^ERR-\\d{3}:" で始まる行を優先し、なければ行内の "ERR-xxx: ..." を抜き出す。
+                if let Some(line) = stderr_trimmed
+                    .lines()
+                    .find(|l| l.trim_start().starts_with("ERR-"))
+                {
+                    return Err(line.trim().to_string());
+                }
+                for l in stderr_trimmed.lines() {
+                    if let Some(pos) = l.find("ERR-") {
+                        let tail = &l[pos..];
+                        if let Some((code_part, rest)) = tail.split_once(':') {
+                            let code = code_part.trim();
+                            let message = rest.trim();
+                            if !message.is_empty() {
+                                return Err(format!("{}: {}", code, message));
+                            }
+                            return Err(code.to_string());
+                        }
+                    }
+                }
+
+                // 特定の R 側バリデーションエラーはフロントで WarningDialog として扱えるよう、
+                // エラーコードにマッピングして返す
+                if stderr_trimmed.contains("ERR-811") {
+                    return Err("CORR_NON_NUMERIC_COLUMNS".to_string());
+                }
+                if stderr_trimmed.contains("ERR-831") {
+                    return Err("CORR_NEED_TWO_NUMERIC_COLUMNS".to_string());
+                }
+
                 return Err(format!(
                     "R 実行に失敗しました (code: {:?}): {}",
                     status.code(),
-                    stderr.trim()
+                    stderr_trimmed
                 ));
             }
             // R 側が out_tf へ JSON を書き出す想定

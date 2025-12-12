@@ -3,23 +3,27 @@
 # Calculate cronbach's alpha
 #
 # Args:
-# - x (data.frame or matrix): The Dataset where rows are subject and colmns are items.
+# - x (data.frame): The Dataset where rows are subject and colmns are items.
 #
 # Returns:
 # - alpha (numeric): The Cronbach's alpha coefficient of the input dataset.
 #
-.CronbachAlpha <- function(x) {
+.CronbachAlpha <- function(df) {
+  # Receive raw data.
+  # Input dataset must be a data frame
+  IsDataFrame(df)
+
   # Get the number of items
-  n_cols <- base::ncol(x)
+  n_cols <- base::ncol(df)
   if (n_cols < 2) {
-    stop("The input dataset must have at least two items.")
+    StopWithErrCode("ERR-831")
   }
 
   # Calculate the variance of each item
-  item_var <- base::apply(x, 2, stats::var)
+  item_var <- base::apply(df, 2, stats::var)
 
   # Calculate the variance of the total score of all items
-  total_var <- stats::var(base::rowSums(x))
+  total_var <- stats::var(base::rowSums(df))
 
   # Calculate the Cronbach's alpha coefficient
   alpha <- (n_cols / (n_cols - 1)) * (1 - (base::sum(item_var) / total_var))
@@ -32,14 +36,13 @@
 .ReliabilityParsed <- function(x, model='alpha') {
   # Coerce to data.frame matrix of numeric only
   if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
-  if (!is.data.frame(x) && !is.matrix(x)) stop("x must be a data.frame or matrix")
+  IsDataFrame(x)
   is_num <- if (is.data.frame(x)) base::vapply(x, is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(x))
   if (base::any(!is_num)) x <- x[, is_num, drop = FALSE]
-  if (base::ncol(x) < 2) stop("Need at least two numeric columns for reliability analysis")
 
   headers <- c("Statistic", "Value")
   if (base::identical(model, 'alpha')) {
-    val <- .CronbachAlpha(base::as.matrix(x))
+    val <- .CronbachAlpha(x)
     rows <- list(c("Cronbach's alpha", FormatNum(val)))
   } else {
     rows <- list(c("Omega", "未実装"))
@@ -51,14 +54,12 @@
 #
 # Arguments:
 # - x (data.frame): numeric dataset
-# - options (list):
-#     - model (character): 'alpha' (default). Reserved for future extensions.
+# - model (character): 'alpha' (default). Reserved for future extensions.
 #
 # Returns ParsedTable-like list(headers, rows)
-RunReliability <- function(x, options = NULL) {
-  if (is.null(options)) options <- list()
+RunReliability <- function(x, model = NULL) {
   model <- base::tryCatch({
-    m <- options$model
+    m <- model
     if (is.null(m) || !base::nzchar(m)) 'alpha' else base::as.character(m)
   }, error = function(e) 'alpha')
   .ReliabilityParsed(x, model = model)
