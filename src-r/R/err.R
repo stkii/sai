@@ -6,6 +6,7 @@ ERR_MESSAGES <- base::list(
   "ERR-811" = "Non-numeric columns detected",
   # Data structure / size
   "ERR-831" = "Not enough numeric columns (need at least two)",
+  "ERR-832" = "Missing values detected. Change missing-value handling option.",
   # Design (power analysis) parameter errors (user-caused)
   "ERR-845" = "sig_level must be between 0 and 1",
   "ERR-846" = "power must be between 0 and 1",

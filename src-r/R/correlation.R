@@ -75,7 +75,21 @@
     }
   }
 
-  corr_mtx <- stats::cor(x_work, method=method, use=use)
+  corr_mtx <- base::tryCatch(
+    stats::cor(x_work, method = method, use = use),
+    error = function(e) {
+      msg <- base::conditionMessage(e)
+      if (base::grepl(
+        "missing observations in cov/cor|not enough finite observations|NA/NaN/Inf in foreign function call",
+        msg,
+        perl = TRUE
+      )) {
+        StopWithErrCode("ERR-832")
+      }
+      # Re-throw with minimal noise for non-user errors
+      base::stop(msg, call. = FALSE)
+    }
+  )
 
   if (use == "all.obs") {
     # If there are missing values, cor() will error

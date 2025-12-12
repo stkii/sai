@@ -1,12 +1,21 @@
 use indexmap::IndexMap;
-use std::collections::{HashMap, HashSet};
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 use std::io::Write as _;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{
+    Command,
+    Stdio,
+};
 use std::time::Duration;
 
 use calamine::Data;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tauri::AppHandle;
 use tempfile::NamedTempFile;
 use wait_timeout::ChildExt;
@@ -219,6 +228,28 @@ pub fn run_r_analysis_with_dataset(
             if !status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 let stderr_trimmed = stderr.trim();
+
+                // R 側の StopWithErrCode("ERR-xxx") をユーザー向けエラーとして抽出して返す。
+                // まず "^ERR-\\d{3}:" で始まる行を優先し、なければ行内の "ERR-xxx: ..." を抜き出す。
+                if let Some(line) = stderr_trimmed
+                    .lines()
+                    .find(|l| l.trim_start().starts_with("ERR-"))
+                {
+                    return Err(line.trim().to_string());
+                }
+                for l in stderr_trimmed.lines() {
+                    if let Some(pos) = l.find("ERR-") {
+                        let tail = &l[pos..];
+                        if let Some((code_part, rest)) = tail.split_once(':') {
+                            let code = code_part.trim();
+                            let message = rest.trim();
+                            if !message.is_empty() {
+                                return Err(format!("{}: {}", code, message));
+                            }
+                            return Err(code.to_string());
+                        }
+                    }
+                }
 
                 // 特定の R 側バリデーションエラーはフロントで WarningDialog として扱えるよう、
                 // エラーコードにマッピングして返す
