@@ -1,21 +1,12 @@
 use indexmap::IndexMap;
-use std::collections::{
-    HashMap,
-    HashSet,
-};
+use std::collections::{HashMap, HashSet};
 use std::io::Write as _;
 use std::path::PathBuf;
-use std::process::{
-    Command,
-    Stdio,
-};
+use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use calamine::Data;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tempfile::NamedTempFile;
 use wait_timeout::ChildExt;
@@ -194,10 +185,8 @@ pub fn run_r_analysis_with_dataset(
     if let Some(raw) = options_json {
         if !raw.is_empty() {
             match serde_json::from_str::<AnalysisOptions>(raw) {
-                Ok(AnalysisOptions::Descriptive { order, .. }) => {
-                    if !order.trim().is_empty() {
-                        cmd.arg(order);
-                    }
+                Ok(AnalysisOptions::Descriptive { .. }) => {
+                    cmd.arg(raw);
                 },
                 Ok(AnalysisOptions::Correlation {
                     methods, alt, r#use, ..
@@ -229,10 +218,21 @@ pub fn run_r_analysis_with_dataset(
             let output = child.wait_with_output().map_err(|e| e.to_string())?;
             if !status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
+                let stderr_trimmed = stderr.trim();
+
+                // 特定の R 側バリデーションエラーはフロントで WarningDialog として扱えるよう、
+                // エラーコードにマッピングして返す
+                if stderr_trimmed.contains("ERR-811") {
+                    return Err("CORR_NON_NUMERIC_COLUMNS".to_string());
+                }
+                if stderr_trimmed.contains("ERR-831") {
+                    return Err("CORR_NEED_TWO_NUMERIC_COLUMNS".to_string());
+                }
+
                 return Err(format!(
                     "R 実行に失敗しました (code: {:?}): {}",
                     status.code(),
-                    stderr.trim()
+                    stderr_trimmed
                 ));
             }
             // R 側が out_tf へ JSON を書き出す想定
