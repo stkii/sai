@@ -1,38 +1,39 @@
-RunDesign <- function(x, options = NULL) {
-  if (is.null(options) || !is.list(options)) {
-    stop("options must be a non-null list for design analysis")
-  }
-
-  # 共通パラメータの単純な取り出しと検証
-  test <- options$test
+RunDesign <- function(x,
+                      test = NULL,
+                      sig_level = NULL,
+                      power = NULL,
+                      t_type = NULL,
+                      alternative = NULL,
+                      k = NULL,
+                      categories = NULL,
+                      u = NULL) {
+  # Extract and validate common parameters
   if (is.null(test) || !base::nzchar(base::as.character(test))) {
-    stop("test is missing")
+    StopWithErrCode("ERR-940")
   }
   test <- base::as.character(test)
 
   if (!base::exists("COHEN_ES")) {
-    stop("COHEN_ES is not defined (constants.R not loaded)")
+    StopWithErrCode("ERR-940")
   }
   if (!test %in% base::names(COHEN_ES)) {
-    stop(base::sprintf("Unknown test key for COHEN_ES: %s", test))
+    StopWithErrCode("ERR-940")
   }
   effect <- COHEN_ES[[test]]
 
-  s <- options$sig_level
-  if (is.null(s)) stop("sig_level is missing")
-  sig_level <- base::as.numeric(s)
+  if (is.null(sig_level)) StopWithErrCode("ERR-940")
+  sig_level <- base::as.numeric(sig_level)
   if (!base::is.finite(sig_level) || sig_level <= 0 || sig_level >= 1) {
-    stop("sig_level must be between 0 and 1")
+    StopWithErrCode("ERR-845")
   }
 
-  p <- options$power
-  if (is.null(p)) stop("power is missing")
-  power <- base::as.numeric(p)
+  if (is.null(power)) StopWithErrCode("ERR-940")
+  power <- base::as.numeric(power)
   if (!base::is.finite(power) || power <= 0 || power >= 1) {
-    stop("power must be between 0 and 1")
+    StopWithErrCode("ERR-846")
   }
 
-  # 表示用に事前フォーマット
+  # Pre-format for display
   effect_str <- FormatNum(effect)
   alpha_str <- FormatNum(sig_level)
   power_str <- FormatNum(power)
@@ -41,22 +42,18 @@ RunDesign <- function(x, options = NULL) {
 
   # Branch per test
   if (base::identical(test, "t")) {
-    tt <- options$t_type
-    if (is.null(tt) || !base::nzchar(base::as.character(tt))) {
+    if (is.null(t_type) || !base::nzchar(base::as.character(t_type))) {
       t_type <- "two.sample"
-    } else {
-      t_type <- base::as.character(tt)
-    }
+    } else t_type <- base::as.character(t_type)
 
     if (!t_type %in% c("one.sample", "two.sample", "paired")) {
-      stop("t_type must be one of 'one.sample', 'two.sample', 'paired'")
+      StopWithErrCode("ERR-940")
     }
 
-    a <- options$alternative
-    if (is.null(a) || !base::nzchar(base::as.character(a))) {
+    if (is.null(alternative) || !base::nzchar(base::as.character(alternative))) {
       alt_opt <- "two.sided"
     } else {
-      alt_opt <- base::as.character(a)
+      alt_opt <- base::as.character(alternative)
     }
 
     alt <- if (base::identical(alt_opt, "one.sided")) "greater" else alt_opt
@@ -77,12 +74,10 @@ RunDesign <- function(x, options = NULL) {
 
     if (base::inherits(res, "error")) {
       n_val <- FormatDf(NA_real_)
-      # 日本語はフロント側で扱うため、ここでは ASCII のみを返す
       add_text <- base::sprintf("ERROR:t-test:%s", base::conditionMessage(res))
     } else {
       n_raw <- res$n
       n_val <- FormatDf(n_raw)
-      # 正常系では追加パラメータはフロント側で組み立てるので空にしておく
       add_text <- ""
     }
 
@@ -91,11 +86,10 @@ RunDesign <- function(x, options = NULL) {
   }
 
   if (base::identical(test, "anov")) {
-    kv <- options$k
-    if (is.null(kv)) stop("k is missing for anova")
-    k <- base::as.numeric(kv)
+    if (is.null(k)) StopWithErrCode("ERR-940")
+    k <- base::as.numeric(k)
     if (!base::is.finite(k) || k < 2) {
-      stop("k must be >= 2")
+      StopWithErrCode("ERR-847")
     }
 
     res <- pwr::pwr.anova.test(
@@ -108,7 +102,7 @@ RunDesign <- function(x, options = NULL) {
     n_per <- res$n
     n_total <- k * n_per
     n_val <- FormatDf(n_total)
-    # 追加パラメータはフロント側で表示用に組み立てる
+    # Additional parameters are assembled on the frontend for display
     add_text <- ""
 
     row <- c(n_val, effect_str, alpha_str, power_str, add_text)
@@ -116,11 +110,10 @@ RunDesign <- function(x, options = NULL) {
   }
 
   if (base::identical(test, "chisq")) {
-    cv <- options$categories
-    if (is.null(cv)) stop("categories is missing for chisq")
-    categories <- base::as.numeric(cv)
+    if (is.null(categories)) StopWithErrCode("ERR-940")
+    categories <- base::as.numeric(categories)
     if (!base::is.finite(categories) || categories < 2) {
-      stop("categories must be >= 2")
+      StopWithErrCode("ERR-848")
     }
 
     df <- categories - 1
@@ -133,7 +126,7 @@ RunDesign <- function(x, options = NULL) {
     )
     n_total <- res$N
     n_val <- FormatDf(n_total)
-    # 追加パラメータはフロント側で表示用に組み立てる
+    # Additional parameters are assembled on the frontend for display
     add_text <- ""
 
     row <- c(n_val, effect_str, alpha_str, power_str, add_text)
@@ -141,11 +134,10 @@ RunDesign <- function(x, options = NULL) {
   }
 
   if (base::identical(test, "f2")) {
-    uv <- options$u
-    if (is.null(uv)) stop("u is missing for f2")
-    u <- base::as.numeric(uv)
+    if (is.null(u)) StopWithErrCode("ERR-940")
+    u <- base::as.numeric(u)
     if (!base::is.finite(u) || u < 1) {
-      stop("u must be >= 1")
+      StopWithErrCode("ERR-849")
     }
 
     res <- pwr::pwr.f2.test(
@@ -159,12 +151,12 @@ RunDesign <- function(x, options = NULL) {
     # n = v + u + 1 (v = n - u - 1)
     n_total <- v_df + res$u + 1
     n_val <- FormatDf(n_total)
-    # 追加パラメータはフロント側で表示用に組み立てる
+    # Additional parameters are assembled on the frontend for display
     add_text <- ""
 
     row <- c(n_val, effect_str, alpha_str, power_str, add_text)
     return(list(headers = headers, rows = list(row)))
   }
 
-  stop(base::sprintf("Unsupported design test: %s", test))
+  StopWithErrCode("ERR-940")
 }
