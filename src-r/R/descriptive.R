@@ -49,10 +49,10 @@
 
   rows <- base::lapply(base::seq_len(base::nrow(stats)), function(i) {
     c(vars[[i]],
-      ReplaceSpecialNum(base::unname(stats[i, "Mean"])),
-      ReplaceSpecialNum(base::unname(stats[i, "SD"])),
-      ReplaceSpecialNum(base::unname(stats[i, "Min"])),
-      ReplaceSpecialNum(base::unname(stats[i, "Max"])))
+      FormatNum(base::unname(stats[i, "Mean"])),
+      FormatNum(base::unname(stats[i, "SD"])),
+      FormatNum(base::unname(stats[i, "Min"])),
+      FormatNum(base::unname(stats[i, "Max"])))
   })
 
   return(list(headers=headers, rows=rows))
@@ -74,7 +74,14 @@ RunDescriptive <- function(df, order = 'default', na_ig = TRUE) {
     if (is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
   }, error = function(e) 'default')
 
-  stats <- .Describe(df, na_ig = na_ig)
+  # Normalize na_ig to a single logical value.
+  # Frontend/CLI may pass NULL or non-logical JSON scalars; default to TRUE.
+  na_ig_norm <- base::tryCatch({
+    if (is.null(na_ig)) TRUE else base::as.logical(na_ig)[[1]]
+  }, error = function(e) TRUE)
+  if (base::is.na(na_ig_norm)) na_ig_norm <- TRUE
+
+  stats <- .Describe(df, na_ig = na_ig_norm)
   parsed <- .DescribeParsed(stats)
 
   # Sorting using Sort() utility

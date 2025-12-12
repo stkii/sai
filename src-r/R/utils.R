@@ -136,7 +136,7 @@ StarsForPval <- function(p) {
   return("")
 }
 
-# Replace only special numeric values to match DTO rules, while preserving
+# Replace ONLY special numeric values to match DTO rules, while preserving
 # finite numbers as-is (to avoid changing legacy rendering behavior).
 # - NA stays NA (-> JSON null)
 # - NaN -> "NaN!"
