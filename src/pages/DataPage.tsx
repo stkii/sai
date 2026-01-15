@@ -1,8 +1,8 @@
 import { Box, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/react';
 import { emitTo } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import type { FC } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import type { FC, ReactElement } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import type { AnalysisResultPayload } from '../analysisEvents';
@@ -21,6 +21,23 @@ const ANALYSIS_ITEMS: PopoverSelectItem[] = [
   { label: '相関', value: 'correlation' },
   { label: '回帰', value: 'regression' },
 ];
+
+const ANALYSIS_MODAL_KEYS = ['descriptive', 'correlation'] as const;
+
+type AnalysisModalKey = (typeof ANALYSIS_MODAL_KEYS)[number];
+
+interface AnalysisModalRenderProps {
+  open: boolean;
+  onClose: () => void;
+  variables: string[];
+}
+
+interface AnalysisModalConfig {
+  render: (props: AnalysisModalRenderProps) => ReactElement;
+}
+
+const isAnalysisModalKey = (value: string): value is AnalysisModalKey =>
+  ANALYSIS_MODAL_KEYS.includes(value as AnalysisModalKey);
 
 const formatWindowError = (event: { payload?: unknown }) => {
   const payload = event?.payload;
@@ -51,8 +68,7 @@ const formatWindowError = (event: { payload?: unknown }) => {
 const DataPage: FC = () => {
   const [table, setTable] = useState<ParsedDataTable | null>(null);
   const [dataSelection, setDataSelection] = useState<DataImportSelection | null>(null);
-  const [isDescriptiveOpen, setIsDescriptiveOpen] = useState(false);
-  const [isCorrelationOpen, setIsCorrelationOpen] = useState(false);
+  const [openAnalysis, setOpenAnalysis] = useState<AnalysisModalKey | null>(null);
   const analysisDisabled = table === null;
   const analysisRunner = useMemo(
     () =>
@@ -97,8 +113,7 @@ const DataPage: FC = () => {
   }, []);
 
   const getSelection = useCallback(() => dataSelection, [dataSelection]);
-  const closeDescriptive = useCallback(() => setIsDescriptiveOpen(false), []);
-  const closeCorrelation = useCallback(() => setIsCorrelationOpen(false), []);
+  const closeAnalysis = useCallback(() => setOpenAnalysis(null), []);
   const handlers = useMemo(
     () =>
       createAnalysisHandlers({
@@ -106,26 +121,30 @@ const DataPage: FC = () => {
         getSelection,
         openResultWindow,
         emitResult,
-        onCloseDescriptive: closeDescriptive,
-        onCloseCorrelation: closeCorrelation,
+        onCloseDescriptive: closeAnalysis,
+        onCloseCorrelation: closeAnalysis,
       }),
-    [analysisRunner, closeCorrelation, closeDescriptive, emitResult, getSelection, openResultWindow]
+    [analysisRunner, closeAnalysis, emitResult, getSelection, openResultWindow]
+  );
+
+  const analysisModalConfigs = useMemo<Record<AnalysisModalKey, AnalysisModalConfig>>(
+    () => ({
+      descriptive: {
+        render: (props) => <DescriptiveModal {...props} onExecute={handlers.runDescriptive} />,
+      },
+      correlation: {
+        render: (props) => <CorrTestModal {...props} onExecute={handlers.runCorrelation} />,
+      },
+    }),
+    [handlers.runCorrelation, handlers.runDescriptive]
   );
 
   const handleAnalysisSelect = (item: PopoverSelectItem | null) => {
-    if (item?.value === 'descriptive') {
-      setIsDescriptiveOpen(true);
-      setIsCorrelationOpen(false);
+    if (item?.value && isAnalysisModalKey(item.value)) {
+      setOpenAnalysis(item.value);
       return;
     }
-    if (item?.value === 'correlation') {
-      setIsCorrelationOpen(true);
-      setIsDescriptiveOpen(false);
-      return;
-    } else {
-      setIsDescriptiveOpen(false);
-      setIsCorrelationOpen(false);
-    }
+    setOpenAnalysis(null);
   };
 
   const handleLoaded = (loadedTable: ParsedDataTable, selection: DataImportSelection) => {
@@ -147,18 +166,15 @@ const DataPage: FC = () => {
           />
         </HStack>
         <DataTable table={table} height={600} />
-        <DescriptiveModal
-          open={isDescriptiveOpen}
-          onClose={() => setIsDescriptiveOpen(false)}
-          variables={table?.headers ?? []}
-          onExecute={handlers.runDescriptive}
-        />
-        <CorrTestModal
-          open={isCorrelationOpen}
-          onClose={() => setIsCorrelationOpen(false)}
-          variables={table?.headers ?? []}
-          onExecute={handlers.runCorrelation}
-        />
+        {ANALYSIS_MODAL_KEYS.map((key) => (
+          <Fragment key={key}>
+            {analysisModalConfigs[key].render({
+              open: openAnalysis === key,
+              onClose: closeAnalysis,
+              variables: table?.headers ?? [],
+            })}
+          </Fragment>
+        ))}
       </Stack>
     </Box>
   );
