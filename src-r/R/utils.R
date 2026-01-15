@@ -77,6 +77,20 @@ Sort <- function(criterion) {
   }
 }
 
+# Map p-value to significance stars used across analyses
+# - p (numeric): p-value
+# - Returns: character string among "", "*", "**", "***"
+StarsForPval <- function(p) {
+  if (is.null(p) || base::length(p) == 0L) return("")
+  if (base::is.na(p)) return("")
+  pv <- base::as.numeric(p)
+  if (!base::is.finite(pv)) return("")
+  if (pv < 0.001) return("***")
+  if (pv < 0.01)  return("**")
+  if (pv < 0.05)  return("*")
+  return("")
+}
+
 # Internal: half-up rounding to a fixed number of decimal digits.
 # Args:
 # - x (numeric): input value(s)
