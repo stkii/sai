@@ -2,15 +2,17 @@ import { Box, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/re
 import { emitTo } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import type { AnalysisResultPayload } from '../analysisEvents';
 import DataTable from '../components/DataTable';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
 import type { ParsedDataTable } from '../dto';
+import { createAnalysisHandlers } from '../handlers/createAnalysisHandlers';
 import { createAnalysisRunner } from '../runner';
 import tauriIPC from '../tauriIPC';
+import CorrTestModal from '../ui/CorrTestModal';
 import DataImportModal, { type DataImportSelection } from '../ui/DataImportModal';
 import DescriptiveModal from '../ui/DescriptiveModal';
 
@@ -50,6 +52,7 @@ const DataPage: FC = () => {
   const [table, setTable] = useState<ParsedDataTable | null>(null);
   const [dataSelection, setDataSelection] = useState<DataImportSelection | null>(null);
   const [isDescriptiveOpen, setIsDescriptiveOpen] = useState(false);
+  const [isCorrelationOpen, setIsCorrelationOpen] = useState(false);
   const analysisDisabled = table === null;
   const analysisRunner = useMemo(
     () =>
@@ -58,12 +61,13 @@ const DataPage: FC = () => {
           tauriIPC.buildNumericDataset(selection.path, selection.sheet, variables),
         analyses: {
           descriptive: ({ datasetId, options }) => tauriIPC.runAnalysis('descriptive', datasetId, options),
+          correlation: ({ datasetId, options }) => tauriIPC.runAnalysis('correlation', datasetId, options),
         },
       }),
     []
   );
 
-  const openResultWindow = async () => {
+  const openResultWindow = useCallback(async () => {
     const existing = await WebviewWindow.getByLabel('resultView');
     if (existing) {
       await existing.show();
@@ -75,7 +79,7 @@ const DataPage: FC = () => {
     });
     const resultWindow = new WebviewWindow('resultView', {
       url: '/pages/result.html',
-      title: 'SAI (結果)',
+      title: 'SAI (結果ビュー)',
       width: 960,
       height: 720,
       minWidth: 860,
@@ -86,13 +90,41 @@ const DataPage: FC = () => {
       resultWindow.once('tauri://error', (event) => reject(new Error(formatWindowError(event))));
     });
     await ready;
-  };
+  }, []);
+
+  const emitResult = useCallback(async (payload: AnalysisResultPayload) => {
+    await emitTo('resultView', 'analysis:result', payload);
+  }, []);
+
+  const getSelection = useCallback(() => dataSelection, [dataSelection]);
+  const closeDescriptive = useCallback(() => setIsDescriptiveOpen(false), []);
+  const closeCorrelation = useCallback(() => setIsCorrelationOpen(false), []);
+  const handlers = useMemo(
+    () =>
+      createAnalysisHandlers({
+        analysisRunner,
+        getSelection,
+        openResultWindow,
+        emitResult,
+        onCloseDescriptive: closeDescriptive,
+        onCloseCorrelation: closeCorrelation,
+      }),
+    [analysisRunner, closeCorrelation, closeDescriptive, emitResult, getSelection, openResultWindow]
+  );
 
   const handleAnalysisSelect = (item: PopoverSelectItem | null) => {
     if (item?.value === 'descriptive') {
       setIsDescriptiveOpen(true);
+      setIsCorrelationOpen(false);
+      return;
+    }
+    if (item?.value === 'correlation') {
+      setIsCorrelationOpen(true);
+      setIsDescriptiveOpen(false);
+      return;
     } else {
       setIsDescriptiveOpen(false);
+      setIsCorrelationOpen(false);
     }
   };
 
@@ -100,28 +132,6 @@ const DataPage: FC = () => {
     setTable(loadedTable);
     setDataSelection(selection);
     analysisRunner.clearCache();
-  };
-
-  const handleRunDescriptive = async (variables: string[], order: string) => {
-    if (!dataSelection) {
-      throw new Error('データが選択されていません');
-    }
-    const analysis = await analysisRunner.run({
-      type: 'descriptive',
-      selection: dataSelection,
-      variables,
-      options: { order },
-    });
-    const payload: AnalysisResultPayload = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      type: 'descriptive',
-      label: '記述統計',
-      timestamp: analysis.loggedAt,
-      result: analysis.result,
-    };
-    await openResultWindow();
-    await emitTo('resultView', 'analysis:result', payload);
-    setIsDescriptiveOpen(false);
   };
 
   return (
@@ -141,7 +151,13 @@ const DataPage: FC = () => {
           open={isDescriptiveOpen}
           onClose={() => setIsDescriptiveOpen(false)}
           variables={table?.headers ?? []}
-          onExecute={handleRunDescriptive}
+          onExecute={handlers.runDescriptive}
+        />
+        <CorrTestModal
+          open={isCorrelationOpen}
+          onClose={() => setIsCorrelationOpen(false)}
+          variables={table?.headers ?? []}
+          onExecute={handlers.runCorrelation}
         />
       </Stack>
     </Box>

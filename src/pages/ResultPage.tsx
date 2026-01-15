@@ -8,6 +8,9 @@ import { createRoot } from 'react-dom/client';
 import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysisEvents';
 import DataTable from '../components/DataTable';
 
+const RESULT_ROW_HEIGHT = 40;
+const RESULT_TABLE_BORDER = 2;
+
 const ResultPage: FC = () => {
   const [logs, setLogs] = useState<AnalysisResultPayload[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -32,6 +35,8 @@ const ResultPage: FC = () => {
   }, []);
 
   const selected = useMemo(() => logs.find((log) => log.id === selectedId) ?? null, [logs, selectedId]);
+  const rowCount = selected?.result?.rows.length ?? 0;
+  const resultTableHeight = selected ? (rowCount + 1) * RESULT_ROW_HEIGHT + RESULT_TABLE_BORDER : 560;
 
   return (
     <Box p="6" height="100vh">
@@ -78,7 +83,7 @@ const ResultPage: FC = () => {
             <Text fontWeight="semibold">分析結果</Text>
             <DataTable
               table={selected?.result ?? null}
-              height={560}
+              height={resultTableHeight}
               showRowIndex={false}
               emptyMessage="分析結果がまだありません"
             />
