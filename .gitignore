@@ -1,0 +1,22 @@
+# Build
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Developing
+.dev/
+
+# Docs
+docs/llms-txt/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# macOS system files
+.DS_Store
+.Rproj.user
