@@ -1,0 +1,12 @@
+edition = "2024"
+fn_params_layout = "Vertical"
+hard_tabs = false
+imports_granularity = "Module"
+imports_layout = "Vertical"
+indent_style = "Visual"
+match_block_trailing_comma = true
+max_width = 110
+newline_style = "Auto"
+remove_nested_parens = true
+reorder_imports = true
+tab_spaces = 4
