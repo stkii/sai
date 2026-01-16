@@ -33,13 +33,13 @@ SAI で実行することのできる分析手法の一覧です。
     </tr>
     <tr>
       <td>相関</td>
-      <td>Pearson の相関係数を算出し相関の検定を行います</td>
-      <td>🚧 In progress</td>
+      <td>相関係数を算出し相関の検定を行います</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>回帰</td>
-      <td>線形回帰分析を行います</td>
-      <td>📝 Planned</td>
+      <td>線形モデルをあてはめ回帰分析を行います</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>分散分析</td>
@@ -52,9 +52,9 @@ SAI で実行することのできる分析手法の一覧です。
       <td>📝 Planned</td>
     </tr>
     <tr>
-      <td>信頼性分析</td>
+      <td>信頼性</td>
       <td>Cronbach の alpha 係数を算出します</td>
-      <td>🚧 Developing</td>
+      <td>🚧 In progress</td>
     </tr>
     <tr>
       <td>...</td>

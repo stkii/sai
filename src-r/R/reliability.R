@@ -39,17 +39,18 @@
   # Coerce to data.frame matrix of numeric only
   if (is.list(x) && !is.data.frame(x)) x <- base::as.data.frame(x)
   IsDataFrame(x)
-  is_num <- if (is.data.frame(x)) base::vapply(x, is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(x))
-  if (base::any(!is_num)) x <- x[, is_num, drop = FALSE]
 
-  headers <- c("Statistic", "Value")
-  if (base::identical(model, 'alpha')) {
+  n_cols <- base::ncol(x)
+  is_alpha <- !base::identical(model, "omega")
+  model_label <- if (is_alpha) "Cronbach の alpha" else "Omega"
+  headers <- c(model_label, "項目の数")
+  if (is_alpha) {
     val <- .CronbachAlpha(x)
-    rows <- list(c("Cronbach's alpha", FormatNum(val)))
+    rows <- list(c(FormatNum(val), base::as.character(n_cols)))
   } else {
-    rows <- list(c("Omega", "Planning"))
+    rows <- list(c("Developing...", base::as.character(n_cols)))
   }
-  return(list(headers=headers, rows=rows))
+  return(list(headers = headers, rows = rows))
 }
 
 # High-level runner used by CLI dispatcher
@@ -62,7 +63,7 @@
 RunReliability <- function(x, model = NULL) {
   model <- base::tryCatch({
     m <- model
-    if (is.null(m) || !base::nzchar(m)) 'alpha' else base::as.character(m)
-  }, error = function(e) 'alpha')
+    if (is.null(m) || !base::nzchar(m)) "alpha" else base::tolower(base::as.character(m))
+  }, error = function(e) "alpha")
   .ReliabilityParsed(x, model = model)
 }

@@ -1,8 +1,8 @@
-use crate::dto::ParsedDataTable;
+use crate::dto::AnalysisResult;
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisRunResult {
-    pub result: ParsedDataTable,
+    pub result: AnalysisResult,
     pub logged_at: String,
 }

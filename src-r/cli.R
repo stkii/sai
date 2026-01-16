@@ -99,6 +99,9 @@ main <- function() {
   load_module(r_dir, "utils.R", "ERR-901")
   load_module(r_dir, "describe.R", "ERR-902")
   load_module(r_dir, "correlation.R", "ERR-903")
+  load_module(r_dir, "reliability.R", "ERR-904")
+  load_module(r_dir, "centering.R", "ERR-905")
+  load_module(r_dir, "regression.R", "ERR-906")
 
   analysis <- opts$analysis %||% "descriptive"
   input_path <- opts$input %||% "-"
@@ -123,6 +126,14 @@ main <- function() {
   if (is.null(alternative_raw)) alternative_raw <- opts$alternative %||% ""
   view_raw <- get_option_value(options_payload, "view")
   if (is.null(view_raw)) view_raw <- opts$view %||% ""
+  model_raw <- get_option_value(options_payload, "model")
+  if (is.null(model_raw)) model_raw <- opts$model %||% "alpha"
+
+  dependent_raw <- get_option_value(options_payload, "dependent")
+  independent_raw <- get_option_value(options_payload, "independent")
+  interactions_raw <- get_option_value(options_payload, "interactions")
+  intercept_raw <- get_option_value(options_payload, "intercept")
+  center_raw <- get_option_value(options_payload, "center")
 
   if (!identical(input_format, "json")) {
     base::stop("Only JSON input is supported")
@@ -148,6 +159,15 @@ main <- function() {
                              use = base::as.character(use_raw),
                              alternative = base::as.character(alternative_raw),
                              view = base::as.character(view_raw))
+  } else if (identical(analysis, "reliability")) {
+    result <- RunReliability(df, model = base::as.character(model_raw))
+  } else if (identical(analysis, "regression")) {
+    result <- RunRegression(df,
+                            dependent = dependent_raw,
+                            independent = independent_raw,
+                            interactions = interactions_raw,
+                            intercept = intercept_raw,
+                            center = center_raw)
   } else {
     base::stop("Unsupported analysis type")
   }

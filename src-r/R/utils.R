@@ -3,6 +3,9 @@
 # ===================
 
 # Format a numeric to 3 decimal places (half-up), aligned to DTO rules.
+# When rounding results in "0.000" but the original value is non-zero,
+# displays "< 0.001" (positive) or "> -0.001" (negative) to avoid misleading display.
+#
 # Args:
 # - x (numeric): value to format
 # - na (character or NA): placeholder for NA (missing) values; default NA -> JSON null
@@ -15,7 +18,17 @@ FormatNum <- function(x, na = NA_character_) {
     if (xv > 0) return("Inf!") else return("-Inf!")
   }
   v <- .RoundHalfUp(xv, digits = 3L)
-  base::sprintf("%.3f", v)
+  formatted <- base::sprintf("%.3f", v)
+
+  # Avoid misleading "0.000" or "-0.000" when value is actually non-zero
+  if (formatted == "0.000" && xv > 0) {
+    return("< 0.001")
+  }
+  if (formatted == "-0.000" && xv < 0) {
+    return("> -0.001")
+  }
+
+  formatted
 }
 
 # Check if x is a data frame or matrix

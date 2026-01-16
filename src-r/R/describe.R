@@ -33,7 +33,7 @@
   stats <- base::t(stats)
 
   # Set column names
-  base::colnames(stats) <- c("Mean", "SD", "Min", "Max")
+  base::colnames(stats) <- c("平均値", "標準偏差", "最小値", "最大値")
 
   return (stats)
 }
@@ -47,16 +47,16 @@
 # - list(headers=[..], rows=[[..], ...])
 #
 .DescribeParsed <- function(stats){
-  headers <- c("Variable", "Mean", "SD", "Min", "Max")
+  headers <- c("変数", "平均値", "標準偏差", "最小値", "最大値")
   vars <- base::rownames(stats)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(stats)))
 
   rows <- base::lapply(base::seq_len(base::nrow(stats)), function(i) {
     c(vars[[i]],
-      FormatNum(base::unname(stats[i, "Mean"])),
-      FormatNum(base::unname(stats[i, "SD"])),
-      FormatNum(base::unname(stats[i, "Min"])),
-      FormatNum(base::unname(stats[i, "Max"])))
+      FormatNum(base::unname(stats[i, "平均値"])),
+      FormatNum(base::unname(stats[i, "標準偏差"])),
+      FormatNum(base::unname(stats[i, "最小値"])),
+      FormatNum(base::unname(stats[i, "最大値"])))
   })
 
   return(list(headers=headers, rows=rows))

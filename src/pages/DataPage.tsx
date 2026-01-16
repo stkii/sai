@@ -15,14 +15,17 @@ import tauriIPC from '../tauriIPC';
 import CorrTestModal from '../ui/CorrTestModal';
 import DataImportModal, { type DataImportSelection } from '../ui/DataImportModal';
 import DescriptiveModal from '../ui/DescriptiveModal';
+import RegressionModal from '../ui/RegressionModal';
+import ReliabilityModal from '../ui/ReliabilityModal';
 
 const ANALYSIS_ITEMS: PopoverSelectItem[] = [
   { label: '記述統計', value: 'descriptive' },
   { label: '相関', value: 'correlation' },
   { label: '回帰', value: 'regression' },
+  { label: '信頼性', value: 'reliability' },
 ];
 
-const ANALYSIS_MODAL_KEYS = ['descriptive', 'correlation'] as const;
+const ANALYSIS_MODAL_KEYS = ['descriptive', 'correlation', 'regression', 'reliability'] as const;
 
 type AnalysisModalKey = (typeof ANALYSIS_MODAL_KEYS)[number];
 
@@ -78,6 +81,8 @@ const DataPage: FC = () => {
         analyses: {
           descriptive: ({ datasetId, options }) => tauriIPC.runAnalysis('descriptive', datasetId, options),
           correlation: ({ datasetId, options }) => tauriIPC.runAnalysis('correlation', datasetId, options),
+          regression: ({ datasetId, options }) => tauriIPC.runAnalysis('regression', datasetId, options),
+          reliability: ({ datasetId, options }) => tauriIPC.runAnalysis('reliability', datasetId, options),
         },
       }),
     []
@@ -123,6 +128,8 @@ const DataPage: FC = () => {
         emitResult,
         onCloseDescriptive: closeAnalysis,
         onCloseCorrelation: closeAnalysis,
+        onCloseRegression: closeAnalysis,
+        onCloseReliability: closeAnalysis,
       }),
     [analysisRunner, closeAnalysis, emitResult, getSelection, openResultWindow]
   );
@@ -135,8 +142,14 @@ const DataPage: FC = () => {
       correlation: {
         render: (props) => <CorrTestModal {...props} onExecute={handlers.runCorrelation} />,
       },
+      regression: {
+        render: (props) => <RegressionModal {...props} onExecute={handlers.runRegression} />,
+      },
+      reliability: {
+        render: (props) => <ReliabilityModal {...props} onExecute={handlers.runReliability} />,
+      },
     }),
-    [handlers.runCorrelation, handlers.runDescriptive]
+    [handlers.runCorrelation, handlers.runDescriptive, handlers.runRegression, handlers.runReliability]
   );
 
   const handleAnalysisSelect = (item: PopoverSelectItem | null) => {

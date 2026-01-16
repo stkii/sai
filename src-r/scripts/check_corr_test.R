@@ -46,7 +46,13 @@
 
       t_mtx[i, j] <- unname(test$statistic)
 
-      df_mtx[i, j] <- unname(test$parameter)
+      df_mtx[i, j] <- if (method == "kendall") {
+        NA_real_
+      } else if (method == "spearman" && (is.null(test$parameter) || length(test$parameter) == 0)) {
+        NA_real_
+      } else {
+        unname(test$parameter)
+      }
 
       n_mtx[i, j] <- base::length(x)
     }
