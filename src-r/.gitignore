@@ -1,3 +1,6 @@
+# Datasets
+_datasets/
+
 # Dev Environment
 renv/profiles/dev/
 profile

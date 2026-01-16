@@ -98,6 +98,7 @@ main <- function() {
   base::source(error_path, local = FALSE)
   load_module(r_dir, "utils.R", "ERR-901")
   load_module(r_dir, "describe.R", "ERR-902")
+  load_module(r_dir, "correlation.R", "ERR-903")
 
   analysis <- opts$analysis %||% "descriptive"
   input_path <- opts$input %||% "-"
@@ -113,6 +114,15 @@ main <- function() {
   na_ignore_raw <- get_option_value(options_payload, "na_ignore")
   if (is.null(na_ignore_raw)) na_ignore_raw <- get_option_value(options_payload, "naIgnore")
   if (is.null(na_ignore_raw)) na_ignore_raw <- opts$na_ignore %||% "true"
+
+  method_raw <- get_option_value(options_payload, "method")
+  if (is.null(method_raw)) method_raw <- opts$method %||% ""
+  use_raw <- get_option_value(options_payload, "use")
+  if (is.null(use_raw)) use_raw <- opts$use %||% ""
+  alternative_raw <- get_option_value(options_payload, "alternative")
+  if (is.null(alternative_raw)) alternative_raw <- opts$alternative %||% ""
+  view_raw <- get_option_value(options_payload, "view")
+  if (is.null(view_raw)) view_raw <- opts$view %||% ""
 
   if (!identical(input_format, "json")) {
     base::stop("Only JSON input is supported")
@@ -132,6 +142,12 @@ main <- function() {
   result <- NULL
   if (identical(analysis, "descriptive")) {
     result <- RunDescriptive(df, order = order, na_ig = na_ignore)
+  } else if (identical(analysis, "correlation")) {
+    result <- RunCorrelation(df,
+                             method = base::as.character(method_raw),
+                             use = base::as.character(use_raw),
+                             alternative = base::as.character(alternative_raw),
+                             view = base::as.character(view_raw))
   } else {
     base::stop("Unsupported analysis type")
   }
