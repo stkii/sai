@@ -42,7 +42,7 @@
 
   n_cols <- base::ncol(x)
   is_alpha <- !base::identical(model, "omega")
-  model_label <- if (is_alpha) "Cronbach の α" else "Omega"
+  model_label <- if (is_alpha) "Cronbach の alpha" else "Omega"
   headers <- c(model_label, "項目の数")
   if (is_alpha) {
     val <- .CronbachAlpha(x)

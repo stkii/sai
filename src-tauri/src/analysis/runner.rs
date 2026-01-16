@@ -12,7 +12,7 @@ use std::time::{
 use serde_json::Value;
 
 use crate::cache;
-use crate::dto::ParsedDataTable;
+use crate::dto::AnalysisResult;
 
 struct TempFileGuard {
     path: PathBuf,
@@ -37,7 +37,7 @@ impl Drop for TempFileGuard {
 pub fn run_r_analysis(analysis_type: &str,
                       dataset: &cache::NumericDataset,
                       options: &Value)
-                      -> Result<ParsedDataTable, String> {
+                      -> Result<AnalysisResult, String> {
     let dataset_path = write_dataset_json(dataset)?;
     let dataset_guard = TempFileGuard::new(dataset_path);
     let options_path = write_options_json(options)?;
@@ -62,13 +62,13 @@ pub fn run_r_analysis(analysis_type: &str,
         return Err(format!("R analysis failed: {}{}", stderr, stdout));
     }
 
-    let table: ParsedDataTable =
+    let result: AnalysisResult =
         serde_json::from_slice(&output.stdout).map_err(|e| {
                                                   format!("Failed to parse analysis output: {}", e)
                                               })?;
-    table.validate()?;
+    result.validate()?;
 
-    Ok(table)
+    Ok(result)
 }
 
 fn resolve_cli_path() -> Result<PathBuf, String> {

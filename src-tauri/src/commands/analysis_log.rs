@@ -8,7 +8,7 @@ use chrono::Local;
 use serde_json::Value;
 use tauri::Manager;
 
-use crate::dto::ParsedDataTable;
+use crate::dto::AnalysisResult;
 
 const MAX_LOG_BYTES: u64 = 5 * 1024 * 1024;
 const MAX_ROTATIONS: usize = 100;
@@ -25,7 +25,7 @@ pub struct AnalysisLogEntry {
     pub options: Value,
     // Stored for replaying the finalized output WITHOUT re-running analysis.
     // Raw per-subject values are NEVER stored here.
-    pub result: ParsedDataTable,
+    pub result: AnalysisResult,
 }
 
 pub fn write_analysis_log(app_handle: &tauri::AppHandle,

@@ -7,9 +7,20 @@ import { createRoot } from 'react-dom/client';
 
 import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysisEvents';
 import DataTable from '../components/DataTable';
+import type { AnalysisResult, ParsedDataTable, RegressionResult } from '../dto';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;
+
+// 型ガード: RegressionResult かどうか判定
+const isRegressionResult = (result: AnalysisResult): result is RegressionResult => {
+  return 'coefficients' in result && 'anova' in result && 'model' in result;
+};
+
+// テーブルの高さを計算
+const calcTableHeight = (table: ParsedDataTable): number => {
+  return (table.rows.length + 1) * RESULT_ROW_HEIGHT + RESULT_TABLE_BORDER;
+};
 
 const ResultPage: FC = () => {
   const [logs, setLogs] = useState<AnalysisResultPayload[]>([]);
@@ -35,8 +46,62 @@ const ResultPage: FC = () => {
   }, []);
 
   const selected = useMemo(() => logs.find((log) => log.id === selectedId) ?? null, [logs, selectedId]);
-  const rowCount = selected?.result?.rows.length ?? 0;
-  const resultTableHeight = selected ? (rowCount + 1) * RESULT_ROW_HEIGHT + RESULT_TABLE_BORDER : 560;
+
+  // 結果の表示コンポーネントを生成
+  const renderResult = () => {
+    if (!selected) {
+      return (
+        <DataTable table={null} height={560} showRowIndex={false} emptyMessage="分析結果がまだありません" />
+      );
+    }
+
+    const result = selected.result;
+
+    if (isRegressionResult(result)) {
+      // 回帰分析: 係数テーブル + 分散分析テーブルの2つを表示
+      const coeffHeight = calcTableHeight(result.coefficients);
+      const anovaHeight = calcTableHeight(result.anova);
+      return (
+        <Stack gap="4" flex="1" overflowY="auto">
+          <Box>
+            <Text fontWeight="medium" fontSize="sm" mb="2">
+              回帰係数
+            </Text>
+            <DataTable table={result.coefficients} height={coeffHeight} showRowIndex={false} />
+            {result.coefficients.note ? (
+              <Text fontSize="sm" color="gray.600" textAlign="left" mt="1">
+                {result.coefficients.note}
+              </Text>
+            ) : null}
+          </Box>
+          <Box>
+            <Text fontWeight="medium" fontSize="sm" mb="2">
+              分散分析表
+            </Text>
+            <DataTable table={result.anova} height={anovaHeight} showRowIndex={false} />
+            {result.anova.note ? (
+              <Text fontSize="sm" color="gray.600" textAlign="left" mt="1">
+                {result.anova.note}
+              </Text>
+            ) : null}
+          </Box>
+        </Stack>
+      );
+    }
+
+    // 通常の単一テーブル結果
+    const tableHeight = calcTableHeight(result);
+    return (
+      <>
+        <DataTable table={result} height={tableHeight} showRowIndex={false} />
+        {result.note ? (
+          <Text fontSize="sm" color="gray.600" textAlign="left">
+            {result.note}
+          </Text>
+        ) : null}
+      </>
+    );
+  };
 
   return (
     <Box p="6" height="100vh">
@@ -81,17 +146,7 @@ const ResultPage: FC = () => {
         <Box flex="1" borderWidth="1px" borderColor="gray.200" borderRadius="md" p="4" overflow="hidden">
           <Stack gap="3" height="full">
             <Text fontWeight="semibold">分析結果</Text>
-            <DataTable
-              table={selected?.result ?? null}
-              height={resultTableHeight}
-              showRowIndex={false}
-              emptyMessage="分析結果がまだありません"
-            />
-            {selected?.result?.note ? (
-              <Text fontSize="sm" color="gray.600" textAlign="left">
-                {selected.result.note}
-              </Text>
-            ) : null}
+            {renderResult()}
           </Stack>
         </Box>
       </Flex>

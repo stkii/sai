@@ -34,7 +34,32 @@ export const zDatasetId = z.string();
 
 export const zSheetNames = z.array(z.string());
 
+// 回帰分析のモデル情報スキーマ
+export const zRegressionModelInfo = z.object({
+  r_squared: z.string().nullable(),
+  adj_r_squared: z.string().nullable(),
+  n: z.number().nullable(),
+  f_statistic: z.string().nullable(),
+  f_df1: z.number().nullable(),
+  f_df2: z.number().nullable(),
+  f_pvalue: z.string().nullable(),
+});
+
+// 回帰分析結果スキーマ（係数テーブル + 分散分析テーブル + モデル情報）
+export const zRegressionResult = z.object({
+  coefficients: zParsedDataTable,
+  anova: zParsedDataTable,
+  model: zRegressionModelInfo,
+});
+
+// 分析結果はParsedDataTable（単一テーブル）またはRegressionResult（回帰分析）
+export const zAnalysisResult = z.union([zRegressionResult, zParsedDataTable]);
+
+export type RegressionModelInfo = z.infer<typeof zRegressionModelInfo>;
+export type RegressionResult = z.infer<typeof zRegressionResult>;
+export type AnalysisResult = z.infer<typeof zAnalysisResult>;
+
 export const zAnalysisRunResult = z.object({
-  result: zParsedDataTable,
+  result: zAnalysisResult,
   loggedAt: z.string(),
 });

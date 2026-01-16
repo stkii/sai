@@ -72,7 +72,7 @@ pub fn run_analysis(app_handle: tauri::AppHandle,
     let entry = cache::get_numeric_dataset(&dataset_id)?.ok_or_else(|| "Dataset not found".to_string())?;
 
     let options_for_r = build_options_for_r(&analysis_type, options);
-    let table = runner::run_r_analysis(&analysis_type, &entry.dataset, &options_for_r)?;
+    let result = runner::run_r_analysis(&analysis_type, &entry.dataset, &options_for_r)?;
 
     let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let log_entry = analysis_log::AnalysisLogEntry { timestamp: logged_at.clone(),
@@ -82,15 +82,14 @@ pub fn run_analysis(app_handle: tauri::AppHandle,
                                                      sheet_name: entry.sheet.clone(),
                                                      variables: entry.variables.clone(),
                                                      options: options_for_r,
-                                                     result: table.clone() };
+                                                     result: result.clone() };
     analysis_log::write_analysis_log(&app_handle, log_entry)?;
 
-    log::info!("analysis.run_analysis ok dataset_id={} rows={}",
+    log::info!("analysis.run_analysis ok dataset_id={} type={}",
                dataset_id,
-               table.rows.len());
+               analysis_type);
 
-    Ok(AnalysisRunResult { result: table,
-                           logged_at })
+    Ok(AnalysisRunResult { result, logged_at })
 }
 
 fn build_options_for_r(analysis_type: &str,

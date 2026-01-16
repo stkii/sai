@@ -1,4 +1,4 @@
-import type { ParsedDataTable } from './dto';
+import type { AnalysisResult } from './dto';
 import type { AnalysisType } from './runner';
 
 export interface AnalysisResultPayload {
@@ -6,7 +6,7 @@ export interface AnalysisResultPayload {
   type: AnalysisType;
   label: string;
   timestamp: string;
-  result: ParsedDataTable;
+  result: AnalysisResult;
 }
 
 export interface AnalysisReadyPayload {
