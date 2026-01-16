@@ -33,7 +33,7 @@
   stats <- base::t(stats)
 
   # Set column names
-  base::colnames(stats) <- c("平均", "標準偏差", "最小", "最大")
+  base::colnames(stats) <- c("平均値", "標準偏差", "最小値", "最大値")
 
   return (stats)
 }

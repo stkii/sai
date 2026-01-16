@@ -169,7 +169,11 @@
             }, base::character(1)))
   })
 
-  list(headers = headers, rows = rows, note = res$note)
+  result <- list(headers = headers, rows = rows)
+  if (!is.null(res$note)) {
+    result$note <- res$note
+  }
+  result
 }
 
 # Runner used by CLI dispatcher
