@@ -26,8 +26,21 @@
   }
 
   interaction_terms <- if(identical(interactions, "auto")) {
-    # Auto generate all 2-way interactions
-    combn(independents, 2, function(x) paste(x, collapse = ":"), simplify = TRUE)
+    # Auto generate all interactions (2-way and 3-way) for up to 3 independent variables
+    n_vars <- base::length(independents)
+    if (n_vars > 3L) {
+      base::stop("交互作用の自動生成は独立変数3つまでです")
+    }
+    terms <- character(0)
+    # 2-way interactions
+    if (n_vars >= 2L) {
+      terms <- c(terms, combn(independents, 2, function(x) paste(x, collapse = ":"), simplify = TRUE))
+    }
+    # 3-way interaction
+    if (n_vars == 3L) {
+      terms <- c(terms, combn(independents, 3, function(x) paste(x, collapse = ":"), simplify = TRUE))
+    }
+    terms
   } else if (is.list(interactions) && length(interactions) > 0) {
     # Manual specification
     sapply(interactions, function(x) paste(x, collapse = ":"))

@@ -20,11 +20,11 @@ FormatNum <- function(x, na = NA_character_) {
   v <- .RoundHalfUp(xv, digits = 3L)
   formatted <- base::sprintf("%.3f", v)
 
-  # Avoid misleading "0.000" when value is actually non-zero
+  # Avoid misleading "0.000" or "-0.000" when value is actually non-zero
   if (formatted == "0.000" && xv > 0) {
     return("< 0.001")
   }
-  if (formatted == "0.000" && xv < 0) {
+  if (formatted == "-0.000" && xv < 0) {
     return("> -0.001")
   }
 

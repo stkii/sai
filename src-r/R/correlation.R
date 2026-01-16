@@ -139,6 +139,7 @@
 .CorrTestParsed <- function(res) {
   corr_mtx <- res$corr_mtx
   p_mtx <- res$p_mtx
+  note_sig <- "***p < .001, **p < .01, *p < .05"
 
   vars <- base::colnames(corr_mtx)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(corr_mtx)))
@@ -171,7 +172,9 @@
 
   result <- list(headers = headers, rows = rows)
   if (!is.null(res$note)) {
-    result$note <- res$note
+    result$note <- base::paste(res$note, note_sig, sep = " / ")
+  } else {
+    result$note <- note_sig
   }
   result
 }

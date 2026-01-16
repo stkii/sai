@@ -1,7 +1,8 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import ExecuteButton from '../components/ExecuteButton';
+import InteractionSelector from '../components/InteractionSelector';
 import RegressionVariableSelector, {
   type RegressionVariableSelection,
 } from '../components/RegressionVariableSelector';
@@ -10,6 +11,8 @@ import type { AnalysisOptions } from '../runner';
 export interface RegressionModalOptions extends AnalysisOptions {
   dependent: string;
   independent: string[];
+  interactions?: string[] | 'auto';
+  center?: boolean;
 }
 
 interface RegressionModalProps {
@@ -21,12 +24,30 @@ interface RegressionModalProps {
 
 const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModalProps) => {
   const [selection, setSelection] = useState<RegressionVariableSelection>({ dependent: '', independent: [] });
+  const [interactionTerms, setInteractionTerms] = useState<string[]>([]);
+  const [includeAllInteractions, setIncludeAllInteractions] = useState(false);
+  const [center, setCenter] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleInteractionChange = useCallback((value: string[]) => {
+    setInteractionTerms(value);
+  }, []);
+
+  const handleIncludeAllChange = useCallback((checked: boolean) => {
+    setIncludeAllInteractions(checked);
+  }, []);
+
+  const handleCenterChange = useCallback((checked: boolean) => {
+    setCenter(checked);
+  }, []);
 
   useEffect(() => {
     if (!open) {
       setSelection({ dependent: '', independent: [] });
+      setInteractionTerms([]);
+      setIncludeAllInteractions(false);
+      setCenter(false);
       setError(null);
       setLoading(false);
     }
@@ -34,6 +55,9 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
 
   useEffect(() => {
     setSelection({ dependent: '', independent: [] });
+    setInteractionTerms([]);
+    setIncludeAllInteractions(false);
+    setCenter(false);
     setError(null);
     if (variables.length === 0) {
       return;
@@ -56,9 +80,16 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
     setError(null);
     try {
       const allVariables = [selection.dependent, ...selection.independent];
+      const interactions: string[] | 'auto' | undefined = includeAllInteractions
+        ? 'auto'
+        : interactionTerms.length > 0
+          ? interactionTerms
+          : undefined;
       await onExecute(allVariables, {
         dependent: selection.dependent,
         independent: selection.independent,
+        interactions,
+        center: center || undefined,
       });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
@@ -84,7 +115,17 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
                     <RegressionVariableSelector variables={variables} onChange={setSelection} />
                   </Box>
                 </Stack>
-                <Stack gap="4">{/* 将来的にここにオプション（交互作用など）を追加 */}</Stack>
+                <Stack gap="4">
+                  <InteractionSelector
+                    independentVars={selection.independent}
+                    value={interactionTerms}
+                    onValueChange={handleInteractionChange}
+                    includeAll={includeAllInteractions}
+                    onIncludeAllChange={handleIncludeAllChange}
+                    center={center}
+                    onCenterChange={handleCenterChange}
+                  />
+                </Stack>
               </SimpleGrid>
               {error ? <Text color="red.500">{error}</Text> : null}
             </Dialog.Body>

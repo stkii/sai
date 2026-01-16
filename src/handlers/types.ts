@@ -21,6 +21,8 @@ export interface CorrelationOptions extends AnalysisOptions {
 export interface RegressionOptions extends AnalysisOptions {
   dependent: string;
   independent: string[];
+  interactions?: string[] | 'auto';
+  center?: boolean;
 }
 
 export interface ReliabilityOptions extends AnalysisOptions {

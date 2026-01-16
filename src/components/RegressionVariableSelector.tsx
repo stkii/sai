@@ -130,7 +130,7 @@ const RegressionVariableSelector = ({ variables, onChange }: RegressionVariableS
                 collection={state.dependent}
                 selectionMode="single"
                 minH="12"
-                emptyMessage="（1つ選択）"
+                emptyMessage=""
                 value={state.selectedDependent ? [state.selectedDependent.value] : []}
                 onValueChange={(e) => state.setSelectedDependent(e.items[0] ?? null)}
               />
@@ -168,7 +168,7 @@ const RegressionVariableSelector = ({ variables, onChange }: RegressionVariableS
                 collection={state.independent}
                 selectionMode="multiple"
                 minH="48"
-                emptyMessage="（複数選択可）"
+                emptyMessage=""
                 value={state.selectedIndependent.map((item) => item.value)}
                 onValueChange={(e) => state.setSelectedIndependent(e.items)}
               />
