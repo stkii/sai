@@ -7,6 +7,8 @@ use serde::{
 pub struct ParsedDataTable {
     pub headers: Vec<String>,
     pub rows: Vec<Vec<serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 impl ParsedDataTable {

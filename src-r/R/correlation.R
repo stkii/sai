@@ -50,6 +50,7 @@
     work_mat <- work_mat[ok_all, , drop = FALSE]
   }
 
+  ties_approx <- FALSE
   for (i in base::seq_len(n_col)) {
     for (j in base::seq_len(n_col)) {
       if (j <= i) next
@@ -66,13 +67,22 @@
 
       if (base::length(x) < 3 || base::length(y) < 3) next
 
-      test <- stats::cor.test(
-        x,
-        y,
-        alternative = alternative,
-        method = method,
-        exact = NULL,
-        continuity = FALSE
+      test <- base::withCallingHandlers(
+        stats::cor.test(
+          x,
+          y,
+          alternative = alternative,
+          method = method,
+          exact = NULL,
+          continuity = FALSE
+        ),
+        warning = function(w) {
+          if (method == "spearman" &&
+              base::grepl("Cannot compute exact p-value with ties", base::conditionMessage(w), fixed = TRUE)) {
+            ties_approx <<- TRUE
+          }
+          base::invokeRestart("muffleWarning")
+        }
       )
 
       corr_mtx[i, j] <- unname(test$estimate)
@@ -84,7 +94,13 @@
       t_mtx[i, j] <- unname(test$statistic)
       # t_mtx[j, i] <- t_mtx[i, j]
 
-      df_mtx[i, j] <- unname(test$parameter)
+      df_mtx[i, j] <- if (method == "kendall") {
+        NA_real_
+      } else if (method == "spearman" && (is.null(test$parameter) || length(test$parameter) == 0)) {
+        NA_real_
+      } else {
+        unname(test$parameter)
+      }
       # df_mtx[j, i] <- df_mtx[i, j]
 
       n_mtx[i, j] <- base::length(x)
@@ -101,7 +117,12 @@
     n_mtx = n_mtx,
     method = method,
     alternative = alternative,
-    use = use
+    use = use,
+    note = if (method == "spearman" && ties_approx) {
+      "※タイが存在するため、p値は近似によって算出されました"
+    } else {
+      NULL
+    }
   )
 
   return(res)
@@ -142,13 +163,13 @@
   rows <- base::lapply(base::seq_len(base::nrow(corr_mtx)), function(i) {
     base::c(vars[[i]],
             base::vapply(base::seq_len(base::ncol(corr_mtx)), function(j) {
+              if (j <= i) return("")
               p_val <- p_mtx[i, j]
-              p_alt <- if (j < i) p_mtx[j, i] else p_val
-              format_corr_cell(corr_mtx[i, j], p_val, p_alt)
+              format_corr_cell(corr_mtx[i, j], p_val, p_val)
             }, base::character(1)))
   })
 
-  list(headers = headers, rows = rows)
+  list(headers = headers, rows = rows, note = res$note)
 }
 
 # Runner used by CLI dispatcher

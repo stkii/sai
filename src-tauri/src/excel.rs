@@ -59,7 +59,8 @@ pub fn compute_headers_from_first_row(row0: &[Data]) -> Result<Vec<String>, Stri
 pub fn create_parsed_data_table(rows_data: Vec<Vec<Data>>) -> Result<ParsedDataTable, String> {
     if rows_data.is_empty() {
         return Ok(ParsedDataTable { headers: vec![],
-                                    rows: vec![] });
+                                    rows: vec![],
+                                    note: None });
     }
 
     let headers = compute_headers_from_first_row(&rows_data[0])?;
@@ -69,7 +70,9 @@ pub fn create_parsed_data_table(rows_data: Vec<Vec<Data>>) -> Result<ParsedDataT
                         .map(|row| row.into_iter().map(cell_value_to_json_value).collect())
                         .collect();
 
-    Ok(ParsedDataTable { headers, rows })
+    Ok(ParsedDataTable { headers,
+                         rows,
+                         note: None })
 }
 
 /// Read sheet names from an Excel file.

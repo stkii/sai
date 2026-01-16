@@ -87,6 +87,11 @@ const ResultPage: FC = () => {
               showRowIndex={false}
               emptyMessage="分析結果がまだありません"
             />
+            {selected?.result?.note ? (
+              <Text fontSize="sm" color="gray.600" textAlign="left">
+                {selected.result.note}
+              </Text>
+            ) : null}
           </Stack>
         </Box>
       </Flex>
