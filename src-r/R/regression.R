@@ -91,6 +91,7 @@
 .LinearRegressionParsed <- function(res) {
   smry <- res$summary
   anova_tbl <- res$anova
+  centered_note <- if (isTRUE(res$centered)) "説明変数が中心化されています" else NULL
 
   # --- Coefficients table ---
   coef_tbl <- smry$coefficients
@@ -124,6 +125,9 @@
   })
 
   coefficients <- base::list(headers = coef_headers, rows = coef_rows)
+  if (!is.null(centered_note)) {
+    coefficients$note <- centered_note
+  }
 
   # --- ANOVA table ---
   # anova(fit) returns: Df, Sum Sq, Mean Sq, F value, Pr(>F)
@@ -247,5 +251,6 @@ RunRegression <- function(df,
     center = center_norm
   )
 
+  res$centered <- isTRUE(center_norm)
   .LinearRegressionParsed(res)
 }
