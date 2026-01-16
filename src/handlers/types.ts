@@ -8,10 +8,15 @@ export interface AnalysisHandlerDeps {
   emitResult: (payload: AnalysisResultPayload) => Promise<void>;
   onCloseDescriptive: () => void;
   onCloseCorrelation: () => void;
+  onCloseReliability: () => void;
 }
 
 export interface CorrelationOptions extends AnalysisOptions {
   method: string;
   alternative: string;
   use: string;
+}
+
+export interface ReliabilityOptions extends AnalysisOptions {
+  model: string;
 }

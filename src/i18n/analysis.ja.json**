@@ -1,0 +1,28 @@
+```json
+{
+  "analysis.header.variable": "変数",
+  "analysis.header.item_count": "項目の数",
+  "analysis.header.mean": "平均",
+  "analysis.header.sd": "標準偏差",
+  "analysis.header.min": "最小",
+  "analysis.header.max": "最大",
+  "analysis.note.correlation.ties": "※タイが存在するため、p値は近似によって算出されました"
+}
+```
+
+辞書は `key -> 日本語` のみを管理し、R 側には日本語を置かない。
+
+## 追加時の運用ルール
+
+- 新規の列名 / 注記が増えたら:
+  1. R で `header_keys` / `note_key` を追加
+  2. 翻訳辞書にキーと日本語を追加
+- UI 側は「キーが無い場合のフォールバック」を必ず残す
+- 既存キーは安易に変更しない（翻訳が壊れる）
+
+## テスト観点
+
+- `header_keys` の長さが `headers` と一致しない場合のフォールバック
+- `note_key` がある場合 / ない場合の表示切り替え
+- 辞書にキーが存在しない場合に `headers` / `note` 表示になること
+

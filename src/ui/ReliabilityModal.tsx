@@ -6,44 +6,27 @@ import RadioOptions from '../components/RadioOptions';
 import VariableSelector from '../components/VariableSelector';
 import type { AnalysisOptions } from '../runner';
 
-const METHOD_OPTIONS = [
-  { label: 'Pearson', value: 'pearson' },
-  { label: 'Kendall', value: 'kendall' },
-  { label: 'Spearman', value: 'spearman' },
+const MODEL_OPTIONS = [
+  { label: 'Alpha', value: 'alpha' },
+  { label: 'Omega', value: 'omega' },
 ];
 
-const ALTERNATIVE_OPTIONS = [
-  { label: '両側', value: 'two.sided' },
-  { label: '左側', value: 'less' },
-  { label: '右側', value: 'greater' },
-];
-
-const MISSING_VALUE_OPTIONS = [
-  { label: '許可しない', value: 'all.obs' },
-  { label: 'リストワイズ', value: 'complete.obs' },
-  { label: 'ペアワイズ', value: 'pairwise.complete.obs' },
-];
-
-interface CorrTestModalOptions extends AnalysisOptions {
-  method: string;
-  alternative: string;
-  use: string;
+export interface ReliabilityModalOptions extends AnalysisOptions {
+  model: string;
 }
 
-interface CorrTestModalProps {
+interface ReliabilityModalProps {
   open: boolean;
   onClose: () => void;
   variables: string[];
-  onExecute?: (variables: string[], options: CorrTestModalOptions) => Promise<void>;
+  onExecute?: (variables: string[], options: ReliabilityModalOptions) => Promise<void>;
 }
 
-const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalProps) => {
+const ReliabilityModal = ({ open, onClose, onExecute, variables }: ReliabilityModalProps) => {
   const [selectedVariables, setSelectedVariables] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [method, setMethod] = useState(METHOD_OPTIONS[0]?.value ?? 'pearson');
-  const [alternative, setAlternative] = useState(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
-  const [use, setUse] = useState(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
+  const [model, setModel] = useState(MODEL_OPTIONS[0]?.value ?? 'alpha');
 
   useEffect(() => {
     if (!open) {
@@ -65,9 +48,7 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
     if (!open) {
       return;
     }
-    setMethod(METHOD_OPTIONS[0]?.value ?? 'pearson');
-    setAlternative(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
-    setUse(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
+    setModel(MODEL_OPTIONS[0]?.value ?? 'alpha');
   }, [open]);
 
   const handleExecute = async () => {
@@ -81,7 +62,7 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
     setLoading(true);
     setError(null);
     try {
-      await onExecute(selectedVariables, { method, alternative, use });
+      await onExecute(selectedVariables, { model });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -96,7 +77,7 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
         <Dialog.Positioner>
           <Dialog.Content maxW="5xl">
             <Dialog.Header>
-              <Dialog.Title>相関</Dialog.Title>
+              <Dialog.Title>信頼性分析</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">
@@ -106,34 +87,14 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
                     <VariableSelector variables={variables} onChange={setSelectedVariables} />
                   </Box>
                 </Stack>
-                <Stack gap="4">
-                  <Stack gap="3">
-                    <Text fontWeight="semibold">相関係数</Text>
-                    <RadioOptions
-                      items={METHOD_OPTIONS}
-                      orientation="horizontal"
-                      value={method}
-                      onChange={setMethod}
-                    />
-                  </Stack>
-                  <Stack gap="3">
-                    <Text fontWeight="semibold">検定</Text>
-                    <RadioOptions
-                      items={ALTERNATIVE_OPTIONS}
-                      orientation="horizontal"
-                      value={alternative}
-                      onChange={setAlternative}
-                    />
-                  </Stack>
-                  <Stack gap="3">
-                    <Text fontWeight="semibold">欠損値</Text>
-                    <RadioOptions
-                      items={MISSING_VALUE_OPTIONS}
-                      orientation="horizontal"
-                      value={use}
-                      onChange={setUse}
-                    />
-                  </Stack>
+                <Stack gap="3">
+                  <Text fontWeight="semibold">モデル</Text>
+                  <RadioOptions
+                    items={MODEL_OPTIONS}
+                    orientation="vertical"
+                    value={model}
+                    onChange={setModel}
+                  />
                 </Stack>
               </SimpleGrid>
               {error ? <Text color="red.500">{error}</Text> : null}
@@ -154,4 +115,4 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
   );
 };
 
-export default CorrTestModal;
+export default ReliabilityModal;

@@ -99,6 +99,7 @@ main <- function() {
   load_module(r_dir, "utils.R", "ERR-901")
   load_module(r_dir, "describe.R", "ERR-902")
   load_module(r_dir, "correlation.R", "ERR-903")
+  load_module(r_dir, "reliability.R", "ERR-904")
 
   analysis <- opts$analysis %||% "descriptive"
   input_path <- opts$input %||% "-"
@@ -123,6 +124,8 @@ main <- function() {
   if (is.null(alternative_raw)) alternative_raw <- opts$alternative %||% ""
   view_raw <- get_option_value(options_payload, "view")
   if (is.null(view_raw)) view_raw <- opts$view %||% ""
+  model_raw <- get_option_value(options_payload, "model")
+  if (is.null(model_raw)) model_raw <- opts$model %||% "alpha"
 
   if (!identical(input_format, "json")) {
     base::stop("Only JSON input is supported")
@@ -148,6 +151,8 @@ main <- function() {
                              use = base::as.character(use_raw),
                              alternative = base::as.character(alternative_raw),
                              view = base::as.character(view_raw))
+  } else if (identical(analysis, "reliability")) {
+    result <- RunReliability(df, model = base::as.character(model_raw))
   } else {
     base::stop("Unsupported analysis type")
   }
