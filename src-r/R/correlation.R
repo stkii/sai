@@ -143,7 +143,7 @@
   vars <- base::colnames(corr_mtx)
   if (is.null(vars)) vars <- base::paste0("V", base::seq_len(base::nrow(corr_mtx)))
 
-  headers <- base::c("Variable", vars)
+  headers <- base::c("変数", vars)
 
   format_corr_cell <- function(value, p_value, alt_p_value) {
     formatted <- FormatNum(value)

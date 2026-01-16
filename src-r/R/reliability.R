@@ -41,13 +41,14 @@
   IsDataFrame(x)
 
   n_cols <- base::ncol(x)
-  model_label <- if (base::identical(model, "omega")) "omega" else "alpha"
+  is_alpha <- !base::identical(model, "omega")
+  model_label <- if (is_alpha) "Cronbach の α" else "Omega"
   headers <- c(model_label, "項目の数")
-  if (base::identical(model_label, "alpha")) {
+  if (is_alpha) {
     val <- .CronbachAlpha(x)
     rows <- list(c(FormatNum(val), base::as.character(n_cols)))
   } else {
-    rows <- list(c("Planning", base::as.character(n_cols)))
+    rows <- list(c("Developing...", base::as.character(n_cols)))
   }
   return(list(headers = headers, rows = rows))
 }
