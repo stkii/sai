@@ -41,25 +41,17 @@ impl ParsedDataTable {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RegressionModelInfo {
-    pub r_squared: Option<String>,
-    pub adj_r_squared: Option<String>,
-    pub n: Option<i64>,
-    pub f_statistic: Option<String>,
-    pub f_df1: Option<i64>,
-    pub f_df2: Option<i64>,
-    pub f_pvalue: Option<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RegressionResult {
+    pub model_summary: ParsedDataTable,
     pub coefficients: ParsedDataTable,
     pub anova: ParsedDataTable,
-    pub model: RegressionModelInfo,
 }
 
 impl RegressionResult {
     pub fn validate(&self) -> Result<(), String> {
+        self.model_summary
+            .validate()
+            .map_err(|e| format!("model_summary: {}", e))?;
         self.coefficients
             .validate()
             .map_err(|e| format!("coefficients: {}", e))?;

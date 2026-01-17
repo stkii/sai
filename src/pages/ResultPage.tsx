@@ -14,7 +14,7 @@ const RESULT_TABLE_BORDER = 2;
 
 // 型ガード: RegressionResult かどうか判定
 const isRegressionResult = (result: AnalysisResult): result is RegressionResult => {
-  return 'coefficients' in result && 'anova' in result && 'model' in result;
+  return 'model_summary' in result && 'coefficients' in result && 'anova' in result;
 };
 
 // テーブルの高さを計算
@@ -58,11 +58,18 @@ const ResultPage: FC = () => {
     const result = selected.result;
 
     if (isRegressionResult(result)) {
-      // 回帰分析: 係数テーブル + 分散分析テーブルの2つを表示
+      // 回帰分析: モデル要約 + 係数テーブル + 分散分析テーブルの3つを表示
+      const modelSummaryHeight = calcTableHeight(result.model_summary);
       const coeffHeight = calcTableHeight(result.coefficients);
       const anovaHeight = calcTableHeight(result.anova);
       return (
         <Stack gap="4" flex="1" overflowY="auto">
+          <Box>
+            <Text fontWeight="medium" fontSize="sm" mb="2">
+              モデルの要約
+            </Text>
+            <DataTable table={result.model_summary} height={modelSummaryHeight} showRowIndex={false} />
+          </Box>
           <Box>
             <Text fontWeight="medium" fontSize="sm" mb="2">
               回帰係数
