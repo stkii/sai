@@ -93,6 +93,11 @@ const ResultPage: FC = () => {
     const tableHeight = calcTableHeight(result);
     return (
       <>
+        {result.title ? (
+          <Text fontWeight="medium" fontSize="sm" mb="2">
+            {result.title}
+          </Text>
+        ) : null}
         <DataTable table={result} height={tableHeight} showRowIndex={false} />
         {result.note ? (
           <Text fontSize="sm" color="gray.600" textAlign="left">
@@ -145,7 +150,7 @@ const ResultPage: FC = () => {
         </Box>
         <Box flex="1" borderWidth="1px" borderColor="gray.200" borderRadius="md" p="4" overflow="hidden">
           <Stack gap="3" height="full">
-            <Text fontWeight="semibold">分析結果</Text>
+            <Text fontWeight="semibold">{selected?.label ?? '分析結果'}</Text>
             {renderResult()}
           </Stack>
         </Box>

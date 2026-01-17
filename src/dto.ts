@@ -16,6 +16,7 @@ export const zParsedDataTable = z
     headers: z.array(z.string()),
     rows: z.array(z.array(zCellValue)),
     note: z.string().optional(),
+    title: z.string().optional(),
   })
   .superRefine((val, ctx) => {
     const w = val.headers.length;
