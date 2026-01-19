@@ -2,6 +2,17 @@ import { invoke } from '@tauri-apps/api/core';
 import type { AnalysisRunResult, ParsedDataTable } from './dto';
 import { zAnalysisRunResult, zDatasetId, zParsedDataTable, zSheetNames } from './dto';
 
+export interface AnalysisExportSection {
+  sectionTitle?: string;
+  table: ParsedDataTable;
+}
+
+export interface AnalysisExportLog {
+  label: string;
+  timestamp: string;
+  sections: AnalysisExportSection[];
+}
+
 const validateParsedDataTable = (raw: unknown, source: string): ParsedDataTable => {
   const parsed = zParsedDataTable.safeParse(raw);
   if (!parsed.success) {
@@ -18,6 +29,10 @@ class TauriIPC {
       throw new Error(`データセットIDのスキーマが一致しませんでした: ${parsed.error.message}`);
     }
     return parsed.data;
+  }
+
+  async exportAnalysisToXlsx(path: string, logs: AnalysisExportLog[]): Promise<void> {
+    await invoke('export_analysis_to_xlsx', { path, logs });
   }
 
   async getSheets(path: string): Promise<string[]> {

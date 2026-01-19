@@ -1,16 +1,20 @@
-import { Box, ChakraProvider, defaultSystem, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, ChakraProvider, defaultSystem, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { emitTo } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { save } from '@tauri-apps/plugin-dialog';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysisEvents';
 import DataTable from '../components/DataTable';
-import type { ParsedDataTable } from '../dto';
+import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
+import type { AnalysisResult, ParsedDataTable } from '../dto';
+import tauriIPC, { type AnalysisExportLog, type AnalysisExportSection } from '../tauriIPC';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;
+const EXPORT_ITEMS: PopoverSelectItem[] = [{ label: 'Excel', value: 'xlsx' }];
 
 // テーブルの高さを計算
 const calcTableHeight = (table: ParsedDataTable): number => {
@@ -20,6 +24,9 @@ const calcTableHeight = (table: ParsedDataTable): number => {
 const ResultPage: FC = () => {
   const [logs, setLogs] = useState<AnalysisResultPayload[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportKey, setExportKey] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     let unlisten: (() => void) | null = null;
@@ -41,6 +48,61 @@ const ResultPage: FC = () => {
   }, []);
 
   const selected = useMemo(() => logs.find((log) => log.id === selectedId) ?? null, [logs, selectedId]);
+  const canExport = logs.length > 0 && !isExporting;
+
+  const buildExportSections = (result: AnalysisResult): AnalysisExportSection[] => {
+    if (result.kind === 'regression') {
+      return [
+        { sectionTitle: 'モデルの要約', table: result.regression.model_summary },
+        { sectionTitle: '回帰係数', table: result.regression.coefficients },
+        { sectionTitle: '分散分析表', table: result.regression.anova },
+      ];
+    }
+    return [{ table: result.table }];
+  };
+
+  const buildExportLogs = (entries: AnalysisResultPayload[]): AnalysisExportLog[] =>
+    entries.map((entry) => ({
+      label: entry.label,
+      timestamp: entry.timestamp,
+      sections: buildExportSections(entry.result),
+    }));
+
+  const handleExport = async (item: PopoverSelectItem | null) => {
+    if (!item || item.value !== 'xlsx') {
+      return;
+    }
+
+    setExportError(null);
+
+    if (logs.length === 0) {
+      setExportError('エクスポートする分析結果がありません');
+      setExportKey((prev) => prev + 1);
+      return;
+    }
+
+    const filePath = await save({
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    });
+
+    if (!filePath) {
+      setExportKey((prev) => prev + 1);
+      return;
+    }
+
+    const normalized = filePath.toLowerCase();
+    const resolvedPath = normalized.endsWith('.xlsx') ? filePath : `${filePath}.xlsx`;
+
+    setIsExporting(true);
+    try {
+      await tauriIPC.exportAnalysisToXlsx(resolvedPath, buildExportLogs(logs));
+    } catch (err: unknown) {
+      setExportError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsExporting(false);
+      setExportKey((prev) => prev + 1);
+    }
+  };
 
   // 結果の表示コンポーネントを生成
   const renderResult = () => {
@@ -154,7 +216,23 @@ const ResultPage: FC = () => {
         </Box>
         <Box flex="1" borderWidth="1px" borderColor="gray.200" borderRadius="md" p="4" overflow="hidden">
           <Stack gap="3" height="full">
-            <Text fontWeight="semibold">{selected?.label ?? '分析結果'}</Text>
+            <Stack gap="1">
+              <HStack justify="space-between" align="center">
+                <Text fontWeight="semibold">{selected?.label ?? '分析結果'}</Text>
+                <PopoverSelect
+                  key={`export-${exportKey}`}
+                  items={EXPORT_ITEMS}
+                  placeholder="エクスポート"
+                  onSelect={handleExport}
+                  disabled={!canExport}
+                />
+              </HStack>
+              {exportError ? (
+                <Text fontSize="sm" color="red.500">
+                  {exportError}
+                </Text>
+              ) : null}
+            </Stack>
             {renderResult()}
           </Stack>
         </Box>
