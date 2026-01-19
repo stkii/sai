@@ -19,6 +19,14 @@ It allows users to perform data analysis through point-and-click operations with
 - TypeScript
   - Use `interface` for object shapes unless a `type` is required (for example, unions, tuples, mapped types, or primitive aliases).
 
+## Dark Patterns Prohibited
+
+### Silent Changes to Analysis Results
+
+Do not implement fallbacks or logic that change a user's analysis results in a way the user did not intend, or without explicit notification.
+
+Example: If `corr_use` is invalid, silently defaulting to `"all.obs"` alters the analysis without user awareness and is prohibited.
+
 ## Agent Communication Policy
 
 - Thinking (internal reasoning, planning, notes) may be in Japanese or English.
