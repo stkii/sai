@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import ExecuteButton from '../components/ExecuteButton';
 import RadioOptions from '../components/RadioOptions';
 import VariableSelector from '../components/VariableSelector';
+import { useDialogError } from '../hooks/useDialogError';
 import type { AnalysisOptions } from '../runner';
 
 const METHOD_OPTIONS = [
@@ -45,6 +46,8 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
   const [alternative, setAlternative] = useState(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
   const [use, setUse] = useState(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
 
+  const { showValidationError, showAnalysisError } = useDialogError(setError);
+
   useEffect(() => {
     if (!open) {
       setSelectedVariables([]);
@@ -72,7 +75,19 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
 
   const handleExecute = async () => {
     if (selectedVariables.length === 0) {
-      setError('変数を選択してください');
+      await showValidationError('変数を選択してください');
+      return;
+    }
+    if (!METHOD_OPTIONS.some((option) => option.value === method)) {
+      await showValidationError('相関係数の指定が不正です');
+      return;
+    }
+    if (!ALTERNATIVE_OPTIONS.some((option) => option.value === alternative)) {
+      await showValidationError('検定の指定が不正です');
+      return;
+    }
+    if (!MISSING_VALUE_OPTIONS.some((option) => option.value === use)) {
+      await showValidationError('欠損値の指定が不正です');
       return;
     }
     if (!onExecute) {
@@ -83,7 +98,7 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
     try {
       await onExecute(selectedVariables, { method, alternative, use });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      await showAnalysisError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

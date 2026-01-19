@@ -14,15 +14,23 @@ interface PopoverSelectProps {
   placeholder?: string;
   onSelect?: (item: PopoverSelectItem | null) => void;
   disabled?: boolean;
+  resetKey?: number;
 }
 
-const PopoverSelect = ({ items, placeholder = 'Select', onSelect, disabled = false }: PopoverSelectProps) => {
+const PopoverSelect = ({
+  items,
+  placeholder = 'Select',
+  onSelect,
+  disabled = false,
+  resetKey,
+}: PopoverSelectProps) => {
   const [inputValue, setInputValue] = useState('');
   const [open, setOpen] = useState(false);
 
   const { contains } = useFilter({ sensitivity: 'base' });
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const prevItemsRef = useRef<PopoverSelectItem[] | null>(null);
+  const prevResetKeyRef = useRef<number | undefined>(resetKey);
 
   const { collection, filter, set } = useListCollection<PopoverSelectItem>({
     initialItems: items,
@@ -54,7 +62,19 @@ const PopoverSelect = ({ items, placeholder = 'Select', onSelect, disabled = fal
     filter('');
     setOpen(false);
     prevItemsRef.current = items;
-  }, [filter, items, listbox.setValue, set]);
+  }, [filter, items, listbox, set]);
+
+  useEffect(() => {
+    if (prevResetKeyRef.current === resetKey) {
+      return;
+    }
+    prevResetKeyRef.current = resetKey;
+    listbox.setValue([]);
+    setInputValue('');
+    filter('');
+    setOpen(false);
+    onSelect?.(null);
+  }, [filter, listbox, onSelect, resetKey]);
 
   useEffect(() => {
     if (disabled) {

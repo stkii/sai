@@ -72,6 +72,7 @@ const DataPage: FC = () => {
   const [table, setTable] = useState<ParsedDataTable | null>(null);
   const [dataSelection, setDataSelection] = useState<DataImportSelection | null>(null);
   const [openAnalysis, setOpenAnalysis] = useState<AnalysisModalKey | null>(null);
+  const [analysisSelectResetKey, setAnalysisSelectResetKey] = useState(0);
   const analysisDisabled = table === null;
   const analysisRunner = useMemo(
     () =>
@@ -118,7 +119,10 @@ const DataPage: FC = () => {
   }, []);
 
   const getSelection = useCallback(() => dataSelection, [dataSelection]);
-  const closeAnalysis = useCallback(() => setOpenAnalysis(null), []);
+  const closeAnalysis = useCallback(() => {
+    setOpenAnalysis(null);
+    setAnalysisSelectResetKey((value) => value + 1);
+  }, []);
   const handlers = useMemo(
     () =>
       createAnalysisHandlers({
@@ -176,6 +180,7 @@ const DataPage: FC = () => {
             placeholder="分析を選択"
             onSelect={handleAnalysisSelect}
             disabled={analysisDisabled}
+            resetKey={analysisSelectResetKey}
           />
         </HStack>
         <DataTable table={table} height={600} />
