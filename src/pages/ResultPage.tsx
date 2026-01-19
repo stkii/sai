@@ -7,15 +7,10 @@ import { createRoot } from 'react-dom/client';
 
 import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysisEvents';
 import DataTable from '../components/DataTable';
-import type { AnalysisResult, ParsedDataTable, RegressionResult } from '../dto';
+import type { ParsedDataTable } from '../dto';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;
-
-// 型ガード: RegressionResult かどうか判定
-const isRegressionResult = (result: AnalysisResult): result is RegressionResult => {
-  return 'model_summary' in result && 'coefficients' in result && 'anova' in result;
-};
 
 // テーブルの高さを計算
 const calcTableHeight = (table: ParsedDataTable): number => {
@@ -57,27 +52,28 @@ const ResultPage: FC = () => {
 
     const result = selected.result;
 
-    if (isRegressionResult(result)) {
+    if (result.kind === 'regression') {
+      const regression = result.regression;
       // 回帰分析: モデル要約 + 係数テーブル + 分散分析テーブルの3つを表示
-      const modelSummaryHeight = calcTableHeight(result.model_summary);
-      const coeffHeight = calcTableHeight(result.coefficients);
-      const anovaHeight = calcTableHeight(result.anova);
+      const modelSummaryHeight = calcTableHeight(regression.model_summary);
+      const coeffHeight = calcTableHeight(regression.coefficients);
+      const anovaHeight = calcTableHeight(regression.anova);
       return (
         <Stack gap="4" flex="1" overflowY="auto">
           <Box>
             <Text fontWeight="medium" fontSize="sm" mb="2">
               モデルの要約
             </Text>
-            <DataTable table={result.model_summary} height={modelSummaryHeight} showRowIndex={false} />
+            <DataTable table={regression.model_summary} height={modelSummaryHeight} showRowIndex={false} />
           </Box>
           <Box>
             <Text fontWeight="medium" fontSize="sm" mb="2">
               回帰係数
             </Text>
-            <DataTable table={result.coefficients} height={coeffHeight} showRowIndex={false} />
-            {result.coefficients.note ? (
+            <DataTable table={regression.coefficients} height={coeffHeight} showRowIndex={false} />
+            {regression.coefficients.note ? (
               <Text fontSize="sm" color="gray.600" textAlign="left" mt="1">
-                {result.coefficients.note}
+                {regression.coefficients.note}
               </Text>
             ) : null}
           </Box>
@@ -85,10 +81,10 @@ const ResultPage: FC = () => {
             <Text fontWeight="medium" fontSize="sm" mb="2">
               分散分析表
             </Text>
-            <DataTable table={result.anova} height={anovaHeight} showRowIndex={false} />
-            {result.anova.note ? (
+            <DataTable table={regression.anova} height={anovaHeight} showRowIndex={false} />
+            {regression.anova.note ? (
               <Text fontSize="sm" color="gray.600" textAlign="left" mt="1">
-                {result.anova.note}
+                {regression.anova.note}
               </Text>
             ) : null}
           </Box>
@@ -97,18 +93,19 @@ const ResultPage: FC = () => {
     }
 
     // 通常の単一テーブル結果
-    const tableHeight = calcTableHeight(result);
+    const table = result.table;
+    const tableHeight = calcTableHeight(table);
     return (
       <>
-        {result.title ? (
+        {table.title ? (
           <Text fontWeight="medium" fontSize="sm" mb="2">
-            {result.title}
+            {table.title}
           </Text>
         ) : null}
-        <DataTable table={result} height={tableHeight} showRowIndex={false} />
-        {result.note ? (
+        <DataTable table={table} height={tableHeight} showRowIndex={false} />
+        {table.note ? (
           <Text fontSize="sm" color="gray.600" textAlign="left">
-            {result.note}
+            {table.note}
           </Text>
         ) : null}
       </>

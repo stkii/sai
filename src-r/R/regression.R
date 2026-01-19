@@ -132,7 +132,7 @@
 # - res (list): Output from .LinearRegression()
 #
 # Returns:
-# - list with coefficients table, anova table, and model info
+# - list with coefficients table, anova table, and model summary table
 #
 .LinearRegressionParsed <- function(res) {
   smry <- res$summary
@@ -174,7 +174,7 @@
       format_coef_cell(coef_tbl[i, 1], p_val),
       FormatNum(coef_tbl[i, 2]),
       FormatNum(coef_tbl[i, 3]),
-      FormatNum(p_val),
+      FormatPval(p_val),
       vif_val
     )
   })
@@ -213,7 +213,7 @@
       FormatNum(anova_tbl[i, "Sum Sq"]),
       FormatNum(anova_tbl[i, "Mean Sq"]),
       format_f_cell(f_val, p_val),
-      FormatNum(p_val)
+      FormatPval(p_val)
     )
   })
 
@@ -248,7 +248,7 @@
 # - list with:
 #   - coefficients: ParsedDataTable (headers, rows) for regression coefficients
 #   - anova: ParsedDataTable (headers, rows) for ANOVA table
-#   - model: model statistics (r_squared, adj_r_squared, n, f_statistic, etc.)
+#   - model_summary: ParsedDataTable (headers, rows) for model summary
 #
 RunRegression <- function(df,
                           dependent = NULL,

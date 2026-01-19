@@ -3,8 +3,6 @@
 # ===================
 
 # Format a numeric to 3 decimal places (half-up), aligned to DTO rules.
-# When rounding results in "0.000" but the original value is non-zero,
-# displays "< 0.001" (positive) or "> -0.001" (negative) to avoid misleading display.
 #
 # Args:
 # - x (numeric): value to format
@@ -20,14 +18,35 @@ FormatNum <- function(x, na = NA_character_) {
   v <- .RoundHalfUp(xv, digits = 3L)
   formatted <- base::sprintf("%.3f", v)
 
-  # Avoid misleading "0.000" or "-0.000" when value is actually non-zero
-  if (formatted == "0.000" && xv > 0) {
-    return("< 0.001")
-  }
-  if (formatted == "-0.000" && xv < 0) {
-    return("> -0.001")
+  if (formatted == "-0.000") {
+    return("0.000")
   }
 
+  formatted
+}
+
+# Format p-value to 3 decimal places (half-up).
+# Values smaller than 0.001 are rendered as "< 0.001".
+#
+# Args:
+# - x (numeric): p-value
+# - na (character or NA): placeholder for NA (missing) values; default NA -> JSON null
+FormatPval <- function(x, na = NA_character_) {
+  if (is.null(x) || base::length(x) == 0L) return(na)
+  xv <- base::as.numeric(x)
+  if (base::is.na(xv)) return(na)
+  if (base::is.nan(xv)) return("NaN!")
+  if (!base::is.finite(xv)) {
+    if (xv > 0) return("Inf!") else return("-Inf!")
+  }
+  if (xv > 0 && xv < 0.001) {
+    return("< 0.001")
+  }
+  v <- .RoundHalfUp(xv, digits = 3L)
+  formatted <- base::sprintf("%.3f", v)
+  if (formatted == "-0.000") {
+    return("0.000")
+  }
   formatted
 }
 

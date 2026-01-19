@@ -42,10 +42,22 @@ export const zRegressionResult = z.object({
   anova: zParsedDataTable,
 });
 
-// 分析結果はParsedDataTable（単一テーブル）またはRegressionResult（回帰分析）
-export const zAnalysisResult = z.union([zRegressionResult, zParsedDataTable]);
+// 分析結果は kind 付きの判別ユニオン
+export const zAnalysisTableResult = z.object({
+  kind: z.literal('table'),
+  table: zParsedDataTable,
+});
+
+export const zAnalysisRegressionResult = z.object({
+  kind: z.literal('regression'),
+  regression: zRegressionResult,
+});
+
+export const zAnalysisResult = z.union([zAnalysisTableResult, zAnalysisRegressionResult]);
 
 export type RegressionResult = z.infer<typeof zRegressionResult>;
+export type AnalysisTableResult = z.infer<typeof zAnalysisTableResult>;
+export type AnalysisRegressionResult = z.infer<typeof zAnalysisRegressionResult>;
 export type AnalysisResult = z.infer<typeof zAnalysisResult>;
 
 export const zAnalysisRunResult = z.object({

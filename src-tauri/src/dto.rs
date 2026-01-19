@@ -61,17 +61,17 @@ impl RegressionResult {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(tag = "kind", rename_all = "lowercase")]
 pub enum AnalysisResult {
-    Regression(RegressionResult),
-    Table(ParsedDataTable),
+    Table { table: ParsedDataTable },
+    Regression { regression: RegressionResult },
 }
 
 impl AnalysisResult {
     pub fn validate(&self) -> Result<(), String> {
         match self {
-            AnalysisResult::Regression(r) => r.validate(),
-            AnalysisResult::Table(t) => t.validate(),
+            AnalysisResult::Regression { regression } => regression.validate(),
+            AnalysisResult::Table { table } => table.validate(),
         }
     }
 }
