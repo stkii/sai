@@ -202,14 +202,21 @@ function useRegressionTransferState<T extends Item>(
   const [selectedDependent, setSelectedDependent] = useState<T | null>(null);
   const [selectedIndependent, setSelectedIndependent] = useState<T[]>([]);
 
+  const itemsKey = useMemo(() => items.map((item) => item.value).join('\n'), [items]);
+  const previousItemsKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (previousItemsKeyRef.current === itemsKey) {
+      return;
+    }
+    previousItemsKeyRef.current = itemsKey;
     setSource(buildCollection(items));
     setDependent(buildCollection(emptyItems));
     setIndependent(buildCollection(emptyItems));
     setSelectedSource([]);
     setSelectedDependent(null);
     setSelectedIndependent([]);
-  }, [buildCollection, emptyItems, items]);
+  }, [buildCollection, emptyItems, items, itemsKey]);
 
   const scrollToItem = (
     container: HTMLDivElement | null,

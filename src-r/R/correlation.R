@@ -1,3 +1,7 @@
+# ======================
+# Correlation analysis
+# ======================
+
 # Execute correlation analysis
 #
 # Args:
@@ -176,6 +180,11 @@
   } else {
     result$note <- note_sig
   }
+  result$title <- switch(res$method,
+    pearson = "Pearsonの相関",
+    kendall = "Kendallの相関",
+    spearman = "Spearmanの相関"
+  )
   result
 }
 

@@ -1,3 +1,49 @@
+# =====================
+# Regression analysis
+# =====================
+
+# Compute VIF for each predictor variable
+# Each variable is regressed on all other predictors to get R², then VIF = 1/(1-R²)
+.ComputeVIFs <- function(df, main_vars, interaction_terms = NULL) {
+  all_vars <- main_vars
+
+  # Create interaction columns if needed
+  if (!is.null(interaction_terms) && base::length(interaction_terms) > 0) {
+    for (term in interaction_terms) {
+      components <- base::strsplit(term, ":")[[1]]
+      col_data <- df[[components[1]]]
+      for (comp in components[-1]) {
+        col_data <- col_data * df[[comp]]
+      }
+      df[[term]] <- col_data
+      all_vars <- base::c(all_vars, term)
+    }
+  }
+
+  n_vars <- base::length(all_vars)
+  if (n_vars < 2L) {
+    # Only one predictor, VIF is undefined (return 1 or NA)
+    vifs <- base::setNames(1, all_vars)
+    return(vifs)
+  }
+
+  vifs <- base::numeric(n_vars)
+  base::names(vifs) <- all_vars
+
+  for (var in all_vars) {
+    other_vars <- base::setdiff(all_vars, var)
+    # Backtick-quote variable names to handle special characters like ':'
+    var_quoted <- base::sprintf("`%s`", var)
+    other_vars_quoted <- base::sprintf("`%s`", other_vars)
+    formula_str <- base::paste(var_quoted, "~", base::paste(other_vars_quoted, collapse = " + "))
+    fit <- stats::lm(stats::as.formula(formula_str), data = df, na.action = stats::na.omit)
+    r_sq <- base::summary(fit)$r.squared
+    vifs[[var]] <- 1 / (1 - r_sq)
+  }
+
+  return(vifs)
+}
+
 .LinearRegression <- function(df,
                               dependent,
                               independents,
@@ -72,10 +118,14 @@
   result <- summary(fit)
   anova_result <- anova(fit)
 
+  # Compute VIFs for predictors (using the same df, post-centering if applicable)
+  vifs <- .ComputeVIFs(df, independents, interaction_terms)
+
   return(
     list(
       summary = result,
-      anova = anova_result
+      anova = anova_result,
+      vifs = vifs
     )
   )
 }
@@ -86,11 +136,12 @@
 # - res (list): Output from .LinearRegression()
 #
 # Returns:
-# - list with coefficients table, anova table, and model info
+# - list with coefficients table, anova table, and model summary table
 #
 .LinearRegressionParsed <- function(res) {
   smry <- res$summary
   anova_tbl <- res$anova
+  vifs <- res$vifs
   centered_note <- if (isTRUE(res$centered)) "説明変数が中心化されています" else NULL
 
   # --- Coefficients table ---
@@ -98,7 +149,7 @@
   coef_vars <- base::rownames(coef_tbl)
   if (is.null(coef_vars)) coef_vars <- base::paste0("V", base::seq_len(base::nrow(coef_tbl)))
 
-  coef_headers <- base::c("変数", "係数", "標準誤差", "t値", "p値")
+  coef_headers <- base::c("変数", "係数", "標準誤差", "t値", "p値", "VIF")
 
   format_coef_cell <- function(value, p_value) {
     formatted <- FormatNum(value)
@@ -115,12 +166,20 @@
 
   coef_rows <- base::lapply(base::seq_len(base::nrow(coef_tbl)), function(i) {
     p_val <- coef_tbl[i, 4]
+    var_name <- coef_vars[[i]]
+    # VIF is not applicable for intercept
+    vif_val <- if (var_name == "(Intercept)" || is.null(vifs[[var_name]])) {
+      ""
+    } else {
+      FormatNum(vifs[[var_name]])
+    }
     base::c(
-      coef_vars[[i]],
+      var_name,
       format_coef_cell(coef_tbl[i, 1], p_val),
       FormatNum(coef_tbl[i, 2]),
       FormatNum(coef_tbl[i, 3]),
-      FormatNum(p_val)
+      FormatPval(p_val),
+      vif_val
     )
   })
 
@@ -158,36 +217,25 @@
       FormatNum(anova_tbl[i, "Sum Sq"]),
       FormatNum(anova_tbl[i, "Mean Sq"]),
       format_f_cell(f_val, p_val),
-      FormatNum(p_val)
+      FormatPval(p_val)
     )
   })
 
   anova <- base::list(headers = anova_headers, rows = anova_rows)
 
-  # --- Model statistics ---
-  r_sq <- smry$r.squared
-  adj_r_sq <- smry$adj.r.squared
-  f_stat <- smry$fstatistic
-  n_obs <- base::length(smry$residuals)
-
-  model_info <- base::list(
-    r_squared = FormatNum(r_sq),
-    adj_r_squared = FormatNum(adj_r_sq),
-    n = n_obs
+  # --- Model summary table ---
+  model_summary_headers <- base::c("モデル", "R²", "調整済みR²", "標準誤差")
+  model_summary_rows <- base::list(
+    base::c(
+      "モデル1",
+      FormatNum(smry$r.squared),
+      FormatNum(smry$adj.r.squared),
+      FormatNum(smry$sigma)
+    )
   )
+  model_summary <- base::list(headers = model_summary_headers, rows = model_summary_rows)
 
-  if (!is.null(f_stat) && base::length(f_stat) >= 3) {
-    f_val <- f_stat[[1]]
-    df1 <- f_stat[[2]]
-    df2 <- f_stat[[3]]
-    f_pval <- stats::pf(f_val, df1, df2, lower.tail = FALSE)
-    model_info$f_statistic <- FormatNum(f_val)
-    model_info$f_df1 <- df1
-    model_info$f_df2 <- df2
-    model_info$f_pvalue <- FormatNum(f_pval)
-  }
-
-  base::list(coefficients = coefficients, anova = anova, model = model_info)
+  base::list(model_summary = model_summary, coefficients = coefficients, anova = anova)
 }
 
 # Runner used by CLI dispatcher
@@ -204,7 +252,7 @@
 # - list with:
 #   - coefficients: ParsedDataTable (headers, rows) for regression coefficients
 #   - anova: ParsedDataTable (headers, rows) for ANOVA table
-#   - model: model statistics (r_squared, adj_r_squared, n, f_statistic, etc.)
+#   - model_summary: ParsedDataTable (headers, rows) for model summary
 #
 RunRegression <- function(df,
                           dependent = NULL,

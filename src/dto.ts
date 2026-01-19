@@ -16,6 +16,7 @@ export const zParsedDataTable = z
     headers: z.array(z.string()),
     rows: z.array(z.array(zCellValue)),
     note: z.string().optional(),
+    title: z.string().optional(),
   })
   .superRefine((val, ctx) => {
     const w = val.headers.length;
@@ -34,29 +35,29 @@ export const zDatasetId = z.string();
 
 export const zSheetNames = z.array(z.string());
 
-// 回帰分析のモデル情報スキーマ
-export const zRegressionModelInfo = z.object({
-  r_squared: z.string().nullable(),
-  adj_r_squared: z.string().nullable(),
-  n: z.number().nullable(),
-  f_statistic: z.string().nullable(),
-  f_df1: z.number().nullable(),
-  f_df2: z.number().nullable(),
-  f_pvalue: z.string().nullable(),
-});
-
-// 回帰分析結果スキーマ（係数テーブル + 分散分析テーブル + モデル情報）
+// 回帰分析結果スキーマ（モデル要約 + 係数テーブル + 分散分析テーブル）
 export const zRegressionResult = z.object({
+  model_summary: zParsedDataTable,
   coefficients: zParsedDataTable,
   anova: zParsedDataTable,
-  model: zRegressionModelInfo,
 });
 
-// 分析結果はParsedDataTable（単一テーブル）またはRegressionResult（回帰分析）
-export const zAnalysisResult = z.union([zRegressionResult, zParsedDataTable]);
+// 分析結果は kind 付きの判別ユニオン
+export const zAnalysisTableResult = z.object({
+  kind: z.literal('table'),
+  table: zParsedDataTable,
+});
 
-export type RegressionModelInfo = z.infer<typeof zRegressionModelInfo>;
+export const zAnalysisRegressionResult = z.object({
+  kind: z.literal('regression'),
+  regression: zRegressionResult,
+});
+
+export const zAnalysisResult = z.union([zAnalysisTableResult, zAnalysisRegressionResult]);
+
 export type RegressionResult = z.infer<typeof zRegressionResult>;
+export type AnalysisTableResult = z.infer<typeof zAnalysisTableResult>;
+export type AnalysisRegressionResult = z.infer<typeof zAnalysisRegressionResult>;
 export type AnalysisResult = z.infer<typeof zAnalysisResult>;
 
 export const zAnalysisRunResult = z.object({

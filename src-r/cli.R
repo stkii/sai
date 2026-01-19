@@ -172,7 +172,13 @@ main <- function() {
     base::stop("Unsupported analysis type")
   }
 
-  output <- jsonlite::toJSON(result, auto_unbox = TRUE, na = "null")
+  output_payload <- if (identical(analysis, "regression")) {
+    list(kind = "regression", regression = result)
+  } else {
+    list(kind = "table", table = result)
+  }
+
+  output <- jsonlite::toJSON(output_payload, auto_unbox = TRUE, na = "null")
   base::cat(output)
 }
 
