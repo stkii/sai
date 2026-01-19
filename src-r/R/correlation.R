@@ -9,50 +9,17 @@
 # - mehod (character): "pearson" (default), "spearman", "kendall".
 # - use (character): "all.obs" (default), "complete.obs", "pairwise.complete.obs".
 .CorrTest <- function(df, method="pearson", use="all.obs", alternative="two.sided") {
-  # Receive raw data.
-  # Input dataset must be a data frame
-  IsDataFrame(df)
+  corr_res <- .PrepareCorrelation(df, method = method, use = use)
+  work_mat <- corr_res$work_mat
+  corr_mtx <- corr_res$corr_mtx
+  n_col <- corr_res$n_col
+  col_names <- base::colnames(work_mat)
 
-  # Validation (if stop is called, frontend displays WarningDialog)
-  # Check if all columns are numeric
-  is_num <- if (is.data.frame(df)) base::vapply(df, is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(df))
-  # 1. Reject non-numeric columns
-  if (base::any(!is_num)) {
-    StopWithErrCode("ERR-811")
-  }
-  # 2. Ensure at least two columns for correlation
-  if (base::ncol(df) < 2) {
-    StopWithErrCode("ERR-831")
-  }
-
-  # For speed, work in matrix form and preserve column names
-  mat <- base::as.matrix(df)
-  work_mat <- mat
-  if (is.null(base::colnames(work_mat))) {
-    base::colnames(work_mat) <- base::paste0("V", base::seq_len(base::ncol(work_mat)))
-  }
-
-   # Initialize matrix (all square matrix)
-  n_col <- base::ncol(work_mat)
-
-  # Similar to `cor(..., use = "all.obs")`
-  if (use == "all.obs" && base::any(is.na(work_mat))) {
-    StopWithErrCode("ERR-832")
-  }
-
-  corr_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(base::colnames(work_mat), base::colnames(work_mat))) # correlation matrix
-  p_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(base::colnames(work_mat), base::colnames(work_mat)))    # p-value matrix
-  t_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(base::colnames(work_mat), base::colnames(work_mat)))    # t-value matrix
-  df_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(base::colnames(work_mat), base::colnames(work_mat)))   # degree of freedom matrix
-  n_mtx <- matrix(NA_integer_, n_col, n_col, dimnames=list(base::colnames(work_mat), base::colnames(work_mat))) # sample size matrix
-
-  corr_mtx <- stats::cor(work_mat, method = method, use = use)
-
-  if (use == "complete.obs") {
-    # Listwise deletion: drop any row with missing values.
-    ok_all <- stats::complete.cases(work_mat)
-    work_mat <- work_mat[ok_all, , drop = FALSE]
-  }
+  # Initialize matrix (all square matrix)
+  p_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))    # p-value matrix
+  t_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))    # t-value matrix
+  df_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))   # degree of freedom matrix
+  n_mtx <- matrix(NA_integer_, n_col, n_col, dimnames=list(col_names, col_names)) # sample size matrix
 
   ties_approx <- FALSE
   for (i in base::seq_len(n_col)) {

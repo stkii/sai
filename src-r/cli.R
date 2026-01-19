@@ -97,11 +97,14 @@ main <- function() {
   }
   base::source(error_path, local = FALSE)
   load_module(r_dir, "utils.R", "ERR-901")
+  load_module(r_dir, "common.R", "ERR-908")
   load_module(r_dir, "describe.R", "ERR-902")
   load_module(r_dir, "correlation.R", "ERR-903")
   load_module(r_dir, "reliability.R", "ERR-904")
   load_module(r_dir, "centering.R", "ERR-905")
   load_module(r_dir, "regression.R", "ERR-906")
+  load_module(r_dir, "rotation.R", "ERR-909")
+  load_module(r_dir, "factor.R", "ERR-910")
 
   analysis <- opts$analysis %||% "descriptive"
   input_path <- opts$input %||% "-"
@@ -128,6 +131,16 @@ main <- function() {
   if (is.null(view_raw)) view_raw <- opts$view %||% ""
   model_raw <- get_option_value(options_payload, "model")
   if (is.null(model_raw)) model_raw <- opts$model %||% "alpha"
+  n_factors_raw <- get_option_value(options_payload, "n_factors")
+  if (is.null(n_factors_raw)) n_factors_raw <- get_option_value(options_payload, "nFactors")
+  if (is.null(n_factors_raw)) n_factors_raw <- opts$n_factors %||% ""
+  rotation_raw <- get_option_value(options_payload, "rotation")
+  if (is.null(rotation_raw)) rotation_raw <- opts$rotation %||% ""
+  corr_use_raw <- get_option_value(options_payload, "corr_use")
+  if (is.null(corr_use_raw)) corr_use_raw <- get_option_value(options_payload, "corrUse")
+  if (is.null(corr_use_raw)) corr_use_raw <- opts$corr_use %||% ""
+  power_raw <- get_option_value(options_payload, "power")
+  if (is.null(power_raw)) power_raw <- opts$power %||% ""
 
   dependent_raw <- get_option_value(options_payload, "dependent")
   independent_raw <- get_option_value(options_payload, "independent")
@@ -161,6 +174,12 @@ main <- function() {
                              view = base::as.character(view_raw))
   } else if (identical(analysis, "reliability")) {
     result <- RunReliability(df, model = base::as.character(model_raw))
+  } else if (identical(analysis, "factor")) {
+    result <- RunFactor(df,
+                        n_factors = n_factors_raw,
+                        rotation = base::as.character(rotation_raw),
+                        corr_use = base::as.character(corr_use_raw),
+                        power = power_raw)
   } else if (identical(analysis, "regression")) {
     result <- RunRegression(df,
                             dependent = dependent_raw,
