@@ -1,3 +1,7 @@
+# =====================
+# Regression analysis
+# =====================
+
 # Compute VIF for each predictor variable
 # Each variable is regressed on all other predictors to get R², then VIF = 1/(1-R²)
 .ComputeVIFs <- function(df, main_vars, interaction_terms = NULL) {
