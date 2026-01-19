@@ -168,23 +168,9 @@
 # - ParsedDataTable-like list(headers, rows)
 #
 RunCorrelation <- function(df, method = NULL, use = NULL, alternative = NULL, view = NULL) {
-  method_norm <- base::tryCatch({
-    m <- method
-    if (is.null(m) || !base::nzchar(m)) "pearson" else base::tolower(base::as.character(m))
-  }, error = function(e) "pearson")
-  if (!method_norm %in% c("pearson", "spearman", "kendall")) method_norm <- "pearson"
-
-  use_norm <- base::tryCatch({
-    u <- use
-    if (is.null(u) || !base::nzchar(u)) "all.obs" else base::tolower(base::as.character(u))
-  }, error = function(e) "all.obs")
-  if (!use_norm %in% c("all.obs", "complete.obs", "pairwise.complete.obs")) use_norm <- "all.obs"
-
-  alternative_norm <- base::tryCatch({
-    a <- alternative
-    if (is.null(a) || !base::nzchar(a)) "two.sided" else base::tolower(base::as.character(a))
-  }, error = function(e) "two.sided")
-  if (!alternative_norm %in% c("two.sided", "less", "greater")) alternative_norm <- "two.sided"
+  method_norm <- .ValidateOptionInSet(method, c("pearson", "spearman", "kendall"))
+  use_norm <- .ValidateOptionInSet(use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
+  alternative_norm <- .ValidateOptionInSet(alternative, c("two.sided", "less", "greater"))
 
   res <- .CorrTest(df, method = method_norm, use = use_norm, alternative = alternative_norm)
   .CorrTestParsed(res)

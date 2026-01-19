@@ -133,30 +133,10 @@
 # - list of ParsedDataTable-like objects
 #
 RunFactor <- function(df, n_factors = NULL, rotation = NULL, corr_use = NULL, power = NULL) {
-  n_factors_norm <- base::tryCatch({
-    n <- base::as.integer(n_factors)
-    if (is.null(n) || is.na(n) || n < 1) NA_integer_ else n
-  }, error = function(e) NA_integer_)
-  if (is.na(n_factors_norm)) {
-    base::stop("因子数が指定されていません")
-  }
-
-  rotation_norm <- base::tryCatch({
-    r <- rotation
-    if (is.null(r) || !base::nzchar(r)) "varimax" else base::tolower(base::as.character(r))
-  }, error = function(e) "varimax")
-  if (!rotation_norm %in% c("varimax", "promax")) rotation_norm <- "varimax"
-
-  corr_use_norm <- base::tryCatch({
-    u <- corr_use
-    if (is.null(u) || !base::nzchar(u)) "all.obs" else base::tolower(base::as.character(u))
-  }, error = function(e) "all.obs")
-  if (!corr_use_norm %in% c("all.obs", "complete.obs", "pairwise.complete.obs")) corr_use_norm <- "all.obs"
-
-  power_norm <- base::tryCatch({
-    if (is.null(power)) 4 else base::as.numeric(power)
-  }, error = function(e) 4)
-  if (is.na(power_norm)) power_norm <- 4
+  n_factors_norm <- .RequirePositiveIntegerOption(n_factors)
+  rotation_norm <- .ValidateOptionInSet(rotation, c("varimax", "promax"))
+  corr_use_norm <- .ValidateOptionInSet(corr_use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
+  power_norm <- .NormalizePositiveNumericOption(power, default = 4)
 
   res <- .FactorAnalysis(
     df,

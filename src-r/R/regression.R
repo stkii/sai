@@ -274,21 +274,20 @@ RunRegression <- function(df,
     NULL
   } else if (identical(interactions, "auto")) {
     "auto"
+  } else if (is.character(interactions) && base::length(interactions) > 0) {
+    terms <- base::strsplit(interactions, ":", fixed = TRUE)
+    if (base::any(base::lengths(terms) < 2L)) {
+      StopWithErrCode("ERR-920")
+    }
+    terms
   } else if (is.list(interactions)) {
-    interactions
+    if (base::length(interactions) == 0L) NULL else interactions
   } else {
-    NULL
+    StopWithErrCode("ERR-920")
   }
 
-  intercept_norm <- base::tryCatch({
-    if (is.null(intercept)) TRUE else base::as.logical(intercept)[[1]]
-  }, error = function(e) TRUE)
-  if (base::is.na(intercept_norm)) intercept_norm <- TRUE
-
-  center_norm <- base::tryCatch({
-    if (is.null(center)) FALSE else base::as.logical(center)[[1]]
-  }, error = function(e) FALSE)
-  if (base::is.na(center_norm)) center_norm <- FALSE
+  intercept_norm <- .NormalizeLogicalOption(intercept, default = TRUE)
+  center_norm <- .NormalizeLogicalOption(center, default = FALSE)
 
   res <- .LinearRegression(
     df,

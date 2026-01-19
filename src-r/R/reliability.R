@@ -61,9 +61,6 @@
 #
 # Returns ParsedTable-like list(headers, rows)
 RunReliability <- function(x, model = NULL) {
-  model <- base::tryCatch({
-    m <- model
-    if (is.null(m) || !base::nzchar(m)) "alpha" else base::tolower(base::as.character(m))
-  }, error = function(e) "alpha")
-  .ReliabilityParsed(x, model = model)
+  model_norm <- .ValidateOptionInSet(model, c("alpha", "omega"))
+  .ReliabilityParsed(x, model = model_norm)
 }
