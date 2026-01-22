@@ -61,10 +61,37 @@ impl RegressionResult {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FactorResult {
+    pub eigen: ParsedDataTable,
+    pub pattern: ParsedDataTable,
+    pub rotmat: ParsedDataTable,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structure: Option<ParsedDataTable>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phi: Option<ParsedDataTable>,
+}
+
+impl FactorResult {
+    pub fn validate(&self) -> Result<(), String> {
+        self.eigen.validate().map_err(|e| format!("eigen: {}", e))?;
+        self.pattern.validate().map_err(|e| format!("pattern: {}", e))?;
+        self.rotmat.validate().map_err(|e| format!("rotmat: {}", e))?;
+        if let Some(structure) = self.structure.as_ref() {
+            structure.validate().map_err(|e| format!("structure: {}", e))?;
+        }
+        if let Some(phi) = self.phi.as_ref() {
+            phi.validate().map_err(|e| format!("phi: {}", e))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum AnalysisResult {
     Table { table: ParsedDataTable },
     Regression { regression: RegressionResult },
+    Factor { factor: FactorResult },
 }
 
 impl AnalysisResult {
@@ -72,6 +99,7 @@ impl AnalysisResult {
         match self {
             AnalysisResult::Regression { regression } => regression.validate(),
             AnalysisResult::Table { table } => table.validate(),
+            AnalysisResult::Factor { factor } => factor.validate(),
         }
     }
 }

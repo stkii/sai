@@ -134,13 +134,18 @@ main <- function() {
   n_factors_raw <- get_option_value(options_payload, "n_factors")
   if (is.null(n_factors_raw)) n_factors_raw <- get_option_value(options_payload, "nFactors")
   if (is.null(n_factors_raw)) n_factors_raw <- opts$n_factors %||% ""
+  n_factors_auto_raw <- get_option_value(options_payload, "n_factors_auto")
+  if (is.null(n_factors_auto_raw)) n_factors_auto_raw <- get_option_value(options_payload, "nFactorsAuto")
+  if (is.null(n_factors_auto_raw)) n_factors_auto_raw <- opts$n_factors_auto %||% NULL
   rotation_raw <- get_option_value(options_payload, "rotation")
   if (is.null(rotation_raw)) rotation_raw <- opts$rotation %||% ""
   corr_use_raw <- get_option_value(options_payload, "corr_use")
   if (is.null(corr_use_raw)) corr_use_raw <- get_option_value(options_payload, "corrUse")
+  if (is.null(corr_use_raw)) corr_use_raw <- get_option_value(options_payload, "use")
   if (is.null(corr_use_raw)) corr_use_raw <- opts$corr_use %||% ""
   power_raw <- get_option_value(options_payload, "power")
   if (is.null(power_raw)) power_raw <- opts$power %||% ""
+  if (is.null(power_raw) || !base::nzchar(base::as.character(power_raw))) power_raw <- NULL
 
   dependent_raw <- get_option_value(options_payload, "dependent")
   independent_raw <- get_option_value(options_payload, "independent")
@@ -177,7 +182,9 @@ main <- function() {
   } else if (identical(analysis, "factor")) {
     result <- RunFactor(df,
                         n_factors = n_factors_raw,
+                        n_factors_auto = n_factors_auto_raw,
                         rotation = base::as.character(rotation_raw),
+                        method = base::as.character(method_raw),
                         corr_use = base::as.character(corr_use_raw),
                         power = power_raw)
   } else if (identical(analysis, "regression")) {
@@ -193,6 +200,8 @@ main <- function() {
 
   output_payload <- if (identical(analysis, "regression")) {
     list(kind = "regression", regression = result)
+  } else if (identical(analysis, "factor")) {
+    list(kind = "factor", factor = result)
   } else {
     list(kind = "table", table = result)
   }

@@ -82,15 +82,17 @@
   output
 }
 
-.FactorAnalysis <- function(df, n_factors, rotation, corr_use, power = 4) {
-  eig_res <- .EigenAndProp(df, corr_use)
+.FactorAnalysis <- function(df, n_factors, rotation, method, corr_use, power = 4, eig_res = NULL) {
+  if (is.null(eig_res)) {
+    eig_res <- .EigenAndProp(df, corr_use)
+  }
   R <- eig_res$R
   eig <- eig_res$eig
   prop <- eig_res$prop
   cum_prop <- eig_res$cum_prop
 
   # Perform varimax rotation
-  vx_res <- .FactanalWithVarimax(R, n_factors)
+  vx_res <- .FactanalWithVarimax(R, n_factors, method)
 
   # ===== Extract results =====
   final_loadings <- vx_res$loadings
@@ -126,24 +128,41 @@
 # - df (data.frame): numeric dataset
 # - n_factors (integer): number of factors
 # - rotation (character): "varimax" | "promax"
+# - method (character): "ml"
 # - corr_use (character): "all.obs" | "complete.obs" | "pairwise.complete.obs"
 # - power (numeric): promax power parameter
+# - n_factors_auto (logical): whether to auto-select factors (Guttman criterion)
 #
 # Returns:
 # - list of ParsedDataTable-like objects
 #
-RunFactor <- function(df, n_factors = NULL, rotation = NULL, corr_use = NULL, power = NULL) {
-  n_factors_norm <- .RequirePositiveIntegerOption(n_factors)
+RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr_use = NULL, power = NULL, n_factors_auto = NULL) {
+  auto_norm <- .NormalizeLogicalOption(n_factors_auto, default = FALSE)
   rotation_norm <- .ValidateOptionInSet(rotation, c("varimax", "promax"))
+  method_norm <- .ValidateOptionInSet(method, c("ml"))
   corr_use_norm <- .ValidateOptionInSet(corr_use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
   power_norm <- .NormalizePositiveNumericOption(power, default = 4)
+
+  if (identical(corr_use_norm, "all.obs") && base::any(is.na(df))) {
+    StopWithErrCode("ERR-832")
+  }
+
+  eig_res <- NULL
+  if (isTRUE(auto_norm)) {
+    eig_res <- .EigenAndProp(df, corr_use_norm)
+    n_factors_norm <- base::sum(eig_res$eig >= 1)
+  } else {
+    n_factors_norm <- .RequirePositiveIntegerOption(n_factors)
+  }
 
   res <- .FactorAnalysis(
     df,
     n_factors = n_factors_norm,
     rotation = rotation_norm,
+    method = method_norm,
     corr_use = corr_use_norm,
-    power = power_norm
+    power = power_norm,
+    eig_res = eig_res
   )
 
   .FactorAnalysisParsed(res, n_factors_norm)

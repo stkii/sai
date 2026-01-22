@@ -58,6 +58,20 @@ const ResultPage: FC = () => {
         { sectionTitle: '分散分析表', table: result.regression.anova },
       ];
     }
+    if (result.kind === 'factor') {
+      const sections: AnalysisExportSection[] = [
+        { sectionTitle: '固有値と寄与率', table: result.factor.eigen },
+        { sectionTitle: '因子負荷量', table: result.factor.pattern },
+        { sectionTitle: '回転行列', table: result.factor.rotmat },
+      ];
+      if (result.factor.structure) {
+        sections.push({ sectionTitle: '構造行列', table: result.factor.structure });
+      }
+      if (result.factor.phi) {
+        sections.push({ sectionTitle: '因子間相関 (Phi)', table: result.factor.phi });
+      }
+      return sections;
+    }
     return [{ table: result.table }];
   };
 
@@ -150,6 +164,54 @@ const ResultPage: FC = () => {
               </Text>
             ) : null}
           </Box>
+        </Stack>
+      );
+    }
+
+    if (result.kind === 'factor') {
+      const factor = result.factor;
+      const eigenHeight = calcTableHeight(factor.eigen);
+      const patternHeight = calcTableHeight(factor.pattern);
+      const rotmatHeight = calcTableHeight(factor.rotmat);
+      const structureHeight = factor.structure ? calcTableHeight(factor.structure) : 0;
+      const phiHeight = factor.phi ? calcTableHeight(factor.phi) : 0;
+
+      return (
+        <Stack gap="4" flex="1" overflowY="auto">
+          <Box>
+            <Text fontWeight="medium" fontSize="sm" mb="2">
+              固有値と寄与率
+            </Text>
+            <DataTable table={factor.eigen} height={eigenHeight} showRowIndex={false} />
+          </Box>
+          <Box>
+            <Text fontWeight="medium" fontSize="sm" mb="2">
+              因子負荷量
+            </Text>
+            <DataTable table={factor.pattern} height={patternHeight} showRowIndex={false} />
+          </Box>
+          <Box>
+            <Text fontWeight="medium" fontSize="sm" mb="2">
+              回転行列
+            </Text>
+            <DataTable table={factor.rotmat} height={rotmatHeight} showRowIndex={false} />
+          </Box>
+          {factor.structure ? (
+            <Box>
+              <Text fontWeight="medium" fontSize="sm" mb="2">
+                構造行列
+              </Text>
+              <DataTable table={factor.structure} height={structureHeight} showRowIndex={false} />
+            </Box>
+          ) : null}
+          {factor.phi ? (
+            <Box>
+              <Text fontWeight="medium" fontSize="sm" mb="2">
+                因子間相関 (Phi)
+              </Text>
+              <DataTable table={factor.phi} height={phiHeight} showRowIndex={false} />
+            </Box>
+          ) : null}
         </Stack>
       );
     }

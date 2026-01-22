@@ -2,10 +2,13 @@
 # Rotation helpers
 # ==================
 
-.FactanalWithVarimax <- function(R, n_factors) {
+.FactanalWithVarimax <- function(R, n_factors, method) {
   # Perform factor analysis using a covariance matrix
-  # Extraction: maximum likelihood (factanal default)
+  # Extraction: maximum likelihood
   # Rotation: none (we apply rotations manually)
+  if (method != "ml") {
+    StopWithErrCode("ERR-920")
+  }
   fa <- stats::factanal(covmat = R, factors = n_factors, rotation = "none")
 
   # Extract unrotated loading matrix
