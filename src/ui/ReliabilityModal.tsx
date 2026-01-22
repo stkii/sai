@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import ExecuteButton from '../components/ExecuteButton';
 import RadioOptions from '../components/RadioOptions';
 import VariableSelector from '../components/VariableSelector';
+import { useDialogError } from '../hooks/useDialogError';
 import type { AnalysisOptions } from '../runner';
 
 const MODEL_OPTIONS = [
@@ -27,6 +28,8 @@ const ReliabilityModal = ({ open, onClose, onExecute, variables }: ReliabilityMo
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState(MODEL_OPTIONS[0]?.value ?? 'alpha');
+
+  const { showValidationError, showAnalysisError } = useDialogError(setError);
 
   useEffect(() => {
     if (!open) {
@@ -53,7 +56,11 @@ const ReliabilityModal = ({ open, onClose, onExecute, variables }: ReliabilityMo
 
   const handleExecute = async () => {
     if (selectedVariables.length === 0) {
-      setError('変数を選択してください');
+      await showValidationError('変数を選択してください');
+      return;
+    }
+    if (!MODEL_OPTIONS.some((option) => option.value === model)) {
+      await showValidationError('モデルの指定が不正です');
       return;
     }
     if (!onExecute) {
@@ -64,7 +71,7 @@ const ReliabilityModal = ({ open, onClose, onExecute, variables }: ReliabilityMo
     try {
       await onExecute(selectedVariables, { model });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      await showAnalysisError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

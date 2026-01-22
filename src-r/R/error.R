@@ -22,6 +22,10 @@ ERR_MESSAGES <- base::list(
   "ERR-905" = "R module 'regression.R' not found under src-r/R",
   "ERR-906" = "R module 'design.R' not found under src-r/R",
   "ERR-907" = "R module 'centering.R' not found under src-r/R",
+  "ERR-908" = "R module 'common.R' not found under src-r/R",
+  "ERR-909" = "R module 'rotation.R' not found under src-r/R",
+  "ERR-910" = "R module 'factor.R' not found under src-r/R",
+  "ERR-920" = "Invalid analysis option",
   # Internal errors
   "ERR-940" = "Internal error in design module"
 

@@ -1,5 +1,8 @@
-use crate::analysis::runner;
 use crate::analysis::types::AnalysisRunResult;
+use crate::analysis::{
+    runner,
+    sort,
+};
 use crate::commands::analysis_log;
 use crate::{
     cache,
@@ -72,7 +75,10 @@ pub fn run_analysis(app_handle: tauri::AppHandle,
     let entry = cache::get_numeric_dataset(&dataset_id)?.ok_or_else(|| "Dataset not found".to_string())?;
 
     let options_for_r = build_options_for_r(&analysis_type, options);
-    let result = runner::run_r_analysis(&analysis_type, &entry.dataset, &options_for_r)?;
+    let mut result = runner::run_r_analysis(&analysis_type, &entry.dataset, &options_for_r)?;
+    if analysis_type == "factor" && should_sort_factor_loadings(&options_for_r) {
+        sort::sort_factor_loadings(&mut result);
+    }
 
     let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let log_entry = analysis_log::AnalysisLogEntry { timestamp: logged_at.clone(),
@@ -138,6 +144,37 @@ fn get_option_string(map: &serde_json::Map<String, Value>,
 fn get_option_bool(map: &serde_json::Map<String, Value>,
                    key: &str)
                    -> Option<bool> {
+    let value = map.get(key)?;
+    match value {
+        Value::Bool(value) => Some(*value),
+        Value::Number(value) => value.as_i64().map(|n| n != 0),
+        Value::String(value) => {
+            let value = value.trim().to_ascii_lowercase();
+            match value.as_str() {
+                "true" | "1" | "yes" => Some(true),
+                "false" | "0" | "no" => Some(false),
+                _ => None,
+            }
+        },
+        _ => None,
+    }
+}
+
+fn should_sort_factor_loadings(options: &Value) -> bool {
+    get_option_bool_from_value(options, "sort_loadings").or_else(|| {
+                                                            get_option_bool_from_value(options,
+                                                                                       "sortLoadings")
+                                                        })
+                                                        .unwrap_or(false)
+}
+
+fn get_option_bool_from_value(options: &Value,
+                              key: &str)
+                              -> Option<bool> {
+    let map = match options {
+        Value::Object(map) => map,
+        _ => return None,
+    };
     let value = map.get(key)?;
     match value {
         Value::Bool(value) => Some(*value),

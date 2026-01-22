@@ -73,17 +73,8 @@
 # - ParsedDataTable-like list(headers, rows)
 #
 RunDescriptive <- function(df, order = 'default', na_ig = TRUE) {
-  ord <- base::tryCatch({
-    o <- order
-    if (is.null(o) || !base::nzchar(o)) 'default' else base::as.character(o)
-  }, error = function(e) 'default')
-
-  # Normalize na_ig to a single logical value.
-  # Frontend/CLI may pass NULL or non-logical JSON scalars; default to TRUE.
-  na_ig_norm <- base::tryCatch({
-    if (is.null(na_ig)) TRUE else base::as.logical(na_ig)[[1]]
-  }, error = function(e) TRUE)
-  if (base::is.na(na_ig_norm)) na_ig_norm <- TRUE
+  ord <- .ValidateOptionInSet(order, c("default", "mean_asc", "mean_desc"))
+  na_ig_norm <- .RequireLogicalOption(na_ig)
 
   stats <- .Describe(df, na_ig = na_ig_norm)
   parsed <- .DescribeParsed(stats)

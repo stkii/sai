@@ -10,6 +10,7 @@ export interface AnalysisHandlerDeps {
   onCloseCorrelation: () => void;
   onCloseRegression: () => void;
   onCloseReliability: () => void;
+  onCloseFactor: () => void;
 }
 
 export interface CorrelationOptions extends AnalysisOptions {
@@ -27,4 +28,14 @@ export interface RegressionOptions extends AnalysisOptions {
 
 export interface ReliabilityOptions extends AnalysisOptions {
   model: string;
+}
+
+export interface FactorOptions extends AnalysisOptions {
+  method: string;
+  n_factors_auto: boolean;
+  n_factors?: number;
+  rotation: string;
+  corr_use: string;
+  power?: number;
+  sort_loadings: boolean;
 }

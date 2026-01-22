@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import ExecuteButton from '../components/ExecuteButton';
 import RadioOptions from '../components/RadioOptions';
 import VariableSelector from '../components/VariableSelector';
+import { useDialogError } from '../hooks/useDialogError';
 
 const SORT_OPTIONS = [
   { label: '変数リスト順', value: 'default' },
@@ -23,6 +24,8 @@ const DescriptiveModal = ({ open, onClose, onExecute, variables }: DescriptiveMo
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState(SORT_OPTIONS[0]?.value ?? 'default');
+
+  const { showValidationError, showAnalysisError } = useDialogError(setError);
 
   useEffect(() => {
     if (!open) {
@@ -49,7 +52,11 @@ const DescriptiveModal = ({ open, onClose, onExecute, variables }: DescriptiveMo
 
   const handleExecute = async () => {
     if (selectedVariables.length === 0) {
-      setError('変数を選択してください');
+      await showValidationError('変数を選択してください');
+      return;
+    }
+    if (!SORT_OPTIONS.some((option) => option.value === order)) {
+      await showValidationError('ソートの指定が不正です');
       return;
     }
     if (!onExecute) {
@@ -60,7 +67,7 @@ const DescriptiveModal = ({ open, onClose, onExecute, variables }: DescriptiveMo
     try {
       await onExecute(selectedVariables, order);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      await showAnalysisError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

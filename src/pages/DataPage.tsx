@@ -15,6 +15,7 @@ import tauriIPC from '../tauriIPC';
 import CorrTestModal from '../ui/CorrTestModal';
 import DataImportModal, { type DataImportSelection } from '../ui/DataImportModal';
 import DescriptiveModal from '../ui/DescriptiveModal';
+import FactorModal from '../ui/FactorModal';
 import RegressionModal from '../ui/RegressionModal';
 import ReliabilityModal from '../ui/ReliabilityModal';
 
@@ -23,9 +24,10 @@ const ANALYSIS_ITEMS: PopoverSelectItem[] = [
   { label: '相関', value: 'correlation' },
   { label: '回帰', value: 'regression' },
   { label: '信頼性', value: 'reliability' },
+  { label: '因子分析', value: 'factor' },
 ];
 
-const ANALYSIS_MODAL_KEYS = ['descriptive', 'correlation', 'regression', 'reliability'] as const;
+const ANALYSIS_MODAL_KEYS = ['descriptive', 'correlation', 'regression', 'reliability', 'factor'] as const;
 
 type AnalysisModalKey = (typeof ANALYSIS_MODAL_KEYS)[number];
 
@@ -72,6 +74,7 @@ const DataPage: FC = () => {
   const [table, setTable] = useState<ParsedDataTable | null>(null);
   const [dataSelection, setDataSelection] = useState<DataImportSelection | null>(null);
   const [openAnalysis, setOpenAnalysis] = useState<AnalysisModalKey | null>(null);
+  const [analysisSelectResetKey, setAnalysisSelectResetKey] = useState(0);
   const analysisDisabled = table === null;
   const analysisRunner = useMemo(
     () =>
@@ -83,6 +86,7 @@ const DataPage: FC = () => {
           correlation: ({ datasetId, options }) => tauriIPC.runAnalysis('correlation', datasetId, options),
           regression: ({ datasetId, options }) => tauriIPC.runAnalysis('regression', datasetId, options),
           reliability: ({ datasetId, options }) => tauriIPC.runAnalysis('reliability', datasetId, options),
+          factor: ({ datasetId, options }) => tauriIPC.runAnalysis('factor', datasetId, options),
         },
       }),
     []
@@ -118,7 +122,10 @@ const DataPage: FC = () => {
   }, []);
 
   const getSelection = useCallback(() => dataSelection, [dataSelection]);
-  const closeAnalysis = useCallback(() => setOpenAnalysis(null), []);
+  const closeAnalysis = useCallback(() => {
+    setOpenAnalysis(null);
+    setAnalysisSelectResetKey((value) => value + 1);
+  }, []);
   const handlers = useMemo(
     () =>
       createAnalysisHandlers({
@@ -130,6 +137,7 @@ const DataPage: FC = () => {
         onCloseCorrelation: closeAnalysis,
         onCloseRegression: closeAnalysis,
         onCloseReliability: closeAnalysis,
+        onCloseFactor: closeAnalysis,
       }),
     [analysisRunner, closeAnalysis, emitResult, getSelection, openResultWindow]
   );
@@ -148,8 +156,17 @@ const DataPage: FC = () => {
       reliability: {
         render: (props) => <ReliabilityModal {...props} onExecute={handlers.runReliability} />,
       },
+      factor: {
+        render: (props) => <FactorModal {...props} onExecute={handlers.runFactor} />,
+      },
     }),
-    [handlers.runCorrelation, handlers.runDescriptive, handlers.runRegression, handlers.runReliability]
+    [
+      handlers.runCorrelation,
+      handlers.runDescriptive,
+      handlers.runFactor,
+      handlers.runRegression,
+      handlers.runReliability,
+    ]
   );
 
   const handleAnalysisSelect = (item: PopoverSelectItem | null) => {
@@ -176,6 +193,7 @@ const DataPage: FC = () => {
             placeholder="分析を選択"
             onSelect={handleAnalysisSelect}
             disabled={analysisDisabled}
+            resetKey={analysisSelectResetKey}
           />
         </HStack>
         <DataTable table={table} height={600} />

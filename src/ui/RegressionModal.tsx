@@ -6,6 +6,7 @@ import InteractionSelector from '../components/InteractionSelector';
 import RegressionVariableSelector, {
   type RegressionVariableSelection,
 } from '../components/RegressionVariableSelector';
+import { useDialogError } from '../hooks/useDialogError';
 import type { AnalysisOptions } from '../runner';
 
 export interface RegressionModalOptions extends AnalysisOptions {
@@ -29,6 +30,8 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
   const [center, setCenter] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const { showValidationError, showAnalysisError } = useDialogError(setError);
 
   const handleInteractionChange = useCallback((value: string[]) => {
     setInteractionTerms(value);
@@ -66,11 +69,11 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
 
   const handleExecute = async () => {
     if (!selection.dependent) {
-      setError('従属変数を選択してください');
+      await showValidationError('従属変数を選択してください');
       return;
     }
     if (selection.independent.length === 0) {
-      setError('独立変数を選択してください');
+      await showValidationError('独立変数を選択してください');
       return;
     }
     if (!onExecute) {
@@ -92,7 +95,7 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
         center: center || undefined,
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      await showAnalysisError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

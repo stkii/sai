@@ -93,9 +93,10 @@ Sort <- function(criterion) {
     if (!is_mean)
       return(parsed)
 
-    mean_idx <- which(parsed$headers == "Mean")
-    if (length(mean_idx) != 1)
+    mean_idx <- which(parsed$headers %in% c("Mean", "平均値"))
+    if (length(mean_idx) < 1)
       return(parsed)
+    mean_idx <- mean_idx[[1]]
 
     key_vals <- vapply(parsed$rows, function(r) {
       if (length(r) < mean_idx) return(NA_real_)
@@ -121,6 +122,52 @@ StarsForPval <- function(p) {
   if (pv < 0.01)  return("**")
   if (pv < 0.05)  return("*")
   return("")
+}
+
+# Validate that an option is a non-empty string in the allowed set.
+.ValidateOptionInSet <- function(value, allowed) {
+  if (is.null(value)) StopWithErrCode("ERR-920")
+  val <- base::as.character(value)
+  if (!base::nzchar(val)) StopWithErrCode("ERR-920")
+  val_norm <- base::tolower(val)
+  if (!val_norm %in% allowed) StopWithErrCode("ERR-920")
+  val_norm
+}
+
+# Validate that a required logical option is provided and valid.
+.RequireLogicalOption <- function(value) {
+  if (is.null(value)) StopWithErrCode("ERR-920")
+  if (!base::is.logical(value) || base::length(value) == 0L) StopWithErrCode("ERR-920")
+  val <- value[[1]]
+  if (base::is.na(val)) StopWithErrCode("ERR-920")
+  val
+}
+
+# Validate an optional logical option, returning a default when missing.
+.NormalizeLogicalOption <- function(value, default) {
+  if (is.null(value)) return(default)
+  if (!base::is.logical(value) || base::length(value) == 0L) StopWithErrCode("ERR-920")
+  val <- value[[1]]
+  if (base::is.na(val)) StopWithErrCode("ERR-920")
+  val
+}
+
+# Validate a required positive integer option.
+.RequirePositiveIntegerOption <- function(value) {
+  if (is.null(value)) StopWithErrCode("ERR-920")
+  if (!base::is.numeric(value)) StopWithErrCode("ERR-920")
+  val <- base::as.integer(value[[1]])
+  if (base::is.na(val) || val < 1L) StopWithErrCode("ERR-920")
+  val
+}
+
+# Validate an optional positive numeric option, returning a default when missing.
+.NormalizePositiveNumericOption <- function(value, default) {
+  if (is.null(value)) return(default)
+  if (!base::is.numeric(value)) StopWithErrCode("ERR-920")
+  val <- base::as.numeric(value[[1]])
+  if (!base::is.finite(val) || val <= 0) StopWithErrCode("ERR-920")
+  val
 }
 
 # Internal: half-up rounding to a fixed number of decimal digits.

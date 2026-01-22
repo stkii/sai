@@ -7,9 +7,7 @@ import { z } from 'zod';
 export type ParsedDataTable = z.infer<typeof zParsedDataTable>;
 export type AnalysisRunResult = z.infer<typeof zAnalysisRunResult>;
 
-const zCellValue = z
-  .union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()])
-  .transform((v) => (typeof v === 'undefined' ? null : v));
+const zCellValue = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
 export const zParsedDataTable = z
   .object({
@@ -42,6 +40,14 @@ export const zRegressionResult = z.object({
   anova: zParsedDataTable,
 });
 
+export const zFactorResult = z.object({
+  eigen: zParsedDataTable,
+  pattern: zParsedDataTable,
+  rotmat: zParsedDataTable,
+  structure: zParsedDataTable.optional(),
+  phi: zParsedDataTable.optional(),
+});
+
 // 分析結果は kind 付きの判別ユニオン
 export const zAnalysisTableResult = z.object({
   kind: z.literal('table'),
@@ -53,11 +59,22 @@ export const zAnalysisRegressionResult = z.object({
   regression: zRegressionResult,
 });
 
-export const zAnalysisResult = z.union([zAnalysisTableResult, zAnalysisRegressionResult]);
+export const zAnalysisFactorResult = z.object({
+  kind: z.literal('factor'),
+  factor: zFactorResult,
+});
+
+export const zAnalysisResult = z.union([
+  zAnalysisTableResult,
+  zAnalysisRegressionResult,
+  zAnalysisFactorResult,
+]);
 
 export type RegressionResult = z.infer<typeof zRegressionResult>;
+export type FactorResult = z.infer<typeof zFactorResult>;
 export type AnalysisTableResult = z.infer<typeof zAnalysisTableResult>;
 export type AnalysisRegressionResult = z.infer<typeof zAnalysisRegressionResult>;
+export type AnalysisFactorResult = z.infer<typeof zAnalysisFactorResult>;
 export type AnalysisResult = z.infer<typeof zAnalysisResult>;
 
 export const zAnalysisRunResult = z.object({
