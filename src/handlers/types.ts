@@ -37,4 +37,5 @@ export interface FactorOptions extends AnalysisOptions {
   rotation: string;
   corr_use: string;
   power?: number;
+  sort_loadings: boolean;
 }

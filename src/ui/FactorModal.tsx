@@ -1,5 +1,6 @@
 import {
   Box,
+  Checkbox,
   CloseButton,
   Dialog,
   HStack,
@@ -39,6 +40,7 @@ interface FactorModalOptions extends AnalysisOptions {
   rotation: string;
   corr_use: string;
   power?: number;
+  sort_loadings: boolean;
 }
 
 interface FactorModalProps {
@@ -58,6 +60,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
   const [rotation, setRotation] = useState(ROTATION_OPTIONS[0]?.value ?? 'varimax');
   const [power, setPower] = useState('4');
   const [use, setUse] = useState(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
+  const [sortLoadings, setSortLoadings] = useState(false);
 
   const { showValidationError, showAnalysisError } = useDialogError(setError);
   const isFixed = criterion === 'fixed';
@@ -76,6 +79,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
       setRotation(ROTATION_OPTIONS[0]?.value ?? 'varimax');
       setPower('4');
       setUse(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
+      setSortLoadings(false);
     }
   }, [open]);
 
@@ -88,6 +92,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
     setRotation(ROTATION_OPTIONS[0]?.value ?? 'varimax');
     setPower('4');
     setUse(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
+    setSortLoadings(false);
     if (variables.length === 0) {
       return;
     }
@@ -141,6 +146,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
         rotation,
         corr_use: use,
         power: powerValue,
+        sort_loadings: sortLoadings,
       });
     } catch (err: unknown) {
       await showAnalysisError(err instanceof Error ? err.message : String(err));
@@ -244,6 +250,11 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
                     />
                   </Stack>
                   <MissingValueUse value={use} onChange={setUse} />
+                  <Checkbox.Root checked={sortLoadings} onCheckedChange={(e) => setSortLoadings(!!e.checked)}>
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                    <Checkbox.Label>負荷量をソート</Checkbox.Label>
+                  </Checkbox.Root>
                 </Stack>
               </SimpleGrid>
               {error ? <Text color="red.500">{error}</Text> : null}
