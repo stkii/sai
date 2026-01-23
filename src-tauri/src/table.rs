@@ -15,15 +15,11 @@ pub fn normalize_rows(rows: Vec<Vec<Value>>,
     }
 
     let mut normalized = Vec::with_capacity(rows.len());
-    let mut truncated_count = 0;
-    let mut first_truncated_row = None;
+    let mut truncated_any = false;
 
-    for (i, mut row) in rows.into_iter().enumerate() {
+    for mut row in rows.into_iter() {
         if row.len() > header_len {
-            truncated_count += 1;
-            if first_truncated_row.is_none() {
-                first_truncated_row = Some(i + 2);
-            }
+            truncated_any = true;
             row.truncate(header_len);
         } else if row.len() < header_len {
             row.resize(header_len, Value::Null);
@@ -31,17 +27,14 @@ pub fn normalize_rows(rows: Vec<Vec<Value>>,
         normalized.push(row);
     }
 
-    let note = first_truncated_row.map(|row_no| build_truncate_note(row_no, truncated_count));
+    let note = if truncated_any {
+        Some("一部の行で列数がヘッダ行より多かったため、余分な列のみ切り捨てました".to_string())
+    } else {
+        None
+    };
 
     NormalizedRows { rows: normalized,
                      note }
-}
-
-fn build_truncate_note(row_no: usize,
-                       count: usize)
-                       -> String {
-    format!("一部の行で列数がヘッダ行より多かったため、余分な列を切り捨てました。計 {} 行（ {} 行目）。",
-            count, row_no)
 }
 
 pub fn collect_ordered_selected_columns(headers: &[String],
