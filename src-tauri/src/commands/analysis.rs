@@ -1,9 +1,9 @@
 use crate::analysis::types::AnalysisRunResult;
 use crate::analysis::{
+    log as analysis_log,
     runner,
     sort,
 };
-use crate::commands::analysis_log;
 use crate::{
     cache,
     excel,
