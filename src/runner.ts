@@ -8,7 +8,7 @@ export interface AnalysisOptions {
 
 export interface AnalysisSelection {
   path: string;
-  sheet: string;
+  sheet?: string;
 }
 
 export interface AnalysisInput {
@@ -46,7 +46,7 @@ export type AnalysisType = 'descriptive' | 'correlation' | 'regression' | 'relia
 const buildCacheKey = (selection: AnalysisSelection, variables: string[]) => {
   const unique = Array.from(new Set(variables));
   unique.sort();
-  return [selection.path, selection.sheet, ...unique].join('||');
+  return [selection.path, selection.sheet ?? '', ...unique].join('||');
 };
 
 export const createAnalysisRunner = ({

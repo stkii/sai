@@ -1,8 +1,11 @@
 mod analysis;
 mod cache;
 mod commands;
+mod csv;
 mod dto;
 mod excel;
+mod table;
+mod types;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

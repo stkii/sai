@@ -4,8 +4,10 @@ use crate::analysis::{
     runner,
     sort,
 };
+use crate::types::DataSourceKind;
 use crate::{
     cache,
+    csv,
     excel,
 };
 use chrono::Local;
@@ -13,48 +15,63 @@ use serde_json::Value;
 
 #[tauri::command]
 pub fn build_numeric_dataset(path: String,
-                             sheet: String,
+                             sheet: Option<String>,
                              variables: Vec<String>)
                              -> Result<String, String> {
-    log::info!("analysis.build_numeric_dataset start path={} sheet={} vars={}",
+    let kind = DataSourceKind::from_path(&path)?;
+    let sheet_label = sheet.clone().unwrap_or_else(|| "-".to_string());
+    log::info!("analysis.build_numeric_dataset start path={} kind={} sheet={} vars={}",
                path,
-               sheet,
+               kind.as_str(),
+               sheet_label,
                variables.len());
 
-    let rows = match excel::read_excel_sheet_rows(&path, &sheet) {
-        Ok(rows) => rows,
-        Err(e) => {
-            log::error!("analysis.build_numeric_dataset read_failed path={} sheet={} err={}",
-                        path,
-                        sheet,
-                        e);
-            return Err(e);
+    let (dataset, sheet_name) = match kind {
+        DataSourceKind::Csv => {
+            let dataset =
+                csv::build_numeric_dataset_from_csv(&path, &variables).map_err(|e| {
+                    log::error!("analysis.build_numeric_dataset build_failed path={} kind={} err={}",
+                                path,
+                                kind.as_str(),
+                                e);
+                    e
+                })?;
+            (dataset, "CSV".to_string())
         },
-    };
-
-    let dataset = match excel::build_numeric_dataset(rows, &variables) {
-        Ok(dataset) => dataset,
-        Err(e) => {
-            log::error!("analysis.build_numeric_dataset build_failed path={} sheet={} err={}",
-                        path,
-                        sheet,
-                        e);
-            return Err(e);
+        DataSourceKind::Excel => {
+            let sheet = sheet.ok_or_else(|| "Sheet is required for Excel file".to_string())?;
+            let rows = excel::read_excel_sheet_rows(&path, &sheet).map_err(|e| {
+                           log::error!("analysis.build_numeric_dataset read_failed path={} sheet={} err={}",
+                                       path,
+                                       sheet,
+                                       e);
+                           e
+                       })?;
+            let dataset =
+                excel::build_numeric_dataset(rows, &variables).map_err(|e| {
+                    log::error!("analysis.build_numeric_dataset build_failed path={} sheet={} err={}",
+                                path,
+                                sheet,
+                                e);
+                    e
+                })?;
+            (dataset, sheet)
         },
     };
 
     let row_count = dataset.values().next().map(|col| col.len()).unwrap_or(0);
     let dataset_len = dataset.len();
     let variables_in_order = dataset.keys().cloned().collect();
-    let dataset_id = cache::insert_numeric_dataset(cache::NumericDatasetEntry { dataset,
-                                                                                path: path.clone(),
-                                                                                sheet: sheet.clone(),
-                                                                                variables:
-                                                                                    variables_in_order })?;
+    let dataset_id =
+        cache::insert_numeric_dataset(cache::NumericDatasetEntry { dataset,
+                                                                   path: path.clone(),
+                                                                   sheet: sheet_name.clone(),
+                                                                   variables: variables_in_order })?;
 
-    log::info!("analysis.build_numeric_dataset ok path={} sheet={} dataset_id={} vars={} rows={}",
+    log::info!("analysis.build_numeric_dataset ok path={} kind={} sheet={} dataset_id={} vars={} rows={}",
                path,
-               sheet,
+               kind.as_str(),
+               sheet_name,
                dataset_id,
                dataset_len,
                row_count);

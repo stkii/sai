@@ -3,7 +3,7 @@ import type { AnalysisOptions, AnalysisRunner } from '../runner';
 
 export interface AnalysisHandlerDeps {
   analysisRunner: AnalysisRunner;
-  getSelection: () => { path: string; sheet: string } | null;
+  getSelection: () => { path: string; sheet?: string } | null;
   openResultWindow: () => Promise<void>;
   emitResult: (payload: AnalysisResultPayload) => Promise<void>;
   onCloseDescriptive: () => void;
