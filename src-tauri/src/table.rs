@@ -1,11 +1,7 @@
 /// Common table helpers shared by CSV/Excel loaders.
+use crate::types::NormalizedRows;
 use serde_json::Value;
 use std::collections::HashSet;
-
-pub struct NormalizedRows {
-    pub rows: Vec<Vec<Value>>,
-    pub note: Option<String>,
-}
 
 pub fn normalize_rows(rows: Vec<Vec<Value>>,
                       header_len: usize)

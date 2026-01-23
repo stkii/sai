@@ -1,7 +1,8 @@
+use serde_json::Value;
 use std::path::Path;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum DataSourceKind {
+pub(crate) enum DataSourceKind {
     Csv,
     Excel,
 }
@@ -25,4 +26,10 @@ impl DataSourceKind {
             DataSourceKind::Excel => "excel",
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct NormalizedRows {
+    pub rows: Vec<Vec<Value>>,
+    pub note: Option<String>,
 }
