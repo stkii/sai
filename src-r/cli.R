@@ -257,6 +257,14 @@ Main <- function() {
   }
   r_dir <- base::file.path(script_dir, "R")
 
+  renv_activate <- base::file.path(script_dir, "renv", "activate.R")
+  if (base::file.exists(renv_activate)) {
+    if (!base::nzchar(Sys.getenv("RENV_PROJECT"))) {
+      Sys.setenv(RENV_PROJECT = script_dir)
+    }
+    base::source(renv_activate, local = FALSE)
+  }
+
   error_path <- base::file.path(r_dir, "error.R")
   if (!base::file.exists(error_path)) {
     base::stop("ERR-999: R core module 'error.R' not found under src-r/R")

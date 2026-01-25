@@ -26,6 +26,7 @@ ERR_MESSAGES <- base::list(
   "ERR-909" = "R module 'rotation.R' not found under src-r/R",
   "ERR-910" = "R module 'factor.R' not found under src-r/R",
   "ERR-920" = "Invalid analysis option",
+  "ERR-925" = "EFAtools package is required for factor rotation",
   # Internal errors
   "ERR-940" = "Internal error in design module"
 

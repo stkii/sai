@@ -2,67 +2,35 @@
 # Rotation helpers
 # ==================
 
-.FactanalWithVarimax <- function(R, n_factors, method) {
-  # Perform factor analysis using a covariance matrix
-  # Extraction: maximum likelihood
-  # Rotation: none (we apply rotations manually)
-  if (method != "ml") {
-    StopWithErrCode("ERR-920")
+.RequireEFAtools <- function() {
+  if (!requireNamespace("EFAtools", quietly = TRUE)) {
+    StopWithErrCode("ERR-925")
   }
-  fa <- stats::factanal(covmat = R, factors = n_factors, rotation = "none")
-
-  # Extract unrotated loading matrix
-  loadings0 <- as.matrix(fa$loadings)
-
-  # Apply varimax rotation with Kaiser normalization
-  vx <- stats::varimax(loadings0, normalize = TRUE)
-
-  return(list(
-    # Varimax-rotated loadings
-    loadings = as.matrix(vx$loadings),
-    # Varimax rotation matrix
-    rotmat   = vx$rotmat
-  ))
 }
 
-.PromaxRotation <- function(loadings, power = 4) {
-  # Compute communalities from varimax-rotated loadings
-  # Each row corresponds to one observed variable
-  L2 <- rowSums(loadings^2)
+.RotateWithEFAtools <- function(df, n_factors, rotation, method, corr_use, power = 4) {
+  .RequireEFAtools()
 
-  # Square root of communalities
-  W <- sqrt(L2)
+  efa_method <- if (identical(method, "ml")) "ML" else base::toupper(method)
+  efa_rotation <- base::as.character(rotation)
+  k_value <- if (identical(efa_rotation, "promax")) power else NA
 
-  # Apply communality-based weighting (row-wise)
-  loadings_w <- loadings * W
+  res <- EFAtools::EFA(
+    x = df,
+    n_factors = n_factors,
+    method = efa_method,
+    rotation = efa_rotation,
+    type = "SPSS",
+    use = corr_use,
+    k = k_value,
+    normalize = TRUE,
+    cor_method = "pearson"
+  )
 
-  # Construct target matrix using power transformation
-  # Sign is preserved, magnitude is raised to the given power
-  T <- sign(loadings_w) * abs(loadings_w)^power
-
-  # Estimate oblique rotation matrix via least squares
-  P <- solve(t(loadings_w) %*% loadings_w, t(loadings_w) %*% T)
-
-  # Normalize columns of the rotation matrix
-  P <- P %*% diag(1 / sqrt(colSums(P^2)))
-
-  # Compute pattern matrix (primary promax loadings)
-  pattern_mtx <- loadings %*% P
-
-  # Compute factor correlation matrix
-  Phi <- solve(t(P) %*% P)
-
-  # Compute structure matrix (correlations between variables and factors)
-  structure_mtx <- pattern_mtx %*% Phi
-
-  return(list(
-    # Pattern matrix (promax loadings)
-    loadings = pattern_mtx,
-    # Factor correlation matrix
-    Phi = Phi,
-    # Structure matrix
-    structure = structure_mtx,
-    # Oblique rotation matrix
-    rotmat = P
-  ))
+  list(
+    loadings = res$rot_loadings,
+    Phi = res$Phi,
+    structure = res$Structure,
+    rotmat = res$rotmat
+  )
 }
