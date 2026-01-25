@@ -267,7 +267,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
                       disabled={!isPromax}
                     />
                   </Stack>
-                  <MissingValueUse value={use} onChange={setUse} />
+                  <MissingValueUse value={use} onChange={setUse} disabledValues={['mean_imp']} />
                   <Checkbox.Root checked={sortLoadings} onCheckedChange={(e) => setSortLoadings(!!e.checked)}>
                     <Checkbox.HiddenInput />
                     <Checkbox.Control />

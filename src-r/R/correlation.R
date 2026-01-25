@@ -7,8 +7,14 @@
 # Args:
 # - x (data.frame or matrix): numeric variables in columns. Non-numeric columns are not allowed.
 # - mehod (character): "pearson" (default), "spearman", "kendall".
-# - use (character): "all.obs" (default), "complete.obs", "pairwise.complete.obs".
-.CorrTest <- function(df, method="pearson", use="all.obs", alternative="two.sided") {
+# - use (character): "complete.obs" (default), "pairwise.complete.obs", "mean_imp".
+.CorrTest <- function(df, method="pearson", use="complete.obs", alternative="two.sided") {
+  use_input <- use
+  if (identical(use, "mean_imp")) {
+    df <- ImputeMean(df)
+    use <- "pairwise.complete.obs"
+  }
+
   corr_res <- .PrepareCorrelation(df, method = method, use = use)
   work_mat <- corr_res$work_mat
   corr_mtx <- corr_res$corr_mtx
@@ -88,7 +94,7 @@
     n_mtx = n_mtx,
     method = method,
     alternative = alternative,
-    use = use,
+    use = use_input,
     note = if (method == "spearman" && ties_approx) {
       "※タイが存在するため、p値は近似によって算出されました"
     } else {
@@ -160,7 +166,7 @@
 # Arguments:
 # - df (data.frame): numeric dataset
 # - method (character): 'pearson' | 'spearman' | 'kendall'
-# - use (character): 'all.obs' | 'complete.obs' | 'pairwise.complete.obs'
+# - use (character): 'complete.obs' | 'pairwise.complete.obs' | 'mean_imp'
 # - alternative (character): 'two.sided' | 'less' | 'greater'
 # - view (character): reserved for future extensions
 #
@@ -169,7 +175,7 @@
 #
 RunCorrelation <- function(df, method = NULL, use = NULL, alternative = NULL, view = NULL) {
   method_norm <- .ValidateOptionInSet(method, c("pearson", "spearman", "kendall"))
-  use_norm <- .ValidateOptionInSet(use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
+  use_norm <- .ValidateOptionInSet(use, c("complete.obs", "pairwise.complete.obs", "mean_imp"))
   alternative_norm <- .ValidateOptionInSet(alternative, c("two.sided", "less", "greater"))
 
   res <- .CorrTest(df, method = method_norm, use = use_norm, alternative = alternative_norm)
