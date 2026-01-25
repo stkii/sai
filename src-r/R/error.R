@@ -30,11 +30,9 @@ ERR_MESSAGES <- base::list(
   "ERR-940" = "Internal error in design module"
 
   # ------------------------------------------------------------
-  # Bootstrap error (not defined in this file)
+  # Bootstrap error (defined in cli.R)
   # ------------------------------------------------------------
   # ERR-999: "R core module 'err.R' not found under src-r/R"
-  #   - Actual definition: R side bootstrap (src-r/R/registry.R)
-  #   - Rust backend just propagates this error code/message
   #   - Listed here for reference only.
 )
 
