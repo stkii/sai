@@ -165,11 +165,12 @@ fn write_cell_with_star(worksheet: &mut Worksheet,
                         has_star_column: bool)
                         -> Result<Option<String>, XlsxError> {
     if has_star_column
-        && let Value::String(value) = cell
-            && let Some((number, stars)) = split_star_value(value) {
-                worksheet.write_number(row, col, number)?;
-                return Ok(Some(stars));
-            }
+       && let Value::String(value) = cell
+       && let Some((number, stars)) = split_star_value(value)
+    {
+        worksheet.write_number(row, col, number)?;
+        return Ok(Some(stars));
+    }
 
     write_cell(worksheet, row, col, cell)?;
     Ok(None)
@@ -210,10 +211,11 @@ fn write_string_or_number(worksheet: &mut Worksheet,
                           -> Result<(), XlsxError> {
     let trimmed = value.trim();
     if let Ok(number) = trimmed.parse::<f64>()
-        && number.is_finite() {
-            worksheet.write_number(row, col, number)?;
-            return Ok(());
-        }
+       && number.is_finite()
+    {
+        worksheet.write_number(row, col, number)?;
+        return Ok(());
+    }
     worksheet.write_string(row, col, value)?;
     Ok(())
 }
@@ -226,10 +228,11 @@ fn detect_star_columns(table: &ParsedDataTable) -> Vec<bool> {
                 continue;
             }
             if let Value::String(value) = cell
-                && split_star_value(value).is_some()
-                    && let Some(entry) = star_columns.get_mut(col) {
-                        *entry = true;
-                    }
+               && split_star_value(value).is_some()
+               && let Some(entry) = star_columns.get_mut(col)
+            {
+                *entry = true;
+            }
         }
     }
     star_columns
