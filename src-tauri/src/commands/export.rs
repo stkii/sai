@@ -164,14 +164,12 @@ fn write_cell_with_star(worksheet: &mut Worksheet,
                         cell: &Value,
                         has_star_column: bool)
                         -> Result<Option<String>, XlsxError> {
-    if has_star_column {
-        if let Value::String(value) = cell {
-            if let Some((number, stars)) = split_star_value(value) {
+    if has_star_column
+        && let Value::String(value) = cell
+            && let Some((number, stars)) = split_star_value(value) {
                 worksheet.write_number(row, col, number)?;
                 return Ok(Some(stars));
             }
-        }
-    }
 
     write_cell(worksheet, row, col, cell)?;
     Ok(None)
@@ -193,13 +191,13 @@ fn write_cell(worksheet: &mut Worksheet,
                 worksheet.write_number(row, col, number)?;
                 Ok(())
             } else {
-                worksheet.write_string(row, col, &value.to_string())?;
+                worksheet.write_string(row, col, value.to_string())?;
                 Ok(())
             }
         },
         Value::String(value) => write_string_or_number(worksheet, row, col, value),
         _ => {
-            worksheet.write_string(row, col, &cell.to_string())?;
+            worksheet.write_string(row, col, cell.to_string())?;
             Ok(())
         },
     }
@@ -211,12 +209,11 @@ fn write_string_or_number(worksheet: &mut Worksheet,
                           value: &str)
                           -> Result<(), XlsxError> {
     let trimmed = value.trim();
-    if let Ok(number) = trimmed.parse::<f64>() {
-        if number.is_finite() {
+    if let Ok(number) = trimmed.parse::<f64>()
+        && number.is_finite() {
             worksheet.write_number(row, col, number)?;
             return Ok(());
         }
-    }
     worksheet.write_string(row, col, value)?;
     Ok(())
 }
@@ -228,13 +225,11 @@ fn detect_star_columns(table: &ParsedDataTable) -> Vec<bool> {
             if star_columns.get(col) == Some(&true) {
                 continue;
             }
-            if let Value::String(value) = cell {
-                if split_star_value(value).is_some() {
-                    if let Some(entry) = star_columns.get_mut(col) {
+            if let Value::String(value) = cell
+                && split_star_value(value).is_some()
+                    && let Some(entry) = star_columns.get_mut(col) {
                         *entry = true;
                     }
-                }
-            }
         }
     }
     star_columns
