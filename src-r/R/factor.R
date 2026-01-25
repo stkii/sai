@@ -145,7 +145,7 @@
 # Arguments:
 # - df (data.frame): numeric dataset
 # - n_factors (integer): number of factors
-# - rotation (character): "varimax" | "promax"
+# - rotation (character): "none" | "quartimax" | "equamax" | "varimax" | "oblimin" | "promax"
 # - method (character): "ml"
 # - corr_use (character): "all.obs" | "complete.obs" | "pairwise.complete.obs"
 # - power (numeric): promax power parameter
@@ -156,7 +156,10 @@
 #
 RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr_use = NULL, power = NULL, n_factors_auto = NULL) {
   auto_norm <- .NormalizeLogicalOption(n_factors_auto, default = FALSE)
-  rotation_norm <- .ValidateOptionInSet(rotation, c("varimax", "promax"))
+  rotation_norm <- .ValidateOptionInSet(
+    rotation,
+    c("none", "quartimax", "equamax", "varimax", "oblimin", "promax")
+  )
   method_norm <- .ValidateOptionInSet(method, c("ml"))
   corr_use_norm <- .ValidateOptionInSet(corr_use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
   power_norm <- .NormalizePositiveNumericOption(power, default = 4)
