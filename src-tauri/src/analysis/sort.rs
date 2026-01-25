@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use serde_json::Value;
 
 use crate::dto::{
@@ -37,14 +35,21 @@ fn sort_factor_table(table: &mut ParsedDataTable) {
             abs_values.push(abs);
         }
 
-        let (max_factor_index, _) = abs_values.iter().enumerate().fold((0, -1.0),
-                                                                       |(best_idx, best_val), (idx, val)| {
-                                                                           if *val > best_val {
-                                                                               (idx, *val)
-                                                                           } else {
-                                                                               (best_idx, best_val)
-                                                                           }
-                                                                       });
+        let mut max_factor_index = 0;
+        let mut best_val = -1.0;
+        let mut has_over_threshold = false;
+        for (idx, val) in abs_values.iter().enumerate() {
+            if *val >= LOADING_THRESHOLD {
+                if !has_over_threshold || *val > best_val {
+                    max_factor_index = idx;
+                    best_val = *val;
+                    has_over_threshold = true;
+                }
+            } else if !has_over_threshold && *val > best_val {
+                max_factor_index = idx;
+                best_val = *val;
+            }
+        }
 
         entries.push(RowEntry { original_index: index,
                                 row,
@@ -54,26 +59,14 @@ fn sort_factor_table(table: &mut ParsedDataTable) {
 
     let mut buckets: Vec<Vec<RowEntry>> = (0..factor_count).map(|_| Vec::new()).collect();
     for entry in entries {
-        buckets[entry.max_factor_index].push(entry);
+        let factor_idx = entry.max_factor_index;
+        buckets[factor_idx].push(entry);
     }
 
     let mut sorted_rows: Vec<Vec<Value>> = Vec::with_capacity(buckets.iter().map(|b| b.len()).sum());
-    for (factor_idx, bucket) in buckets.into_iter().enumerate() {
-        let mut high = Vec::new();
-        let mut low = Vec::new();
-        for entry in bucket {
-            if entry.abs_values[factor_idx] >= LOADING_THRESHOLD {
-                high.push(entry);
-            } else {
-                low.push(entry);
-            }
-        }
-
-        high.sort_by(|a, b| compare_entries(a, b, factor_idx));
-        low.sort_by(|a, b| compare_entries(a, b, factor_idx));
-
-        sorted_rows.extend(high.into_iter().map(|entry| entry.row));
-        sorted_rows.extend(low.into_iter().map(|entry| entry.row));
+    for (factor_idx, bucket) in buckets.iter_mut().enumerate() {
+        bucket.sort_by(|a, b| compare_entries(a, b, factor_idx));
+        sorted_rows.extend(bucket.drain(..).map(|entry| entry.row));
     }
 
     table.rows = sorted_rows;
@@ -90,11 +83,11 @@ fn parse_loading_value(value: &Value) -> Option<f64> {
 fn compare_entries(a: &RowEntry,
                    b: &RowEntry,
                    factor_idx: usize)
-                   -> Ordering {
+                   -> std::cmp::Ordering {
     let left = a.abs_values[factor_idx];
     let right = b.abs_values[factor_idx];
     right.partial_cmp(&left)
-         .unwrap_or(Ordering::Equal)
+         .unwrap_or(std::cmp::Ordering::Equal)
          .then_with(|| a.original_index.cmp(&b.original_index))
 }
 
