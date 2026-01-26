@@ -33,7 +33,6 @@ export const zDatasetCacheId = z.string();
 
 export const zSheetNames = z.array(z.string());
 
-// 回帰分析結果スキーマ（モデル要約 + 係数テーブル + 分散分析テーブル）
 export const zRegressionResult = z.object({
   model_summary: zParsedDataTable,
   coefficients: zParsedDataTable,
