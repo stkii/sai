@@ -11,14 +11,14 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { getAnalysisLabel } from '../analysisRegistry';
+import { getAnalysisLabel } from '../analysis/analysisRegistry';
+import type { AnalysisOptions } from '../analysis/runner';
 import ExecuteButton from '../components/ExecuteButton';
 import MissingValueUse, { MISSING_VALUE_OPTIONS } from '../components/MissingValueUse';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
 import ValueInput from '../components/ValueInput';
 import VariableSelector from '../components/VariableSelector';
 import { useDialogError } from '../hooks/useDialogError';
-import type { AnalysisOptions } from '../runner';
 
 const METHOD_OPTIONS: PopoverSelectItem[] = [{ label: '最尤法', value: 'ml' }];
 

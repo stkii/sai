@@ -1,5 +1,5 @@
+import type { AnalysisRunResult } from '../dto';
 import type { AnalysisType } from './analysisRegistry';
-import type { AnalysisRunResult } from './dto';
 
 export interface AnalysisOptions {
   order?: string;

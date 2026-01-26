@@ -1,6 +1,6 @@
 import { Box, Button, CloseButton, Dialog, HStack, Input, Portal, Stack, Text } from '@chakra-ui/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getAnalysisLabel } from '../analysisRegistry';
+import { getAnalysisLabel } from '../analysis/analysisRegistry';
 import type { AnalysisLogSummary } from '../dto';
 import tauriIPC from '../tauriIPC';
 

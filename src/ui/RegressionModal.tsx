@@ -1,13 +1,13 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useCallback, useEffect, useState } from 'react';
-import { getAnalysisLabel } from '../analysisRegistry';
+import { getAnalysisLabel } from '../analysis/analysisRegistry';
+import type { AnalysisOptions } from '../analysis/runner';
 import ExecuteButton from '../components/ExecuteButton';
 import InteractionSelector from '../components/InteractionSelector';
 import RegressionVariableSelector, {
   type RegressionVariableSelection,
 } from '../components/RegressionVariableSelector';
 import { useDialogError } from '../hooks/useDialogError';
-import type { AnalysisOptions } from '../runner';
 
 export interface RegressionModalOptions extends AnalysisOptions {
   dependent: string;

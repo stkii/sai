@@ -1,6 +1,6 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { getAnalysisLabel } from '../analysisRegistry';
+import { getAnalysisLabel } from '../analysis/analysisRegistry';
 import ExecuteButton from '../components/ExecuteButton';
 import RadioOptions from '../components/RadioOptions';
 import VariableSelector from '../components/VariableSelector';

@@ -1,12 +1,12 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { getAnalysisLabel } from '../analysisRegistry';
+import { getAnalysisLabel } from '../analysis/analysisRegistry';
+import type { AnalysisOptions } from '../analysis/runner';
 import ExecuteButton from '../components/ExecuteButton';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
 import RadioOptions from '../components/RadioOptions';
 import ValueInput from '../components/ValueInput';
 import { useDialogError } from '../hooks/useDialogError';
-import type { AnalysisOptions } from '../runner';
 
 const TEST_OPTIONS: PopoverSelectItem[] = [
   { label: '相関', value: 'r' },

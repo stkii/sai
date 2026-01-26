@@ -6,7 +6,7 @@ import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysisEvents';
+import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysis/analysisEvents';
 import DataTable from '../components/DataTable';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
 import type { AnalysisResult, ParsedDataTable } from '../dto';

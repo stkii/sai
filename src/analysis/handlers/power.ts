@@ -1,12 +1,12 @@
 import type { AnalysisResultPayload } from '../analysisEvents';
 import { getAnalysisLabel } from '../analysisRegistry';
-import tauriIPC from '../tauriIPC';
+import { runPowerTest } from '../usecases/runPowerTest';
 import type { AnalysisHandlerDeps, PowerTestOptions } from './types';
 
 export const createRunPowerTest =
   (deps: AnalysisHandlerDeps) =>
   async (options: PowerTestOptions): Promise<void> => {
-    const analysis = await tauriIPC.runPowerTest(options);
+    const analysis = await runPowerTest(options);
 
     const payload: AnalysisResultPayload = {
       id: analysis.analysisId,
