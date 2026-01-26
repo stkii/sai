@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react';
 import ExecuteButton from '../components/ExecuteButton';
 import MissingValueUse, { MISSING_VALUE_OPTIONS } from '../components/MissingValueUse';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
-import RadioOptions from '../components/RadioOptions';
 import ValueInput from '../components/ValueInput';
 import VariableSelector from '../components/VariableSelector';
 import { useDialogError } from '../hooks/useDialogError';
@@ -29,9 +28,15 @@ const CRITERION_OPTIONS = [
 ];
 
 const ROTATION_OPTIONS = [
+  { label: 'なし', value: 'none' },
+  { label: 'クォーティマックス', value: 'quartimax' },
   { label: 'バリマックス', value: 'varimax' },
+  { label: 'エカマックス', value: 'equamax' },
+  { label: 'オブリミン', value: 'oblimin' },
   { label: 'プロマックス', value: 'promax' },
 ];
+
+const DEFAULT_ROTATION = 'varimax';
 
 interface FactorModalOptions extends AnalysisOptions {
   method: string;
@@ -57,7 +62,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
   const [selectedMethod, setSelectedMethod] = useState<PopoverSelectItem | null>(METHOD_OPTIONS[0] ?? null);
   const [criterion, setCriterion] = useState(CRITERION_OPTIONS[0]?.value ?? 'guttman');
   const [fixedFactors, setFixedFactors] = useState('');
-  const [rotation, setRotation] = useState(ROTATION_OPTIONS[0]?.value ?? 'varimax');
+  const [rotation, setRotation] = useState(DEFAULT_ROTATION);
   const [power, setPower] = useState('4');
   const [use, setUse] = useState(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
   const [sortLoadings, setSortLoadings] = useState(false);
@@ -76,7 +81,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
       setSelectedMethod(METHOD_OPTIONS[0] ?? null);
       setCriterion(CRITERION_OPTIONS[0]?.value ?? 'guttman');
       setFixedFactors('');
-      setRotation(ROTATION_OPTIONS[0]?.value ?? 'varimax');
+      setRotation(DEFAULT_ROTATION);
       setPower('4');
       setUse(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
       setSortLoadings(false);
@@ -89,7 +94,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
     setSelectedMethod(METHOD_OPTIONS[0] ?? null);
     setCriterion(CRITERION_OPTIONS[0]?.value ?? 'guttman');
     setFixedFactors('');
-    setRotation(ROTATION_OPTIONS[0]?.value ?? 'varimax');
+    setRotation(DEFAULT_ROTATION);
     setPower('4');
     setUse(MISSING_VALUE_OPTIONS[0]?.value ?? 'all.obs');
     setSortLoadings(false);
@@ -231,12 +236,25 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
                   </Stack>
                   <Stack gap="2">
                     <Text fontWeight="semibold">回転</Text>
-                    <RadioOptions
-                      items={ROTATION_OPTIONS}
-                      orientation="horizontal"
+                    <RadioGroup.Root
                       value={rotation}
-                      onChange={setRotation}
-                    />
+                      onValueChange={(e) => {
+                        if (e.value) {
+                          setRotation(e.value);
+                        }
+                      }}
+                      orientation="horizontal"
+                    >
+                      <SimpleGrid columns={{ base: 2 }} gap="3" alignItems="center">
+                        {ROTATION_OPTIONS.map((item) => (
+                          <RadioGroup.Item key={item.value} value={item.value}>
+                            <RadioGroup.ItemHiddenInput />
+                            <RadioGroup.ItemIndicator />
+                            <RadioGroup.ItemText>{item.label}</RadioGroup.ItemText>
+                          </RadioGroup.Item>
+                        ))}
+                      </SimpleGrid>
+                    </RadioGroup.Root>
                     <ValueInput
                       width="140px"
                       min={isPromax && powerHasValue ? 0.1 : undefined}
@@ -249,7 +267,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
                       disabled={!isPromax}
                     />
                   </Stack>
-                  <MissingValueUse value={use} onChange={setUse} />
+                  <MissingValueUse value={use} onChange={setUse} disabledValues={['mean_imp']} />
                   <Checkbox.Root checked={sortLoadings} onCheckedChange={(e) => setSortLoadings(!!e.checked)}>
                     <Checkbox.HiddenInput />
                     <Checkbox.Control />

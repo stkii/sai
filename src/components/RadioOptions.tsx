@@ -3,6 +3,7 @@ import { RadioGroup, Stack } from '@chakra-ui/react';
 interface RadioOptionItem {
   label: string;
   value: string;
+  disabled?: boolean;
 }
 
 interface RadioOptionsProps {
@@ -30,7 +31,7 @@ const RadioOptions = ({ items, orientation, value, onChange }: RadioOptionsProps
     >
       <Stack gap="4" direction={direction} align={orientation === 'vertical' ? 'flex-start' : 'center'}>
         {items.map((item) => (
-          <RadioGroup.Item key={item.value} value={item.value}>
+          <RadioGroup.Item key={item.value} value={item.value} disabled={item.disabled}>
             <RadioGroup.ItemHiddenInput />
             <RadioGroup.ItemIndicator />
             <RadioGroup.ItemText>{item.label}</RadioGroup.ItemText>

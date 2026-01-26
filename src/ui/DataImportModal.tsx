@@ -9,7 +9,7 @@ import tauriIPC from '../tauriIPC';
 
 export interface DataImportSelection {
   path: string;
-  sheet: string;
+  sheet?: string;
 }
 
 interface DataImportModalProps {
@@ -23,7 +23,8 @@ const DataImportModal = ({ onLoaded }: DataImportModalProps) => {
   const [selectedSheet, setSelectedSheet] = useState<PopoverSelectItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const canLoad = Boolean(filePath && selectedSheet && !loading);
+  const hasSheetOptions = sheetOptions.length > 0;
+  const canLoad = Boolean(filePath && (!hasSheetOptions || selectedSheet) && !loading);
 
   useEffect(() => {
     if (!filePath) {
@@ -66,7 +67,7 @@ const DataImportModal = ({ onLoaded }: DataImportModalProps) => {
     const result = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: 'Excel', extensions: ['xlsx', 'xls'] }],
+      filters: [{ name: 'Excel/CSV', extensions: ['xlsx', 'xls', 'csv'] }],
     });
 
     if (!result) {
@@ -81,7 +82,7 @@ const DataImportModal = ({ onLoaded }: DataImportModalProps) => {
     if (!canLoad) {
       return;
     }
-    if (!filePath || !selectedSheet) {
+    if (!filePath || (hasSheetOptions && !selectedSheet)) {
       setError('ファイルとシートを選択してください');
       return;
     }
@@ -89,8 +90,9 @@ const DataImportModal = ({ onLoaded }: DataImportModalProps) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await tauriIPC.parseExcel(filePath, selectedSheet.label);
-      onLoaded(data, { path: filePath, sheet: selectedSheet.label });
+      const sheet = selectedSheet?.label;
+      const data = await tauriIPC.parseTable(filePath, sheet);
+      onLoaded(data, { path: filePath, sheet });
       setIsOpen(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
@@ -119,13 +121,15 @@ const DataImportModal = ({ onLoaded }: DataImportModalProps) => {
                   buttonLabel="ファイルを選択"
                   placeholder="ファイル未選択"
                 />
-                <Box alignSelf="flex-start">
-                  <PopoverSelect
-                    items={sheetOptions}
-                    placeholder="シートを選択"
-                    onSelect={setSelectedSheet}
-                  />
-                </Box>
+                {hasSheetOptions ? (
+                  <Box alignSelf="flex-start">
+                    <PopoverSelect
+                      items={sheetOptions}
+                      placeholder="シートを選択"
+                      onSelect={setSelectedSheet}
+                    />
+                  </Box>
+                ) : null}
                 {error ? <Text color="red.500">{error}</Text> : null}
               </Stack>
             </Dialog.Body>

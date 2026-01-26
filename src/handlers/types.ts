@@ -3,7 +3,7 @@ import type { AnalysisOptions, AnalysisRunner } from '../runner';
 
 export interface AnalysisHandlerDeps {
   analysisRunner: AnalysisRunner;
-  getSelection: () => { path: string; sheet: string } | null;
+  getSelection: () => { path: string; sheet?: string } | null;
   openResultWindow: () => Promise<void>;
   emitResult: (payload: AnalysisResultPayload) => Promise<void>;
   onCloseDescriptive: () => void;
@@ -11,6 +11,7 @@ export interface AnalysisHandlerDeps {
   onCloseRegression: () => void;
   onCloseReliability: () => void;
   onCloseFactor: () => void;
+  onClosePower: () => void;
 }
 
 export interface CorrelationOptions extends AnalysisOptions {
@@ -38,4 +39,17 @@ export interface FactorOptions extends AnalysisOptions {
   corr_use: string;
   power?: number;
   sort_loadings: boolean;
+}
+
+export interface PowerTestOptions extends AnalysisOptions {
+  test: string;
+  effect: string;
+  sig_level: number;
+  power?: number;
+  n?: number;
+  t_type?: string;
+  alternative?: string;
+  k?: number;
+  df?: number;
+  u?: number;
 }

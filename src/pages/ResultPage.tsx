@@ -186,9 +186,14 @@ const ResultPage: FC = () => {
           </Box>
           <Box>
             <Text fontWeight="medium" fontSize="sm" mb="2">
-              因子負荷量
+              パターン行列
             </Text>
-            <DataTable table={factor.pattern} height={patternHeight} showRowIndex={false} />
+            <DataTable
+              table={factor.pattern}
+              height={patternHeight}
+              showRowIndex={false}
+              highlightAbsThreshold={0.4}
+            />
           </Box>
           <Box>
             <Text fontWeight="medium" fontSize="sm" mb="2">

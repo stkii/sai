@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client';
 
 import type { AnalysisResultPayload } from '../analysisEvents';
 import DataTable from '../components/DataTable';
+import ExecuteButton from '../components/ExecuteButton';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
 import type { ParsedDataTable } from '../dto';
 import { createAnalysisHandlers } from '../handlers/createAnalysisHandlers';
@@ -16,6 +17,7 @@ import CorrTestModal from '../ui/CorrTestModal';
 import DataImportModal, { type DataImportSelection } from '../ui/DataImportModal';
 import DescriptiveModal from '../ui/DescriptiveModal';
 import FactorModal from '../ui/FactorModal';
+import PowerTestModal from '../ui/PowerTestModal';
 import RegressionModal from '../ui/RegressionModal';
 import ReliabilityModal from '../ui/ReliabilityModal';
 
@@ -75,6 +77,7 @@ const DataPage: FC = () => {
   const [dataSelection, setDataSelection] = useState<DataImportSelection | null>(null);
   const [openAnalysis, setOpenAnalysis] = useState<AnalysisModalKey | null>(null);
   const [analysisSelectResetKey, setAnalysisSelectResetKey] = useState(0);
+  const [powerOpen, setPowerOpen] = useState(false);
   const analysisDisabled = table === null;
   const analysisRunner = useMemo(
     () =>
@@ -126,6 +129,9 @@ const DataPage: FC = () => {
     setOpenAnalysis(null);
     setAnalysisSelectResetKey((value) => value + 1);
   }, []);
+  const closePower = useCallback(() => {
+    setPowerOpen(false);
+  }, []);
   const handlers = useMemo(
     () =>
       createAnalysisHandlers({
@@ -138,8 +144,9 @@ const DataPage: FC = () => {
         onCloseRegression: closeAnalysis,
         onCloseReliability: closeAnalysis,
         onCloseFactor: closeAnalysis,
+        onClosePower: closePower,
       }),
-    [analysisRunner, closeAnalysis, emitResult, getSelection, openResultWindow]
+    [analysisRunner, closeAnalysis, closePower, emitResult, getSelection, openResultWindow]
   );
 
   const analysisModalConfigs = useMemo<Record<AnalysisModalKey, AnalysisModalConfig>>(
@@ -195,6 +202,7 @@ const DataPage: FC = () => {
             disabled={analysisDisabled}
             resetKey={analysisSelectResetKey}
           />
+          <ExecuteButton label="検定力分析" variant="outline" onClick={() => setPowerOpen(true)} />
         </HStack>
         <DataTable table={table} height={600} />
         {ANALYSIS_MODAL_KEYS.map((key) => (
@@ -206,6 +214,7 @@ const DataPage: FC = () => {
             })}
           </Fragment>
         ))}
+        <PowerTestModal open={powerOpen} onClose={closePower} onExecute={handlers.runPowerTest} />
       </Stack>
     </Box>
   );

@@ -65,6 +65,32 @@ IsDataFrame <- function(x) {
   return(TRUE)
 }
 
+# Replace missing values with column means.
+#
+# Args:
+# - df (data.frame): numeric dataset
+#
+# Returns:
+# - data.frame with NA values replaced by column means
+#
+ImputeMean <- function(df) {
+  IsDataFrame(df)
+  is_num <- base::vapply(df, is.numeric, base::logical(1))
+  if (base::any(!is_num)) {
+    StopWithErrCode("ERR-811")
+  }
+
+  out <- df
+  for (col in base::names(out)) {
+    vals <- out[[col]]
+    if (!base::any(base::is.na(vals))) next
+    if (!base::any(!base::is.na(vals))) next
+    mean_val <- base::mean(vals, na.rm = TRUE)
+    out[[col]][base::is.na(vals)] <- mean_val
+  }
+  out
+}
+
 # Create a sorter for ParsedDataTable-like objects.
 #
 # Arguments:

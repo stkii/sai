@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use calamine::{
     CellErrorType,
     Data,
@@ -9,6 +7,7 @@ use calamine::{
 use indexmap::IndexMap;
 
 use crate::dto::ParsedDataTable;
+use crate::table;
 
 pub fn build_numeric_dataset(rows_data: Vec<Vec<Data>>,
                              variables: &[String])
@@ -21,7 +20,7 @@ pub fn build_numeric_dataset(rows_data: Vec<Vec<Data>>,
     }
 
     let headers = compute_headers_from_first_row(&rows_data[0])?;
-    let selected_columns = collect_ordered_selected_columns(&headers, variables)?;
+    let selected_columns = table::collect_ordered_selected_columns(&headers, variables)?;
     let row_count = rows_data.len().saturating_sub(1);
 
     let mut dataset = IndexMap::with_capacity(selected_columns.len());
@@ -50,7 +49,7 @@ pub fn compute_headers_from_first_row(row0: &[Data]) -> Result<Vec<String>, Stri
                                    .map(|(i, cell)| cell_value_to_header_name(cell, i))
                                    .collect();
 
-    validate_unique_headers(&headers)?;
+    table::validate_unique_headers(&headers)?;
 
     Ok(headers)
 }
@@ -71,9 +70,11 @@ pub fn create_parsed_data_table(rows_data: Vec<Vec<Data>>) -> Result<ParsedDataT
                         .map(|row| row.into_iter().map(cell_value_to_json_value).collect())
                         .collect();
 
+    let normalized = table::normalize_rows(rows, headers.len());
+
     Ok(ParsedDataTable { headers,
-                         rows,
-                         note: None,
+                         rows: normalized.rows,
+                         note: normalized.note,
                          title: None })
 }
 
@@ -174,33 +175,6 @@ fn cell_value_to_json_value(cell: Data) -> serde_json::Value {
     }
 }
 
-fn collect_ordered_selected_columns(headers: &[String],
-                                    variables: &[String])
-                                    -> Result<Vec<(String, usize)>, String> {
-    let header_set: HashSet<&str> = headers.iter().map(|h| h.as_str()).collect();
-    let missing: Vec<&str> = variables.iter()
-                                      .map(|v| v.as_str())
-                                      .filter(|v| !header_set.contains(*v))
-                                      .collect();
-    if !missing.is_empty() {
-        return Err(format!("Selected variables not found: {}", missing.join(", ")));
-    }
-
-    let selected_set: HashSet<&str> = variables.iter().map(|v| v.as_str()).collect();
-    let mut selected = Vec::new();
-    for (index, header) in headers.iter().enumerate() {
-        if selected_set.contains(header.as_str()) {
-            selected.push((header.clone(), index));
-        }
-    }
-
-    if selected.is_empty() {
-        return Err("No matching variables found".to_string());
-    }
-
-    Ok(selected)
-}
-
 fn parse_numeric_cell(cell: Option<&Data>,
                       row_index: usize,
                       col_index: usize,
@@ -287,23 +261,4 @@ fn special_value_to_str(f: f64) -> Option<&'static str> {
         return Some(if f.is_sign_negative() { "-Inf!" } else { "Inf!" });
     }
     None
-}
-
-/// This function is the single source of truth for header naming rules.
-fn validate_unique_headers(headers: &[String]) -> Result<(), String> {
-    // Detect duplicate headers
-    let mut seen: HashSet<&str> = HashSet::new();
-    let mut dup_seen: HashSet<&str> = HashSet::new();
-    let mut dups: Vec<String> = Vec::new();
-    for h in headers {
-        let key = h.as_str();
-        if !seen.insert(key) && dup_seen.insert(key) {
-            dups.push(h.clone());
-        }
-    }
-    if !dups.is_empty() {
-        return Err(format!("Sheet headers are duplicated: {}", dups.join(", ")));
-    }
-
-    Ok(())
 }

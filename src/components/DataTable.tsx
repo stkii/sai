@@ -11,6 +11,7 @@ interface DataTableProps {
   height?: number;
   showRowIndex?: boolean;
   emptyMessage?: string;
+  highlightAbsThreshold?: number;
 }
 
 const CELL_WIDTH = 80;
@@ -37,6 +38,7 @@ const DataTable = ({
   height = 400,
   showRowIndex = true,
   emptyMessage = 'データを選択して読み込んでください',
+  highlightAbsThreshold,
 }: DataTableProps) => {
   if (!table) {
     return (
@@ -127,10 +129,23 @@ const DataTable = ({
         )}
         itemContent={(_index, row) =>
           headers.map((header, columnIndex) => {
+            const dataIndex = columnIndex - dataOffset;
             const value =
               showRowIndex && columnIndex === 0
                 ? String(_index + 1)
-                : formatCellValue(row[columnIndex - dataOffset] ?? null);
+                : formatCellValue(row[dataIndex] ?? null);
+            const rawValue = row[dataIndex] ?? null;
+            const numericValue =
+              typeof rawValue === 'number'
+                ? rawValue
+                : typeof rawValue === 'string'
+                  ? Number.parseFloat(rawValue)
+                  : Number.NaN;
+            const isHighlight =
+              typeof highlightAbsThreshold === 'number' &&
+              dataIndex >= 1 &&
+              Number.isFinite(numericValue) &&
+              Math.abs(numericValue) >= highlightAbsThreshold;
             return (
               <TableCell
                 key={header}
@@ -141,6 +156,7 @@ const DataTable = ({
                   borderColor: 'divider',
                   borderRight: '1px solid',
                   borderRightColor: 'divider',
+                  fontWeight: isHighlight ? 700 : undefined,
                   py: 0,
                   '&:last-of-type': {
                     borderRight: 'none',

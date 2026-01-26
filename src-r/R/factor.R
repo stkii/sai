@@ -45,6 +45,30 @@
   list(headers = headers, rows = rows)
 }
 
+.NormalizeFactorLabels <- function(loadings, rotmat, Phi, structure) {
+  if (is.null(loadings) || !base::is.matrix(loadings)) {
+    return(list(loadings = loadings, rotmat = rotmat, Phi = Phi, structure = structure))
+  }
+
+  n_factors <- base::ncol(loadings)
+  labels <- base::paste0("因子", base::seq_len(n_factors))
+
+  base::colnames(loadings) <- labels
+  if (!is.null(structure) && base::is.matrix(structure)) {
+    base::colnames(structure) <- labels
+  }
+  if (!is.null(Phi) && base::is.matrix(Phi)) {
+    base::colnames(Phi) <- labels
+    base::rownames(Phi) <- labels
+  }
+  if (!is.null(rotmat) && base::is.matrix(rotmat)) {
+    base::colnames(rotmat) <- labels
+    base::rownames(rotmat) <- labels
+  }
+
+  list(loadings = loadings, rotmat = rotmat, Phi = Phi, structure = structure)
+}
+
 .EigenTableParsed <- function(eig, prop, cum_prop) {
   factors <- base::paste0("因子", base::seq_len(base::length(eig)))
   headers <- base::c("因子", "固有値", "寄与率", "累積寄与率")
@@ -65,6 +89,11 @@
   structure <- res$structure
   Phi <- res$Phi
   rotmat <- res$rotmat
+  labeled <- .NormalizeFactorLabels(loadings, rotmat, Phi, structure)
+  loadings <- labeled$loadings
+  rotmat <- labeled$rotmat
+  Phi <- labeled$Phi
+  structure <- labeled$structure
 
   output <- list(
     eigen = .EigenTableParsed(res$eig, res$prop, res$cum_prop),
@@ -91,31 +120,20 @@
   prop <- eig_res$prop
   cum_prop <- eig_res$cum_prop
 
-  # Perform varimax rotation
-  vx_res <- .FactanalWithVarimax(R, n_factors, method)
-
-  # ===== Extract results =====
-  final_loadings <- vx_res$loadings
-  final_rotmat <- vx_res$rotmat
-  final_Phi <- NULL
-  final_structure <- NULL
-
-  if (rotation == "promax") {
-    # Perform promax rotation
-    promax_res <- .PromaxRotation(final_loadings, power)
-
-    # ===== Extract results =====
-    final_loadings <- promax_res$loadings
-    final_Phi <- promax_res$Phi
-    final_structure <- promax_res$structure
-    final_rotmat <- promax_res$rotmat
-  }
+  rot_res <- .RotateWithEFAtools(
+    df,
+    n_factors = n_factors,
+    rotation = rotation,
+    method = method,
+    corr_use = corr_use,
+    power = power
+  )
 
   list(
-    loadings = final_loadings,
-    Phi = final_Phi,
-    structure = final_structure,
-    rotmat = final_rotmat,
+    loadings = rot_res$loadings,
+    Phi = rot_res$Phi,
+    structure = rot_res$structure,
+    rotmat = rot_res$rotmat,
     eig = eig,
     prop = prop,
     cum_prop = cum_prop
@@ -127,7 +145,7 @@
 # Arguments:
 # - df (data.frame): numeric dataset
 # - n_factors (integer): number of factors
-# - rotation (character): "varimax" | "promax"
+# - rotation (character): "none" | "quartimax" | "equamax" | "varimax" | "oblimin" | "promax"
 # - method (character): "ml"
 # - corr_use (character): "all.obs" | "complete.obs" | "pairwise.complete.obs"
 # - power (numeric): promax power parameter
@@ -138,7 +156,10 @@
 #
 RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr_use = NULL, power = NULL, n_factors_auto = NULL) {
   auto_norm <- .NormalizeLogicalOption(n_factors_auto, default = FALSE)
-  rotation_norm <- .ValidateOptionInSet(rotation, c("varimax", "promax"))
+  rotation_norm <- .ValidateOptionInSet(
+    rotation,
+    c("none", "quartimax", "equamax", "varimax", "oblimin", "promax")
+  )
   method_norm <- .ValidateOptionInSet(method, c("ml"))
   corr_use_norm <- .ValidateOptionInSet(corr_use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
   power_norm <- .NormalizePositiveNumericOption(power, default = 4)

@@ -22,8 +22,9 @@ const validateParsedDataTable = (raw: unknown, source: string): ParsedDataTable 
 };
 
 class TauriIPC {
-  async buildNumericDataset(path: string, sheet: string, variables: string[]): Promise<string> {
-    const raw = await invoke('build_numeric_dataset', { path, sheet, variables });
+  async buildNumericDataset(path: string, sheet: string | undefined, variables: string[]): Promise<string> {
+    const payload = sheet ? { path, sheet, variables } : { path, variables };
+    const raw = await invoke('build_numeric_dataset', payload);
     const parsed = zDatasetId.safeParse(raw);
     if (!parsed.success) {
       throw new Error(`データセットIDのスキーマが一致しませんでした: ${parsed.error.message}`);
@@ -36,7 +37,7 @@ class TauriIPC {
   }
 
   async getSheets(path: string): Promise<string[]> {
-    const raw = await invoke('get_excel_sheets', { path });
+    const raw = await invoke('get_sheets', { path });
     const parsed = zSheetNames.safeParse(raw);
     if (!parsed.success) {
       throw new Error(`シート名のスキーマが一致しませんでした: ${parsed.error.message}`);
@@ -44,9 +45,10 @@ class TauriIPC {
     return parsed.data;
   }
 
-  async parseExcel(path: string, sheet: string): Promise<ParsedDataTable> {
-    const raw = await invoke('parse_excel', { path, sheet });
-    return validateParsedDataTable(raw, 'Excelテーブルのスキーマが一致しませんでした');
+  async parseTable(path: string, sheet?: string): Promise<ParsedDataTable> {
+    const payload = sheet ? { path, sheet } : { path };
+    const raw = await invoke('parse_table', payload);
+    return validateParsedDataTable(raw, 'テーブルのスキーマが一致しませんでした');
   }
 
   async runAnalysis(
@@ -59,6 +61,15 @@ class TauriIPC {
       datasetId,
       options,
     });
+    const parsed = zAnalysisRunResult.safeParse(raw);
+    if (!parsed.success) {
+      throw new Error(`分析結果のスキーマが一致しませんでした: ${parsed.error.message}`);
+    }
+    return parsed.data;
+  }
+
+  async runPowerTest(options: Record<string, unknown> = {}): Promise<AnalysisRunResult> {
+    const raw = await invoke('run_power_test', { options });
     const parsed = zAnalysisRunResult.safeParse(raw);
     if (!parsed.success) {
       throw new Error(`分析結果のスキーマが一致しませんでした: ${parsed.error.message}`);
