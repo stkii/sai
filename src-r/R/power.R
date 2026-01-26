@@ -32,7 +32,8 @@ COHEN_ES_LARGE <- c(
 .PowerTest <- function(effect = NULL,
                        test = NULL,
                        sig_level = NULL,
-                       power = 0.8,
+                       power = NULL,
+                       n = NULL,
                        t_type = NULL,
                        alternative = NULL,
                        k = NULL,
@@ -74,12 +75,37 @@ COHEN_ES_LARGE <- c(
     StopWithErrCode("ERR-845")
   }
 
-  if (is.null(power) || !base::is.numeric(power)) {
-    StopWithErrCode("ERR-846")
+  n_val <- NULL
+  has_n <- FALSE
+  if (!is.null(n)) {
+    if (!base::is.numeric(n)) {
+      StopWithErrCode("ERR-852")
+    }
+    n_val <- base::as.numeric(n[[1]])
+    if (!base::is.finite(n_val) || n_val <= 0) {
+      StopWithErrCode("ERR-852")
+    }
+    has_n <- TRUE
   }
-  power <- base::as.numeric(power[[1]])
-  if (!base::is.finite(power) || power <= 0 || power >= 1) {
-    StopWithErrCode("ERR-846")
+
+  has_power <- !is.null(power)
+  if (!has_power && !has_n) {
+    power <- 0.8
+    has_power <- TRUE
+  }
+
+  if (has_power && has_n) {
+    StopWithErrCode("ERR-853")
+  }
+
+  if (has_power) {
+    if (!base::is.numeric(power)) {
+      StopWithErrCode("ERR-846")
+    }
+    power <- base::as.numeric(power[[1]])
+    if (!base::is.finite(power) || power <= 0 || power >= 1) {
+      StopWithErrCode("ERR-846")
+    }
   }
 
   alternative_norm <- NULL
@@ -125,32 +151,46 @@ COHEN_ES_LARGE <- c(
     }
   }
 
+  v_val <- NULL
+  if (test == "f2" && has_n) {
+    v_val <- n_val - u_val - 1
+    if (!base::is.finite(v_val) || v_val <= 0) {
+      StopWithErrCode("ERR-854")
+    }
+  }
+
   res <- switch(
     test,
-    anov = pwr::pwr.anova.test(k = k_val, n = NULL, f = effect, sig.level = sig_level, power = power),
-    chisq = pwr::pwr.chisq.test(w = effect, N = NULL, df = df_val, sig.level = sig_level, power = power),
-    f2 = pwr::pwr.f2.test(u = u_val, v = NULL, f2 = effect, sig.level = sig_level, power = power),
-    r = pwr::pwr.r.test(n = NULL, r = effect, sig.level = sig_level, power = power, alternative = alternative_norm),
-    t = pwr::pwr.t.test(n = NULL, d = effect, sig.level = sig_level, power = power, type = t_type_norm, alternative = alternative_norm),
-    p = pwr::pwr.p.test(n = NULL, h = effect, sig.level = sig_level, power = power, alternative = alternative_norm)
+    anov = pwr::pwr.anova.test(k = k_val, n = if (has_n) n_val else NULL, f = effect, sig.level = sig_level, power = if (has_power) power else NULL),
+    chisq = pwr::pwr.chisq.test(w = effect, N = if (has_n) n_val else NULL, df = df_val, sig.level = sig_level, power = if (has_power) power else NULL),
+    f2 = pwr::pwr.f2.test(u = u_val, v = if (has_n) v_val else NULL, f2 = effect, sig.level = sig_level, power = if (has_power) power else NULL),
+    r = pwr::pwr.r.test(n = if (has_n) n_val else NULL, r = effect, sig.level = sig_level, power = if (has_power) power else NULL, alternative = alternative_norm),
+    t = pwr::pwr.t.test(n = if (has_n) n_val else NULL, d = effect, sig.level = sig_level, power = if (has_power) power else NULL, type = t_type_norm, alternative = alternative_norm),
+    p = pwr::pwr.p.test(n = if (has_n) n_val else NULL, h = effect, sig.level = sig_level, power = if (has_power) power else NULL, alternative = alternative_norm)
   )
 
-  n_value <- switch(
-    test,
-    anov = res$n,
-    chisq = res$N,
-    f2 = u_val + res$v + 1,
-    r = res$n,
-    t = res$n,
-    p = res$n
-  )
+  n_value <- if (has_n) {
+    n_val
+  } else {
+    switch(
+      test,
+      anov = res$n,
+      chisq = res$N,
+      f2 = u_val + res$v + 1,
+      r = res$n,
+      t = res$n,
+      p = res$n
+    )
+  }
+
+  power_value <- if (has_n) res$power else power
 
   headers <- c("サンプルサイズ N", "効果量", "有意水準", "検出力")
   row <- base::c(
     FormatNum(n_value),
     FormatNum(effect),
     FormatNum(sig_level),
-    FormatNum(power)
+    FormatNum(power_value)
   )
 
   result <- list(headers = headers, rows = list(row))
@@ -163,7 +203,7 @@ COHEN_ES_LARGE <- c(
     t = "t検定",
     p = "比率"
   )
-  result$title <- sprintf("サンプルサイズ（%s）", title)
+  result$title <- sprintf("%s（%s）", if (has_n) "検出力" else "サンプルサイズ", title)
 
   result
 }
@@ -171,7 +211,8 @@ COHEN_ES_LARGE <- c(
 RunPowerTest <- function(effect = NULL,
                          test = NULL,
                          sig_level = NULL,
-                         power = 0.8,
+                         power = NULL,
+                         n = NULL,
                          t_type = NULL,
                          alternative = NULL,
                          k = NULL,
@@ -183,6 +224,7 @@ RunPowerTest <- function(effect = NULL,
     test = test,
     sig_level = sig_level,
     power = power,
+    n = n,
     t_type = t_type,
     alternative = alternative,
     k = k,

@@ -15,6 +15,9 @@ ERR_MESSAGES <- base::list(
   "ERR-849" = "u must be >= 1",
   "ERR-851" = "df must be >= 1",
   "ERR-850" = "effect must be 'small', 'medium', or 'large'",
+  "ERR-852" = "n must be > 0",
+  "ERR-853" = "Specify either power or n (not both)",
+  "ERR-854" = "n must be > u + 1 for f2",
   # 900 - 999 represents NO user-caused errors
   # R module loading
   "ERR-901" = "R module 'constants.R' not found under src-r/R",

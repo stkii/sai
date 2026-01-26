@@ -45,7 +45,8 @@ export interface PowerTestOptions extends AnalysisOptions {
   test: string;
   effect: string;
   sig_level: number;
-  power: number;
+  power?: number;
+  n?: number;
   t_type?: string;
   alternative?: string;
   k?: number;

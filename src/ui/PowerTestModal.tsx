@@ -23,6 +23,11 @@ const EFFECT_OPTIONS = [
   { label: '大', value: 'large' },
 ];
 
+const TARGET_OPTIONS = [
+  { label: 'サンプルサイズ', value: 'sample' },
+  { label: '検出力', value: 'power' },
+];
+
 const ALTERNATIVE_OPTIONS = [
   { label: '両側', value: 'two.sided' },
   { label: '左側', value: 'less' },
@@ -33,7 +38,8 @@ export interface PowerTestModalOptions extends AnalysisOptions {
   test: string;
   effect: string;
   sig_level: number;
-  power: number;
+  power?: number;
+  n?: number;
   t_type?: string;
   alternative?: string;
   k?: number;
@@ -50,9 +56,11 @@ interface PowerTestModalProps {
 const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
   const [selectedTest, setSelectedTest] = useState<string | null>(null);
   const [testResetKey, setTestResetKey] = useState(0);
+  const [target, setTarget] = useState(TARGET_OPTIONS[0]?.value ?? 'sample');
   const [effect, setEffect] = useState(EFFECT_OPTIONS[1]?.value ?? 'medium');
   const [sigLevel, setSigLevel] = useState('0.05');
   const [power, setPower] = useState('0.8');
+  const [sampleSize, setSampleSize] = useState('');
   const [alternative, setAlternative] = useState(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
   const [kValue, setKValue] = useState('2');
   const [dfValue, setDfValue] = useState('1');
@@ -66,9 +74,11 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
     if (!open) {
       setSelectedTest(null);
       setTestResetKey((value) => value + 1);
+      setTarget(TARGET_OPTIONS[0]?.value ?? 'sample');
       setEffect(EFFECT_OPTIONS[1]?.value ?? 'medium');
       setSigLevel('0.05');
       setPower('0.8');
+      setSampleSize('');
       setAlternative(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
       setKValue('2');
       setDfValue('1');
@@ -82,6 +92,8 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
   const isChisq = selectedTest === 'chisq';
   const isF2 = selectedTest === 'f2';
   const needsAlternative = selectedTest === 'r' || selectedTest === 't' || selectedTest === 'p';
+  const isPowerTarget = target === 'power';
+  const sampleSizeHasValue = sampleSize.trim().length > 0;
 
   const handleExecute = async () => {
     if (!selectedTest || !TEST_OPTIONS.some((option) => option.value === selectedTest)) {
@@ -103,10 +115,14 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
       return;
     }
 
-    const powerValue = Number(power);
-    if (!Number.isFinite(powerValue) || powerValue <= 0 || powerValue >= 1) {
-      await showValidationError('検出力を正しく入力してください');
-      return;
+    let powerValue: number | undefined;
+    if (!isPowerTarget) {
+      const parsed = Number(power);
+      if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) {
+        await showValidationError('検出力を正しく入力してください');
+        return;
+      }
+      powerValue = parsed;
     }
 
     let k: number | undefined;
@@ -139,6 +155,24 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
       df = parsed;
     }
 
+    let n: number | undefined;
+    if (isPowerTarget) {
+      if (!sampleSizeHasValue) {
+        await showValidationError('サンプルサイズを入力してください');
+        return;
+      }
+      const parsed = Number(sampleSize);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        await showValidationError('サンプルサイズを正しく入力してください');
+        return;
+      }
+      if (isF2 && typeof u === 'number' && parsed <= u + 1) {
+        await showValidationError('サンプルサイズは説明変数数u+1より大きく入力してください');
+        return;
+      }
+      n = parsed;
+    }
+
     if (!onExecute) {
       return;
     }
@@ -150,7 +184,7 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
         test: selectedTest,
         effect,
         sig_level: sigLevelValue,
-        power: powerValue,
+        ...(isPowerTarget ? { n } : { power: powerValue }),
         t_type: selectedTest === 't' ? 'one.sample' : undefined,
         alternative: needsAlternative ? alternative : undefined,
         k,
@@ -176,6 +210,13 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">
                 <Stack gap="4">
+                  <Text fontWeight="semibold">出力</Text>
+                  <RadioOptions
+                    items={TARGET_OPTIONS}
+                    orientation="horizontal"
+                    value={target}
+                    onChange={setTarget}
+                  />
                   <Text fontWeight="semibold">分析方法</Text>
                   <Box alignSelf="flex-start">
                     <PopoverSelect
@@ -224,6 +265,17 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
                     onChange={setPower}
                     label="検出力"
                     placeholder="例: 0.8"
+                    disabled={isPowerTarget}
+                  />
+                  <ValueInput
+                    width="160px"
+                    min={isPowerTarget && sampleSizeHasValue ? 1 : undefined}
+                    step={isPowerTarget ? 1 : undefined}
+                    value={sampleSize}
+                    onChange={setSampleSize}
+                    label="サンプルサイズ N"
+                    placeholder="例: 100"
+                    disabled={!isPowerTarget}
                   />
                   {isAnov ? (
                     <ValueInput
