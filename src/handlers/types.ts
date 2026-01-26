@@ -11,6 +11,7 @@ export interface AnalysisHandlerDeps {
   onCloseRegression: () => void;
   onCloseReliability: () => void;
   onCloseFactor: () => void;
+  onClosePower: () => void;
 }
 
 export interface CorrelationOptions extends AnalysisOptions {
@@ -38,4 +39,16 @@ export interface FactorOptions extends AnalysisOptions {
   corr_use: string;
   power?: number;
   sort_loadings: boolean;
+}
+
+export interface PowerTestOptions extends AnalysisOptions {
+  test: string;
+  effect: string;
+  sig_level: number;
+  power: number;
+  t_type?: string;
+  alternative?: string;
+  k?: number;
+  df?: number;
+  u?: number;
 }

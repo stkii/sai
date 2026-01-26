@@ -1,0 +1,281 @@
+import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import { useEffect, useState } from 'react';
+
+import ExecuteButton from '../components/ExecuteButton';
+import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
+import RadioOptions from '../components/RadioOptions';
+import ValueInput from '../components/ValueInput';
+import { useDialogError } from '../hooks/useDialogError';
+import type { AnalysisOptions } from '../runner';
+
+const TEST_OPTIONS: PopoverSelectItem[] = [
+  { label: '相関', value: 'r' },
+  { label: 't検定（1標本）', value: 't' },
+  { label: '一元配置分散分析', value: 'anov' },
+  { label: '回帰分析（f2）', value: 'f2' },
+  { label: '比率（1標本）', value: 'p' },
+  { label: 'カイ二乗（適合度）', value: 'chisq' },
+];
+
+const EFFECT_OPTIONS = [
+  { label: '小', value: 'small' },
+  { label: '中', value: 'medium' },
+  { label: '大', value: 'large' },
+];
+
+const ALTERNATIVE_OPTIONS = [
+  { label: '両側', value: 'two.sided' },
+  { label: '左側', value: 'less' },
+  { label: '右側', value: 'greater' },
+];
+
+export interface PowerTestModalOptions extends AnalysisOptions {
+  test: string;
+  effect: string;
+  sig_level: number;
+  power: number;
+  t_type?: string;
+  alternative?: string;
+  k?: number;
+  df?: number;
+  u?: number;
+}
+
+interface PowerTestModalProps {
+  open: boolean;
+  onClose: () => void;
+  onExecute?: (options: PowerTestModalOptions) => Promise<void>;
+}
+
+const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
+  const [selectedTest, setSelectedTest] = useState<string | null>(null);
+  const [testResetKey, setTestResetKey] = useState(0);
+  const [effect, setEffect] = useState(EFFECT_OPTIONS[1]?.value ?? 'medium');
+  const [sigLevel, setSigLevel] = useState('0.05');
+  const [power, setPower] = useState('0.8');
+  const [alternative, setAlternative] = useState(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
+  const [kValue, setKValue] = useState('2');
+  const [dfValue, setDfValue] = useState('1');
+  const [uValue, setUValue] = useState('1');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const { showValidationError, showAnalysisError } = useDialogError(setError);
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedTest(null);
+      setTestResetKey((value) => value + 1);
+      setEffect(EFFECT_OPTIONS[1]?.value ?? 'medium');
+      setSigLevel('0.05');
+      setPower('0.8');
+      setAlternative(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
+      setKValue('2');
+      setDfValue('1');
+      setUValue('1');
+      setError(null);
+      setLoading(false);
+    }
+  }, [open]);
+
+  const isAnov = selectedTest === 'anov';
+  const isChisq = selectedTest === 'chisq';
+  const isF2 = selectedTest === 'f2';
+  const needsAlternative = selectedTest === 'r' || selectedTest === 't' || selectedTest === 'p';
+
+  const handleExecute = async () => {
+    if (!selectedTest || !TEST_OPTIONS.some((option) => option.value === selectedTest)) {
+      await showValidationError('分析方法を選択してください');
+      return;
+    }
+    if (!EFFECT_OPTIONS.some((option) => option.value === effect)) {
+      await showValidationError('効果量の指定が不正です');
+      return;
+    }
+    if (needsAlternative && !ALTERNATIVE_OPTIONS.some((option) => option.value === alternative)) {
+      await showValidationError('検定の指定が不正です');
+      return;
+    }
+
+    const sigLevelValue = Number(sigLevel);
+    if (!Number.isFinite(sigLevelValue) || sigLevelValue <= 0 || sigLevelValue >= 1) {
+      await showValidationError('有意水準を正しく入力してください');
+      return;
+    }
+
+    const powerValue = Number(power);
+    if (!Number.isFinite(powerValue) || powerValue <= 0 || powerValue >= 1) {
+      await showValidationError('検出力を正しく入力してください');
+      return;
+    }
+
+    let k: number | undefined;
+    if (isAnov) {
+      const parsed = Number(kValue);
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 2) {
+        await showValidationError('群数kは2以上で入力してください');
+        return;
+      }
+      k = parsed;
+    }
+
+    let u: number | undefined;
+    if (isF2) {
+      const parsed = Number(uValue);
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
+        await showValidationError('説明変数数uは1以上で入力してください');
+        return;
+      }
+      u = parsed;
+    }
+
+    let df: number | undefined;
+    if (isChisq) {
+      const parsed = Number(dfValue);
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
+        await showValidationError('自由度dfは1以上で入力してください');
+        return;
+      }
+      df = parsed;
+    }
+
+    if (!onExecute) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      await onExecute({
+        test: selectedTest,
+        effect,
+        sig_level: sigLevelValue,
+        power: powerValue,
+        t_type: selectedTest === 't' ? 'one.sample' : undefined,
+        alternative: needsAlternative ? alternative : undefined,
+        k,
+        df,
+        u,
+      });
+    } catch (err: unknown) {
+      await showAnalysisError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(e) => (e.open ? null : onClose())}>
+      <Portal>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content maxW="5xl">
+            <Dialog.Header>
+              <Dialog.Title>検定力分析</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body>
+              <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">
+                <Stack gap="4">
+                  <Text fontWeight="semibold">分析方法</Text>
+                  <Box alignSelf="flex-start">
+                    <PopoverSelect
+                      items={TEST_OPTIONS}
+                      placeholder="分析方法を選択"
+                      onSelect={(item) => setSelectedTest(item?.value ?? null)}
+                      resetKey={testResetKey}
+                    />
+                  </Box>
+                  <Text fontWeight="semibold">効果量</Text>
+                  <RadioOptions
+                    items={EFFECT_OPTIONS}
+                    orientation="horizontal"
+                    value={effect}
+                    onChange={setEffect}
+                  />
+                  {needsAlternative ? (
+                    <>
+                      <Text fontWeight="semibold">検定</Text>
+                      <RadioOptions
+                        items={ALTERNATIVE_OPTIONS}
+                        orientation="horizontal"
+                        value={alternative}
+                        onChange={setAlternative}
+                      />
+                    </>
+                  ) : null}
+                </Stack>
+                <Stack gap="4">
+                  <ValueInput
+                    width="160px"
+                    min={0.001}
+                    max={0.999}
+                    step={0.01}
+                    value={sigLevel}
+                    onChange={setSigLevel}
+                    label="有意水準"
+                    placeholder="例: 0.05"
+                  />
+                  <ValueInput
+                    width="160px"
+                    min={0.001}
+                    max={0.999}
+                    step={0.01}
+                    value={power}
+                    onChange={setPower}
+                    label="検出力"
+                    placeholder="例: 0.8"
+                  />
+                  {isAnov ? (
+                    <ValueInput
+                      width="160px"
+                      min={2}
+                      step={1}
+                      value={kValue}
+                      onChange={setKValue}
+                      label="群数 k"
+                      placeholder="例: 3"
+                    />
+                  ) : null}
+                  {isF2 ? (
+                    <ValueInput
+                      width="160px"
+                      min={1}
+                      step={1}
+                      value={uValue}
+                      onChange={setUValue}
+                      label="説明変数数 u"
+                      placeholder="例: 5"
+                    />
+                  ) : null}
+                  {isChisq ? (
+                    <ValueInput
+                      width="160px"
+                      min={1}
+                      step={1}
+                      value={dfValue}
+                      onChange={setDfValue}
+                      label="自由度 df"
+                      placeholder="例: 1"
+                    />
+                  ) : null}
+                </Stack>
+              </SimpleGrid>
+              {error ? <Text color="red.500">{error}</Text> : null}
+            </Dialog.Body>
+            <Dialog.Footer>
+              <HStack gap="3" justify="flex-end" w="full">
+                <ExecuteButton label="終了" variant="outline" onClick={onClose} />
+                <ExecuteButton label="実行" onClick={handleExecute} loading={loading} />
+              </HStack>
+            </Dialog.Footer>
+            <Dialog.CloseTrigger asChild>
+              <CloseButton size="sm" />
+            </Dialog.CloseTrigger>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
+  );
+};
+
+export default PowerTestModal;

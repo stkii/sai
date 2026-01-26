@@ -29,6 +29,7 @@ export interface AnalysisHandlers {
   regression?: (context: AnalysisHandlerContext) => Promise<AnalysisRunResult>;
   reliability?: (context: AnalysisHandlerContext) => Promise<AnalysisRunResult>;
   factor?: (context: AnalysisHandlerContext) => Promise<AnalysisRunResult>;
+  power?: (context: AnalysisHandlerContext) => Promise<AnalysisRunResult>;
 }
 
 export interface AnalysisRunnerDeps {
@@ -41,7 +42,7 @@ export interface AnalysisRunner {
   clearCache: () => void;
 }
 
-export type AnalysisType = 'descriptive' | 'correlation' | 'regression' | 'reliability' | 'factor';
+export type AnalysisType = 'descriptive' | 'correlation' | 'regression' | 'reliability' | 'factor' | 'power';
 
 const buildCacheKey = (selection: AnalysisSelection, variables: string[]) => {
   const unique = Array.from(new Set(variables));

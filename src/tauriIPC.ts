@@ -67,6 +67,15 @@ class TauriIPC {
     }
     return parsed.data;
   }
+
+  async runPowerTest(options: Record<string, unknown> = {}): Promise<AnalysisRunResult> {
+    const raw = await invoke('run_power_test', { options });
+    const parsed = zAnalysisRunResult.safeParse(raw);
+    if (!parsed.success) {
+      throw new Error(`分析結果のスキーマが一致しませんでした: ${parsed.error.message}`);
+    }
+    return parsed.data;
+  }
 }
 
 const tauriIPC = new TauriIPC();

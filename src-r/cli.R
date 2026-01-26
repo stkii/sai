@@ -224,6 +224,32 @@
                       intercept = ctx$intercept,
                       center = ctx$center)
       }
+    ),
+    power = list(
+      output_kind = "table",
+      requires_numeric = FALSE,
+      options = list(
+        list(name = "effect", payload_keys = c("effect"), cli_key = "effect", default = ""),
+        list(name = "test", payload_keys = c("test"), cli_key = "test", default = ""),
+        list(name = "sig_level", payload_keys = c("sig_level", "sigLevel"), cli_key = "sig_level", default = 0.05),
+        list(name = "power", payload_keys = c("power"), cli_key = "power", default = 0.8),
+        list(name = "t_type", payload_keys = c("t_type", "tType"), cli_key = "t_type", default = ""),
+        list(name = "alternative", payload_keys = c("alternative"), cli_key = "alternative", default = ""),
+        list(name = "k", payload_keys = c("k"), cli_key = "k", default = NULL),
+        list(name = "df", payload_keys = c("df"), cli_key = "df", default = NULL),
+        list(name = "u", payload_keys = c("u"), cli_key = "u", default = NULL)
+      ),
+      run = function(df, ctx) {
+        RunPowerTest(effect = ctx$effect,
+                     test = ctx$test,
+                     sig_level = ctx$sig_level,
+                     power = ctx$power,
+                     t_type = ctx$t_type,
+                     alternative = ctx$alternative,
+                     k = ctx$k,
+                     df = ctx$df,
+                     u = ctx$u)
+      }
     )
   )
 }
@@ -279,6 +305,7 @@ Main <- function() {
   .LoadModule(r_dir, "common.R", "ERR-908")
   .LoadModule(r_dir, "rotation.R", "ERR-909")
   .LoadModule(r_dir, "factor.R", "ERR-910")
+  .LoadModule(r_dir, "power.R", "ERR-911")
 
   analysis <- .ResolveCliValue(opts, "analysis", "descriptive")
   input_path <- .ResolveCliValue(opts, "input", "-")
@@ -297,23 +324,39 @@ Main <- function() {
   spec <- analysis_specs[[analysis]]
   resolved_options <- if (is.null(spec)) list() else .ResolveOptionsFromSpec(spec, options_payload, opts)
 
-  payload <- .ReadJsonPayload(input_path)
-  df <- base::as.data.frame(payload, check.names = FALSE, stringsAsFactors = FALSE)
-  IsDataFrame(df)
-  if (is.null(spec) || isTRUE(spec$requires_numeric)) {
-    .ValidateNumericDataset(df)
+  if (identical(analysis, "power")) {
+    if (is.null(spec)) {
+      base::stop("Unsupported analysis type")
+    }
+    ctx <- resolved_options
+    result <- NULL
+    utils::capture.output({
+      result <- spec$run(NULL, ctx)
+    })
+    output_payload <- .BuildOutputPayload(spec$output_kind, result)
+    output <- jsonlite::toJSON(output_payload, auto_unbox = TRUE, na = "null")
+    base::cat(output)
+  } else {
+    payload <- .ReadJsonPayload(input_path)
+    df <- base::as.data.frame(payload, check.names = FALSE, stringsAsFactors = FALSE)
+    IsDataFrame(df)
+    if (is.null(spec) || isTRUE(spec$requires_numeric)) {
+      .ValidateNumericDataset(df)
+    }
+    if (is.null(spec)) {
+      base::stop("Unsupported analysis type")
+    }
+
+    ctx <- resolved_options
+
+    result <- spec$run(df, ctx)
+    output_payload <- .BuildOutputPayload(spec$output_kind, result)
+
+    output <- jsonlite::toJSON(output_payload, auto_unbox = TRUE, na = "null")
+    base::cat(output)
   }
-  if (is.null(spec)) {
-    base::stop("Unsupported analysis type")
-  }
 
-  ctx <- resolved_options
-
-  result <- spec$run(df, ctx)
-  output_payload <- .BuildOutputPayload(spec$output_kind, result)
-
-  output <- jsonlite::toJSON(output_payload, auto_unbox = TRUE, na = "null")
-  base::cat(output)
+  invisible(NULL)
 }
 
 tryCatch(

@@ -71,6 +71,34 @@ pub fn run_r_analysis(analysis_type: &str,
     Ok(result)
 }
 
+pub fn run_r_power_test(options: &Value) -> Result<AnalysisResult, String> {
+    let options_path = write_options_json(options)?;
+    let options_guard = TempFileGuard::new(options_path);
+    let cli_path = resolve_cli_path()?;
+
+    let output = Command::new("Rscript").arg(cli_path)
+                                        .arg("--analysis")
+                                        .arg("power")
+                                        .arg("--options")
+                                        .arg(options_guard.path())
+                                        .output()
+                                        .map_err(|e| format!("Failed to run Rscript: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(format!("R analysis failed: {}{}", stderr, stdout));
+    }
+
+    let result: AnalysisResult =
+        serde_json::from_slice(&output.stdout).map_err(|e| {
+                                                  format!("Failed to parse analysis output: {}", e)
+                                              })?;
+    result.validate()?;
+
+    Ok(result)
+}
+
 fn resolve_cli_path() -> Result<PathBuf, String> {
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let path = PathBuf::from(manifest_dir).join("../src-r/cli.R");

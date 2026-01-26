@@ -115,6 +115,31 @@ pub fn run_analysis(app_handle: tauri::AppHandle,
     Ok(AnalysisRunResult { result, logged_at })
 }
 
+#[tauri::command]
+pub fn run_power_test(app_handle: tauri::AppHandle,
+                      options: Option<Value>)
+                      -> Result<AnalysisRunResult, String> {
+    log::info!("analysis.run_power_test start");
+
+    let options_for_r = build_options_for_r("power", options);
+    let result = runner::run_r_power_test(&options_for_r)?;
+
+    let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let log_entry = analysis_log::AnalysisLogEntry { timestamp: logged_at.clone(),
+                                                     analysis_type: "power".to_string(),
+                                                     dataset_id: "-".to_string(),
+                                                     file_path: "-".to_string(),
+                                                     sheet_name: "-".to_string(),
+                                                     variables: vec![],
+                                                     options: options_for_r,
+                                                     result: result.clone() };
+    analysis_log::write_analysis_log(&app_handle, log_entry)?;
+
+    log::info!("analysis.run_power_test ok");
+
+    Ok(AnalysisRunResult { result, logged_at })
+}
+
 fn build_options_for_r(analysis_type: &str,
                        options: Option<Value>)
                        -> Value {

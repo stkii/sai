@@ -13,6 +13,8 @@ ERR_MESSAGES <- base::list(
   "ERR-847" = "k must be >= 2",
   "ERR-848" = "categories must be >= 2",
   "ERR-849" = "u must be >= 1",
+  "ERR-851" = "df must be >= 1",
+  "ERR-850" = "effect must be 'small', 'medium', or 'large'",
   # 900 - 999 represents NO user-caused errors
   # R module loading
   "ERR-901" = "R module 'constants.R' not found under src-r/R",
@@ -25,8 +27,10 @@ ERR_MESSAGES <- base::list(
   "ERR-908" = "R module 'common.R' not found under src-r/R",
   "ERR-909" = "R module 'rotation.R' not found under src-r/R",
   "ERR-910" = "R module 'factor.R' not found under src-r/R",
+  "ERR-911" = "R module 'power.R' not found under src-r/R",
   "ERR-920" = "Invalid analysis option",
   "ERR-925" = "EFAtools package is required for factor rotation",
+  "ERR-926" = "pwr package is required for power analysis",
   # Internal errors
   "ERR-940" = "Internal error in design module"
 
