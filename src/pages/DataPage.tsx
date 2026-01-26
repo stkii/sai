@@ -4,8 +4,8 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { FC, ReactElement } from 'react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-
 import type { AnalysisResultPayload } from '../analysisEvents';
+import { ANALYSIS_ITEMS, getAnalysisLabel, toAnalysisType } from '../analysisRegistry';
 import DataTable from '../components/DataTable';
 import ExecuteButton from '../components/ExecuteButton';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
@@ -18,16 +18,9 @@ import DataImportModal, { type DataImportSelection } from '../ui/DataImportModal
 import DescriptiveModal from '../ui/DescriptiveModal';
 import FactorModal from '../ui/FactorModal';
 import PowerTestModal from '../ui/PowerTestModal';
+import PreviousAnalysisModal from '../ui/PreviousAnalysisModal';
 import RegressionModal from '../ui/RegressionModal';
 import ReliabilityModal from '../ui/ReliabilityModal';
-
-const ANALYSIS_ITEMS: PopoverSelectItem[] = [
-  { label: '記述統計', value: 'descriptive' },
-  { label: '相関', value: 'correlation' },
-  { label: '回帰', value: 'regression' },
-  { label: '信頼性', value: 'reliability' },
-  { label: '因子分析', value: 'factor' },
-];
 
 const ANALYSIS_MODAL_KEYS = ['descriptive', 'correlation', 'regression', 'reliability', 'factor'] as const;
 
@@ -78,6 +71,7 @@ const DataPage: FC = () => {
   const [openAnalysis, setOpenAnalysis] = useState<AnalysisModalKey | null>(null);
   const [analysisSelectResetKey, setAnalysisSelectResetKey] = useState(0);
   const [powerOpen, setPowerOpen] = useState(false);
+  const [previousOpen, setPreviousOpen] = useState(false);
   const analysisDisabled = table === null;
   const analysisRunner = useMemo(
     () =>
@@ -85,11 +79,15 @@ const DataPage: FC = () => {
         buildNumericDataset: (selection, variables) =>
           tauriIPC.buildNumericDataset(selection.path, selection.sheet, variables),
         analyses: {
-          descriptive: ({ datasetId, options }) => tauriIPC.runAnalysis('descriptive', datasetId, options),
-          correlation: ({ datasetId, options }) => tauriIPC.runAnalysis('correlation', datasetId, options),
-          regression: ({ datasetId, options }) => tauriIPC.runAnalysis('regression', datasetId, options),
-          reliability: ({ datasetId, options }) => tauriIPC.runAnalysis('reliability', datasetId, options),
-          factor: ({ datasetId, options }) => tauriIPC.runAnalysis('factor', datasetId, options),
+          descriptive: ({ datasetCacheId, options }) =>
+            tauriIPC.runAnalysis('descriptive', datasetCacheId, options),
+          correlation: ({ datasetCacheId, options }) =>
+            tauriIPC.runAnalysis('correlation', datasetCacheId, options),
+          regression: ({ datasetCacheId, options }) =>
+            tauriIPC.runAnalysis('regression', datasetCacheId, options),
+          reliability: ({ datasetCacheId, options }) =>
+            tauriIPC.runAnalysis('reliability', datasetCacheId, options),
+          factor: ({ datasetCacheId, options }) => tauriIPC.runAnalysis('factor', datasetCacheId, options),
         },
       }),
     []
@@ -131,6 +129,10 @@ const DataPage: FC = () => {
   }, []);
   const closePower = useCallback(() => {
     setPowerOpen(false);
+    setAnalysisSelectResetKey((value) => value + 1);
+  }, []);
+  const closePrevious = useCallback(() => {
+    setPreviousOpen(false);
   }, []);
   const handlers = useMemo(
     () =>
@@ -177,7 +179,16 @@ const DataPage: FC = () => {
   );
 
   const handleAnalysisSelect = (item: PopoverSelectItem | null) => {
-    if (item?.value && isAnalysisModalKey(item.value)) {
+    if (!item?.value) {
+      setOpenAnalysis(null);
+      return;
+    }
+    if (item.value === 'power') {
+      setOpenAnalysis(null);
+      setPowerOpen(true);
+      return;
+    }
+    if (isAnalysisModalKey(item.value)) {
       setOpenAnalysis(item.value);
       return;
     }
@@ -190,11 +201,32 @@ const DataPage: FC = () => {
     analysisRunner.clearCache();
   };
 
+  const handleDisplayPrevious = useCallback(
+    async (analysisId: string) => {
+      const entry = await tauriIPC.getAnalysisLogEntry(analysisId);
+      const analysisType = toAnalysisType(entry.analysisType);
+      if (!analysisType) {
+        throw new Error(`未対応の分析タイプです: ${entry.analysisType}`);
+      }
+      const payload: AnalysisResultPayload = {
+        id: entry.analysisId,
+        type: analysisType,
+        label: getAnalysisLabel(entry.analysisType),
+        timestamp: entry.timestamp,
+        result: entry.result,
+      };
+      await openResultWindow();
+      await emitResult(payload);
+    },
+    [emitResult, openResultWindow]
+  );
+
   return (
     <Box p="6">
       <Stack gap="4">
         <HStack gap="3">
           <DataImportModal onLoaded={handleLoaded} />
+          <ExecuteButton label="以前の分析" variant="outline" onClick={() => setPreviousOpen(true)} />
           <PopoverSelect
             items={ANALYSIS_ITEMS}
             placeholder="分析を選択"
@@ -215,6 +247,11 @@ const DataPage: FC = () => {
           </Fragment>
         ))}
         <PowerTestModal open={powerOpen} onClose={closePower} onExecute={handlers.runPowerTest} />
+        <PreviousAnalysisModal
+          open={previousOpen}
+          onClose={closePrevious}
+          onDisplay={handleDisplayPrevious}
+        />
       </Stack>
     </Box>
   );

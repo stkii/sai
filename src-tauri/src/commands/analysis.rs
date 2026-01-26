@@ -12,6 +12,7 @@ use crate::{
 };
 use chrono::Local;
 use serde_json::Value;
+use uuid::Uuid;
 
 #[tauri::command]
 pub fn build_numeric_dataset(path: String,
@@ -62,34 +63,35 @@ pub fn build_numeric_dataset(path: String,
     let row_count = dataset.values().next().map(|col| col.len()).unwrap_or(0);
     let dataset_len = dataset.len();
     let variables_in_order = dataset.keys().cloned().collect();
-    let dataset_id =
+    let dataset_cache_id =
         cache::insert_numeric_dataset(cache::NumericDatasetEntry { dataset,
                                                                    path: path.clone(),
                                                                    sheet: sheet_name.clone(),
                                                                    variables: variables_in_order })?;
 
-    log::info!("analysis.build_numeric_dataset ok path={} kind={} sheet={} dataset_id={} vars={} rows={}",
+    log::info!("analysis.build_numeric_dataset ok path={} kind={} sheet={} dataset_cache_id={} vars={} rows={}",
                path,
                kind.as_str(),
                sheet_name,
-               dataset_id,
+               dataset_cache_id,
                dataset_len,
                row_count);
 
-    Ok(dataset_id)
+    Ok(dataset_cache_id)
 }
 
 #[tauri::command]
 pub fn run_analysis(app_handle: tauri::AppHandle,
-                    dataset_id: String,
+                    dataset_cache_id: String,
                     analysis_type: String,
                     options: Option<Value>)
                     -> Result<AnalysisRunResult, String> {
-    log::info!("analysis.run_analysis start dataset_id={} type={}",
-               dataset_id,
+    log::info!("analysis.run_analysis start dataset_cache_id={} type={}",
+               dataset_cache_id,
                analysis_type);
 
-    let entry = cache::get_numeric_dataset(&dataset_id)?.ok_or_else(|| "Dataset not found".to_string())?;
+    let entry =
+        cache::get_numeric_dataset(&dataset_cache_id)?.ok_or_else(|| "Dataset not found".to_string())?;
 
     let options_for_r = build_options_for_r(&analysis_type, options);
     let mut result = runner::run_r_analysis(&analysis_type, &entry.dataset, &options_for_r)?;
@@ -98,9 +100,10 @@ pub fn run_analysis(app_handle: tauri::AppHandle,
     }
 
     let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    let log_entry = analysis_log::AnalysisLogEntry { timestamp: logged_at.clone(),
+    let analysis_id = Uuid::new_v4().to_string();
+    let log_entry = analysis_log::AnalysisLogEntry { analysis_id: analysis_id.clone(),
+                                                     timestamp: logged_at.clone(),
                                                      analysis_type: analysis_type.clone(),
-                                                     dataset_id: dataset_id.clone(),
                                                      file_path: entry.path.clone(),
                                                      sheet_name: entry.sheet.clone(),
                                                      variables: entry.variables.clone(),
@@ -108,11 +111,13 @@ pub fn run_analysis(app_handle: tauri::AppHandle,
                                                      result: result.clone() };
     analysis_log::write_analysis_log(&app_handle, log_entry)?;
 
-    log::info!("analysis.run_analysis ok dataset_id={} type={}",
-               dataset_id,
+    log::info!("analysis.run_analysis ok dataset_cache_id={} type={}",
+               dataset_cache_id,
                analysis_type);
 
-    Ok(AnalysisRunResult { result, logged_at })
+    Ok(AnalysisRunResult { result,
+                           logged_at,
+                           analysis_id })
 }
 
 #[tauri::command]
@@ -125,9 +130,10 @@ pub fn run_power_test(app_handle: tauri::AppHandle,
     let result = runner::run_r_power_test(&options_for_r)?;
 
     let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    let log_entry = analysis_log::AnalysisLogEntry { timestamp: logged_at.clone(),
+    let analysis_id = Uuid::new_v4().to_string();
+    let log_entry = analysis_log::AnalysisLogEntry { analysis_id: analysis_id.clone(),
+                                                     timestamp: logged_at.clone(),
                                                      analysis_type: "power".to_string(),
-                                                     dataset_id: "-".to_string(),
                                                      file_path: "-".to_string(),
                                                      sheet_name: "-".to_string(),
                                                      variables: vec![],
@@ -137,7 +143,37 @@ pub fn run_power_test(app_handle: tauri::AppHandle,
 
     log::info!("analysis.run_power_test ok");
 
-    Ok(AnalysisRunResult { result, logged_at })
+    Ok(AnalysisRunResult { result,
+                           logged_at,
+                           analysis_id })
+}
+
+#[tauri::command]
+pub fn list_recent_analysis_logs(app_handle: tauri::AppHandle,
+                                 limit: Option<usize>)
+                                 -> Result<Vec<analysis_log::AnalysisLogSummary>, String> {
+    let limit = limit.unwrap_or(20);
+    analysis_log::list_recent_analysis_logs(&app_handle, limit)
+}
+
+#[tauri::command]
+pub fn list_analysis_logs_by_period(app_handle: tauri::AppHandle,
+                                    from: Option<String>,
+                                    to: Option<String>,
+                                    limit: Option<usize>)
+                                    -> Result<Vec<analysis_log::AnalysisLogSummary>, String> {
+    let limit = limit.unwrap_or(200);
+    let from = from.as_deref();
+    let to = to.as_deref();
+    analysis_log::list_analysis_logs_by_period(&app_handle, from, to, limit)
+}
+
+#[tauri::command]
+pub fn get_analysis_log_entry(app_handle: tauri::AppHandle,
+                              analysis_id: String)
+                              -> Result<analysis_log::AnalysisLogEntry, String> {
+    analysis_log::get_analysis_log_entry(&app_handle, &analysis_id)?
+        .ok_or_else(|| "分析ログが見つかりませんでした".to_string())
 }
 
 fn build_options_for_r(analysis_type: &str,

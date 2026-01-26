@@ -1,6 +1,6 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useCallback, useEffect, useState } from 'react';
-
+import { getAnalysisLabel } from '../analysisRegistry';
 import ExecuteButton from '../components/ExecuteButton';
 import InteractionSelector from '../components/InteractionSelector';
 import RegressionVariableSelector, {
@@ -108,7 +108,7 @@ const RegressionModal = ({ open, onClose, onExecute, variables }: RegressionModa
         <Dialog.Positioner>
           <Dialog.Content maxW="5xl">
             <Dialog.Header>
-              <Dialog.Title>回帰分析</Dialog.Title>
+              <Dialog.Title>{getAnalysisLabel('regression')}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">

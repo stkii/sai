@@ -1,10 +1,10 @@
 import type { AnalysisResultPayload } from '../analysisEvents';
-import type { AnalysisOptions, AnalysisType } from '../runner';
+import { type AnalysisType, getAnalysisLabel } from '../analysisRegistry';
+import type { AnalysisOptions } from '../runner';
 import type { AnalysisHandlerDeps } from './types';
 
 interface RunAnalysisConfig {
   type: AnalysisType;
-  label: string;
   onClose: () => void;
 }
 
@@ -32,9 +32,9 @@ export const runAnalysisWithOptions = async <TOptions extends AnalysisOptions>(
   });
 
   const payload: AnalysisResultPayload = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: analysis.analysisId,
     type: config.type,
-    label: config.label,
+    label: getAnalysisLabel(config.type),
     timestamp: analysis.loggedAt,
     result: analysis.result,
   };

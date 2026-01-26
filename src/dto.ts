@@ -29,7 +29,7 @@ export const zParsedDataTable = z
     }
   });
 
-export const zDatasetId = z.string();
+export const zDatasetCacheId = z.string();
 
 export const zSheetNames = z.array(z.string());
 
@@ -80,4 +80,28 @@ export type AnalysisResult = z.infer<typeof zAnalysisResult>;
 export const zAnalysisRunResult = z.object({
   result: zAnalysisResult,
   loggedAt: z.string(),
+  analysisId: z.string(),
 });
+
+export const zAnalysisLogSummary = z.object({
+  analysisId: z.string(),
+  timestamp: z.string(),
+  analysisType: z.string(),
+  filePath: z.string(),
+  sheetName: z.string(),
+  variables: z.array(z.string()),
+});
+
+export const zAnalysisLogEntry = z.object({
+  analysisId: z.string(),
+  timestamp: z.string(),
+  analysisType: z.string(),
+  filePath: z.string(),
+  sheetName: z.string(),
+  variables: z.array(z.string()),
+  options: z.record(z.string(), z.unknown()),
+  result: zAnalysisResult,
+});
+
+export type AnalysisLogSummary = z.infer<typeof zAnalysisLogSummary>;
+export type AnalysisLogEntry = z.infer<typeof zAnalysisLogEntry>;

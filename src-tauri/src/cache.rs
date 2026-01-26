@@ -30,17 +30,17 @@ fn dataset_cache() -> &'static Mutex<HashMap<String, Arc<NumericDatasetEntry>>> 
 
 pub fn insert_numeric_dataset(entry: NumericDatasetEntry) -> Result<String, String> {
     let id = DATASET_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let dataset_id = format!("ds_{}", id);
+    let dataset_cache_id = format!("ds_{}", id);
 
     let mut cache = dataset_cache().lock()
                                    .map_err(|_| "Dataset cache lock poisoned".to_string())?;
-    cache.insert(dataset_id.clone(), Arc::new(entry));
+    cache.insert(dataset_cache_id.clone(), Arc::new(entry));
 
-    Ok(dataset_id)
+    Ok(dataset_cache_id)
 }
 
-pub fn get_numeric_dataset(dataset_id: &str) -> Result<Option<Arc<NumericDatasetEntry>>, String> {
+pub fn get_numeric_dataset(dataset_cache_id: &str) -> Result<Option<Arc<NumericDatasetEntry>>, String> {
     let cache = dataset_cache().lock()
                                .map_err(|_| "Dataset cache lock poisoned".to_string())?;
-    Ok(cache.get(dataset_id).cloned())
+    Ok(cache.get(dataset_cache_id).cloned())
 }

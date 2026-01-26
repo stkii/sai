@@ -1,5 +1,5 @@
+import type { AnalysisType } from './analysisRegistry';
 import type { AnalysisResult } from './dto';
-import type { AnalysisType } from './runner';
 
 export interface AnalysisResultPayload {
   id: string;

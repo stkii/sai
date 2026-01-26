@@ -11,7 +11,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-
+import { getAnalysisLabel } from '../analysisRegistry';
 import ExecuteButton from '../components/ExecuteButton';
 import MissingValueUse, { MISSING_VALUE_OPTIONS } from '../components/MissingValueUse';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
@@ -167,7 +167,7 @@ const FactorModal = ({ open, onClose, onExecute, variables }: FactorModalProps) 
         <Dialog.Positioner>
           <Dialog.Content maxW="5xl">
             <Dialog.Header>
-              <Dialog.Title>因子分析</Dialog.Title>
+              <Dialog.Title>{getAnalysisLabel('factor')}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">

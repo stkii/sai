@@ -1,6 +1,6 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-
+import { getAnalysisLabel } from '../analysisRegistry';
 import ExecuteButton from '../components/ExecuteButton';
 import RadioOptions from '../components/RadioOptions';
 import VariableSelector from '../components/VariableSelector';
@@ -80,7 +80,7 @@ const DescriptiveModal = ({ open, onClose, onExecute, variables }: DescriptiveMo
         <Dialog.Positioner>
           <Dialog.Content maxW="5xl">
             <Dialog.Header>
-              <Dialog.Title>記述統計</Dialog.Title>
+              <Dialog.Title>{getAnalysisLabel('descriptive')}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">

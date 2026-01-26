@@ -5,7 +5,7 @@ export const createRunRegression =
   (deps: AnalysisHandlerDeps) => async (variables: string[], options: RegressionOptions) => {
     await runAnalysisWithOptions(
       deps,
-      { type: 'regression', label: '回帰分析', onClose: deps.onCloseRegression },
+      { type: 'regression', onClose: deps.onCloseRegression },
       variables,
       options
     );

@@ -5,7 +5,7 @@ export const createRunReliability =
   (deps: AnalysisHandlerDeps) => async (variables: string[], options: ReliabilityOptions) => {
     await runAnalysisWithOptions(
       deps,
-      { type: 'reliability', label: '信頼性分析', onClose: deps.onCloseReliability },
+      { type: 'reliability', onClose: deps.onCloseReliability },
       variables,
       options
     );

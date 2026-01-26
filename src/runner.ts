@@ -1,3 +1,4 @@
+import type { AnalysisType } from './analysisRegistry';
 import type { AnalysisRunResult } from './dto';
 
 export interface AnalysisOptions {
@@ -19,7 +20,7 @@ export interface AnalysisInput {
 }
 
 export interface AnalysisHandlerContext {
-  datasetId: string;
+  datasetCacheId: string;
   options: AnalysisOptions;
 }
 
@@ -41,8 +42,6 @@ export interface AnalysisRunner {
   run: (input: AnalysisInput) => Promise<AnalysisRunResult>;
   clearCache: () => void;
 }
-
-export type AnalysisType = 'descriptive' | 'correlation' | 'regression' | 'reliability' | 'factor' | 'power';
 
 const buildCacheKey = (selection: AnalysisSelection, variables: string[]) => {
   const unique = Array.from(new Set(variables));
@@ -66,14 +65,14 @@ export const createAnalysisRunner = ({
     }
 
     const key = buildCacheKey(selection, variables);
-    let datasetId = cache.get(key) ?? null;
+    let datasetCacheId = cache.get(key) ?? null;
 
-    if (!datasetId) {
-      datasetId = await buildNumericDataset(selection, variables);
-      cache.set(key, datasetId);
+    if (!datasetCacheId) {
+      datasetCacheId = await buildNumericDataset(selection, variables);
+      cache.set(key, datasetCacheId);
     }
 
-    return handler({ datasetId, options: options ?? {} });
+    return handler({ datasetCacheId, options: options ?? {} });
   };
 
   const clearCache = () => {

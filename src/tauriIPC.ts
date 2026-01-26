@@ -1,6 +1,13 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { AnalysisRunResult, ParsedDataTable } from './dto';
-import { zAnalysisRunResult, zDatasetId, zParsedDataTable, zSheetNames } from './dto';
+import type { AnalysisLogEntry, AnalysisLogSummary, AnalysisRunResult, ParsedDataTable } from './dto';
+import {
+  zAnalysisLogEntry,
+  zAnalysisLogSummary,
+  zAnalysisRunResult,
+  zDatasetCacheId,
+  zParsedDataTable,
+  zSheetNames,
+} from './dto';
 
 export interface AnalysisExportSection {
   sectionTitle?: string;
@@ -25,9 +32,9 @@ class TauriIPC {
   async buildNumericDataset(path: string, sheet: string | undefined, variables: string[]): Promise<string> {
     const payload = sheet ? { path, sheet, variables } : { path, variables };
     const raw = await invoke('build_numeric_dataset', payload);
-    const parsed = zDatasetId.safeParse(raw);
+    const parsed = zDatasetCacheId.safeParse(raw);
     if (!parsed.success) {
-      throw new Error(`データセットIDのスキーマが一致しませんでした: ${parsed.error.message}`);
+      throw new Error(`データセットキャッシュIDのスキーマが一致しませんでした: ${parsed.error.message}`);
     }
     return parsed.data;
   }
@@ -53,12 +60,12 @@ class TauriIPC {
 
   async runAnalysis(
     analysisType: string,
-    datasetId: string,
+    datasetCacheId: string,
     options: Record<string, unknown> = {}
   ): Promise<AnalysisRunResult> {
     const raw = await invoke('run_analysis', {
       analysisType,
-      datasetId,
+      datasetCacheId,
       options,
     });
     const parsed = zAnalysisRunResult.safeParse(raw);
@@ -73,6 +80,44 @@ class TauriIPC {
     const parsed = zAnalysisRunResult.safeParse(raw);
     if (!parsed.success) {
       throw new Error(`分析結果のスキーマが一致しませんでした: ${parsed.error.message}`);
+    }
+    return parsed.data;
+  }
+
+  async listRecentAnalysisLogs(limit: number): Promise<AnalysisLogSummary[]> {
+    const raw = await invoke('list_recent_analysis_logs', { limit });
+    const parsed = zAnalysisLogSummary.array().safeParse(raw);
+    if (!parsed.success) {
+      throw new Error(`分析ログ一覧のスキーマが一致しませんでした: ${parsed.error.message}`);
+    }
+    return parsed.data;
+  }
+
+  async listAnalysisLogsByPeriod(
+    from: string | null,
+    to: string | null,
+    limit: number
+  ): Promise<AnalysisLogSummary[]> {
+    const payload: Record<string, unknown> = { limit };
+    if (from) {
+      payload.from = from;
+    }
+    if (to) {
+      payload.to = to;
+    }
+    const raw = await invoke('list_analysis_logs_by_period', payload);
+    const parsed = zAnalysisLogSummary.array().safeParse(raw);
+    if (!parsed.success) {
+      throw new Error(`分析ログ一覧のスキーマが一致しませんでした: ${parsed.error.message}`);
+    }
+    return parsed.data;
+  }
+
+  async getAnalysisLogEntry(analysisId: string): Promise<AnalysisLogEntry> {
+    const raw = await invoke('get_analysis_log_entry', { analysisId });
+    const parsed = zAnalysisLogEntry.safeParse(raw);
+    if (!parsed.success) {
+      throw new Error(`分析ログのスキーマが一致しませんでした: ${parsed.error.message}`);
     }
     return parsed.data;
   }

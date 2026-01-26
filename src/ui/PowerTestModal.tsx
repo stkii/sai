@@ -1,6 +1,6 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-
+import { getAnalysisLabel } from '../analysisRegistry';
 import ExecuteButton from '../components/ExecuteButton';
 import PopoverSelect, { type PopoverSelectItem } from '../components/PopoverSelect';
 import RadioOptions from '../components/RadioOptions';
@@ -208,7 +208,7 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
         <Dialog.Positioner>
           <Dialog.Content maxW="5xl">
             <Dialog.Header>
-              <Dialog.Title>検定力分析</Dialog.Title>
+              <Dialog.Title>{getAnalysisLabel('power')}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">

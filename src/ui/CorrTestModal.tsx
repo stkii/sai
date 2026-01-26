@@ -1,6 +1,6 @@
 import { Box, CloseButton, Dialog, HStack, Portal, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-
+import { getAnalysisLabel } from '../analysisRegistry';
 import ExecuteButton from '../components/ExecuteButton';
 import MissingValueUse, { MISSING_VALUE_OPTIONS } from '../components/MissingValueUse';
 import RadioOptions from '../components/RadioOptions';
@@ -106,7 +106,7 @@ const CorrTestModal = ({ open, onClose, onExecute, variables }: CorrTestModalPro
         <Dialog.Positioner>
           <Dialog.Content maxW="5xl">
             <Dialog.Header>
-              <Dialog.Title>相関</Dialog.Title>
+              <Dialog.Title>{getAnalysisLabel('correlation')}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">

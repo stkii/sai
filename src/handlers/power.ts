@@ -1,4 +1,5 @@
 import type { AnalysisResultPayload } from '../analysisEvents';
+import { getAnalysisLabel } from '../analysisRegistry';
 import tauriIPC from '../tauriIPC';
 import type { AnalysisHandlerDeps, PowerTestOptions } from './types';
 
@@ -8,9 +9,9 @@ export const createRunPowerTest =
     const analysis = await tauriIPC.runPowerTest(options);
 
     const payload: AnalysisResultPayload = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      id: analysis.analysisId,
       type: 'power',
-      label: '検定力分析',
+      label: getAnalysisLabel('power'),
       timestamp: analysis.loggedAt,
       result: analysis.result,
     };

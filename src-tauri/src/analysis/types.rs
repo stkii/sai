@@ -5,4 +5,5 @@ use crate::dto::AnalysisResult;
 pub struct AnalysisRunResult {
     pub result: AnalysisResult,
     pub logged_at: String,
+    pub analysis_id: String,
 }

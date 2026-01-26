@@ -10,7 +10,7 @@ export interface PopoverSelectItem {
 }
 
 interface PopoverSelectProps {
-  items: PopoverSelectItem[];
+  items: ReadonlyArray<PopoverSelectItem>;
   placeholder?: string;
   onSelect?: (item: PopoverSelectItem | null) => void;
   disabled?: boolean;
@@ -29,11 +29,11 @@ const PopoverSelect = ({
 
   const { contains } = useFilter({ sensitivity: 'base' });
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const prevItemsRef = useRef<PopoverSelectItem[] | null>(null);
+  const prevItemsRef = useRef<ReadonlyArray<PopoverSelectItem> | null>(null);
   const prevResetKeyRef = useRef<number | undefined>(resetKey);
 
   const { collection, filter, set } = useListCollection<PopoverSelectItem>({
-    initialItems: items,
+    initialItems: Array.from(items),
     filter: contains,
     itemToString: (item) => item.label,
     itemToValue: (item) => item.label,
@@ -56,7 +56,7 @@ const PopoverSelect = ({
       return;
     }
 
-    set(items);
+    set(Array.from(items));
     listbox.setValue([]);
     setInputValue('');
     filter('');
