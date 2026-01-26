@@ -62,9 +62,9 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
   const [power, setPower] = useState('0.8');
   const [sampleSize, setSampleSize] = useState('');
   const [alternative, setAlternative] = useState(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
-  const [kValue, setKValue] = useState('2');
-  const [dfValue, setDfValue] = useState('1');
-  const [uValue, setUValue] = useState('1');
+  const [kValue, setKValue] = useState('');
+  const [dfValue, setDfValue] = useState('');
+  const [uValue, setUValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -80,9 +80,9 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
       setPower('0.8');
       setSampleSize('');
       setAlternative(ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided');
-      setKValue('2');
-      setDfValue('1');
-      setUValue('1');
+      setKValue('');
+      setDfValue('');
+      setUValue('');
       setError(null);
       setLoading(false);
     }
@@ -94,6 +94,9 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
   const needsAlternative = selectedTest === 'r' || selectedTest === 't' || selectedTest === 'p';
   const isPowerTarget = target === 'power';
   const sampleSizeHasValue = sampleSize.trim().length > 0;
+  const kHasValue = kValue.trim().length > 0;
+  const dfHasValue = dfValue.trim().length > 0;
+  const uHasValue = uValue.trim().length > 0;
 
   const handleExecute = async () => {
     if (!selectedTest || !TEST_OPTIONS.some((option) => option.value === selectedTest)) {
@@ -254,7 +257,7 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
                     value={sigLevel}
                     onChange={setSigLevel}
                     label="有意水準"
-                    placeholder="例: 0.05"
+                    placeholder="0.05"
                   />
                   <ValueInput
                     width="160px"
@@ -264,7 +267,7 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
                     value={power}
                     onChange={setPower}
                     label="検出力"
-                    placeholder="例: 0.8"
+                    placeholder="0.8"
                     disabled={isPowerTarget}
                   />
                   <ValueInput
@@ -273,41 +276,41 @@ const PowerTestModal = ({ open, onClose, onExecute }: PowerTestModalProps) => {
                     step={isPowerTarget ? 1 : undefined}
                     value={sampleSize}
                     onChange={setSampleSize}
-                    label="サンプルサイズ N"
-                    placeholder="例: 100"
+                    label="サンプルサイズ"
+                    placeholder=""
                     disabled={!isPowerTarget}
                   />
                   {isAnov ? (
                     <ValueInput
                       width="160px"
-                      min={2}
+                      min={kHasValue ? 2 : undefined}
                       step={1}
                       value={kValue}
                       onChange={setKValue}
-                      label="群数 k"
-                      placeholder="例: 3"
+                      label="水準の数"
+                      placeholder=""
                     />
                   ) : null}
                   {isF2 ? (
                     <ValueInput
                       width="160px"
-                      min={1}
+                      min={uHasValue ? 1 : undefined}
                       step={1}
                       value={uValue}
                       onChange={setUValue}
-                      label="説明変数数 u"
-                      placeholder="例: 5"
+                      label="説明変数の数"
+                      placeholder=""
                     />
                   ) : null}
                   {isChisq ? (
                     <ValueInput
                       width="160px"
-                      min={1}
+                      min={dfHasValue ? 1 : undefined}
                       step={1}
                       value={dfValue}
                       onChange={setDfValue}
-                      label="自由度 df"
-                      placeholder="例: 1"
+                      label="自由度"
+                      placeholder=""
                     />
                   ) : null}
                 </Stack>
