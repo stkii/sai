@@ -53,6 +53,11 @@
       <td>✅ Available</td>
     </tr>
     <tr>
+      <td>検出力</td>
+      <td>サンプルサイズや検出力を算出します</td>
+      <td>✅ Available</td>
+    </tr>
+    <tr>
       <td>信頼性</td>
       <td>Cronbach の alpha 係数を算出します</td>
       <td>🚧 In progress</td>
