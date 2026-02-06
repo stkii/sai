@@ -81,6 +81,14 @@ pub fn build_numeric_dataset(path: String,
 }
 
 #[tauri::command]
+pub fn clear_numeric_dataset_cache() -> Result<(), String> {
+    log::info!("analysis.clear_numeric_dataset_cache start");
+    cache::clear_numeric_dataset_cache()?;
+    log::info!("analysis.clear_numeric_dataset_cache ok");
+    Ok(())
+}
+
+#[tauri::command]
 pub fn run_analysis(app_handle: tauri::AppHandle,
                     dataset_cache_id: String,
                     analysis_type: String,

@@ -7,6 +7,7 @@ pub mod export;
 macro_rules! commands_handler {
     () => {
         tauri::generate_handler![$crate::commands::analysis::build_numeric_dataset,
+                                 $crate::commands::analysis::clear_numeric_dataset_cache,
                                  $crate::commands::analysis::get_analysis_log_entry,
                                  $crate::commands::analysis::list_analysis_logs_by_period,
                                  $crate::commands::analysis::list_recent_analysis_logs,
