@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import type { AnalysisModalKey } from '../types';
+import type { SupportedAnalysisType } from '../types';
 import BasePopoverList from './BasePopoverList';
 
 interface AnalysisSelectItem {
   label: string;
-  value: AnalysisModalKey;
+  value: SupportedAnalysisType;
 }
 
 interface Props {
   items: ReadonlyArray<AnalysisSelectItem>;
   disabled?: boolean;
   resetKey?: number;
-  onSelect: (key: AnalysisModalKey | null) => void;
+  onSelect: (key: SupportedAnalysisType | null) => void;
 }
 
 const AnalysisSelect = ({ items, disabled = false, resetKey, onSelect }: Props) => {
@@ -29,7 +29,9 @@ const AnalysisSelect = ({ items, disabled = false, resetKey, onSelect }: Props) 
           onSelect(null);
           return;
         }
-        onSelect(keySet.has(item.value as AnalysisModalKey) ? (item.value as AnalysisModalKey) : null);
+        onSelect(
+          keySet.has(item.value as SupportedAnalysisType) ? (item.value as SupportedAnalysisType) : null
+        );
       }}
     />
   );

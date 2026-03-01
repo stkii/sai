@@ -3,6 +3,7 @@ import type {
   AnalysisExportLog,
   AnalysisLogEntry,
   AnalysisLogSummary,
+  AnalysisOptions,
   AnalysisRunResult,
   ParsedDataTable,
   SupportedAnalysisType,
@@ -26,7 +27,7 @@ class TauriIpc {
   async runAnalysis(
     analysisType: SupportedAnalysisType,
     datasetCacheId: string,
-    options: Record<string, unknown>
+    options: AnalysisOptions
   ): Promise<AnalysisRunResult> {
     return invoke<AnalysisRunResult>('run_analysis', {
       analysisType,

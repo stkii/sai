@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import BasePopoverList from '../../components/BasePopoverList';
 import FileSelect from '../../components/FileSelect';
 import tauriIpc from '../../tauriIpc';
-import type { DataImportSelection, ParsedDataTable } from '../../types';
+import type { ImportDataset, ParsedDataTable } from '../../types';
 
 interface Props {
-  onLoaded: (table: ParsedDataTable, selection: DataImportSelection) => void;
+  onLoaded: (table: ParsedDataTable, selection: ImportDataset) => void;
 }
 
 const DataImportDialog = ({ onLoaded }: Props) => {

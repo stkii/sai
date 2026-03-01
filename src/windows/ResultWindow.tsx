@@ -3,7 +3,6 @@ import { save } from '@tauri-apps/plugin-dialog';
 import type { FC, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { isAnalysisModalKey } from '../analysis/registry/selectors';
 import BasePopoverList from '../components/BasePopoverList';
 import DataTable from '../components/DataTable';
 import { useAnalysisCatalog } from '../hooks/useAnalysisCatalog';
@@ -73,7 +72,7 @@ const ResultWindow: FC = () => {
 
   const buildExportLogs = (entries: AnalysisResultPayload[]): AnalysisExportLog[] => {
     return entries.map((entry) => {
-      const method = isAnalysisModalKey(entry.type) ? getMethodByKey(entry.type) : null;
+      const method = getMethodByKey(entry.type);
       const sections = method
         ? method.buildExportSections(entry.result)
         : buildFallbackExportSections(entry.result);
@@ -127,7 +126,7 @@ const ResultWindow: FC = () => {
       );
     }
 
-    const method = isAnalysisModalKey(selected.type) ? getMethodByKey(selected.type) : null;
+    const method = getMethodByKey(selected.type);
     if (method) {
       return method.renderResult(selected.result);
     }

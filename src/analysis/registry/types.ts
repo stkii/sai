@@ -1,20 +1,25 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { AnalysisExportSection, AnalysisModalKey, AnalysisResult, ParsedDataTable } from '../../types';
+import type {
+  AnalysisExportSection,
+  AnalysisOptions,
+  AnalysisResult,
+  ParsedDataTable,
+  SupportedAnalysisType,
+} from '../../types';
 
-export interface AnalysisMethodDefinition<TKey extends AnalysisModalKey = AnalysisModalKey> {
+export interface AnalysisMethodDefinition<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
   key: TKey;
   label: string;
-  requiresDataset: boolean;
 }
 
 export interface AnalysisModalRenderArgs {
   open: boolean;
   onClose: () => void;
   variables: string[];
-  onExecute: (variables: string[], options: Record<string, unknown>) => Promise<void>;
+  onExecute: (variables: string[], options: AnalysisOptions) => Promise<void>;
 }
 
-export interface AnalysisMethodModule<TKey extends AnalysisModalKey = AnalysisModalKey> {
+export interface AnalysisMethodModule<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
   definition: AnalysisMethodDefinition<TKey>;
   renderModal: (args: AnalysisModalRenderArgs) => ReactElement;
   renderResult: (result: AnalysisResult) => ReactNode;

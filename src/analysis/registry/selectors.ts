@@ -1,14 +1,10 @@
-import type { AnalysisModalKey } from '../../types';
+import type { SupportedAnalysisType } from '../../types';
 import { ANALYSIS_METHODS } from './index';
 import type { AnalysisMethodModule } from './types';
 
-const ANALYSIS_METHOD_MAP = new Map<AnalysisModalKey, AnalysisMethodModule>(
+const ANALYSIS_METHOD_MAP = new Map<SupportedAnalysisType, AnalysisMethodModule>(
   ANALYSIS_METHODS.map((method) => [method.definition.key, method])
 );
-
-export const ANALYSIS_MODAL_KEYS: AnalysisModalKey[] = ANALYSIS_METHODS.map(
-  (method) => method.definition.key
-) as AnalysisModalKey[];
 
 export const getAnalysisItems = () => {
   return ANALYSIS_METHODS.map((method) => ({
@@ -17,14 +13,10 @@ export const getAnalysisItems = () => {
   }));
 };
 
-export const getAnalysisMethodByKey = (key: AnalysisModalKey): AnalysisMethodModule | null => {
+export const getAnalysisMethodByKey = (key: SupportedAnalysisType): AnalysisMethodModule | null => {
   return ANALYSIS_METHOD_MAP.get(key) ?? null;
 };
 
-export const getAnalysisLabelByKey = (key: AnalysisModalKey): string => {
+export const getAnalysisLabelByKey = (key: SupportedAnalysisType): string => {
   return ANALYSIS_METHOD_MAP.get(key)?.definition.label ?? key;
-};
-
-export const isAnalysisModalKey = (value: string): value is AnalysisModalKey => {
-  return ANALYSIS_METHOD_MAP.has(value as AnalysisModalKey);
 };

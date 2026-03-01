@@ -1,25 +1,16 @@
-import type { AnalysisModalKey, AnalysisRunResult } from '../../types';
-
-export interface AnalysisOptions {
-  [key: string]: unknown;
-}
-
-export interface AnalysisSelection {
-  path: string;
-  sheet?: string;
-}
+import type { AnalysisOptions, AnalysisRunResult, ImportDataset, SupportedAnalysisType } from '../../types';
 
 export interface AnalysisInput {
-  type: AnalysisModalKey;
-  selection: AnalysisSelection;
+  type: SupportedAnalysisType;
+  selection: ImportDataset;
   variables: string[];
   options?: AnalysisOptions;
 }
 
 export interface AnalysisRunnerDeps {
-  buildNumericDataset: (selection: AnalysisSelection, variables: string[]) => Promise<string>;
+  buildNumericDataset: (selection: ImportDataset, variables: string[]) => Promise<string>;
   runAnalysis: (
-    type: AnalysisModalKey,
+    type: SupportedAnalysisType,
     datasetCacheId: string,
     options: AnalysisOptions
   ) => Promise<AnalysisRunResult>;
@@ -30,7 +21,7 @@ export interface AnalysisRunner {
   clearCache: () => void;
 }
 
-const buildDatasetCacheKey = (selection: AnalysisSelection, variables: string[]) => {
+const buildDatasetCacheKey = (selection: ImportDataset, variables: string[]) => {
   const uniqueVariables = Array.from(new Set(variables));
   uniqueVariables.sort();
   return [selection.path, selection.sheet ?? '', ...uniqueVariables].join('||');

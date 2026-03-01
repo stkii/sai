@@ -3,20 +3,26 @@ import type { FC } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getAnalysisLabelByKey } from '../analysis/registry/selectors';
-import type { AnalysisOptions, AnalysisRunner } from '../analysis/runtime/runner';
+import type { AnalysisRunner } from '../analysis/runtime/runner';
 import AnalysisSelect from '../components/AnalysisSelect';
 import DataTable from '../components/DataTable';
 import { useAnalysisCatalog } from '../hooks/useAnalysisCatalog';
 import { useAnalysisRunner } from '../hooks/useAnalysisRunner';
 import { useResultWindowBridge } from '../hooks/useResultWindowBridge';
 import tauriIpc from '../tauriIpc';
-import type { AnalysisModalKey, AnalysisResultPayload, DataImportSelection, ParsedDataTable } from '../types';
+import type {
+  AnalysisOptions,
+  AnalysisResultPayload,
+  ImportDataset,
+  ParsedDataTable,
+  SupportedAnalysisType,
+} from '../types';
 import DataImportDialog from './views/DataImportDialog';
 
 interface ExecuteAnalysisArgs {
   analysisRunner: AnalysisRunner;
-  selection: DataImportSelection | null;
-  type: AnalysisModalKey;
+  selection: ImportDataset | null;
+  type: SupportedAnalysisType;
   variables: string[];
   options: AnalysisOptions;
   openResultWindow: () => Promise<void>;
@@ -63,8 +69,8 @@ const executeAnalysis = async ({
 
 const DataWindow: FC = () => {
   const [table, setTable] = useState<ParsedDataTable | null>(null);
-  const [selection, setSelection] = useState<DataImportSelection | null>(null);
-  const [openAnalysis, setOpenAnalysis] = useState<AnalysisModalKey | null>(null);
+  const [selection, setSelection] = useState<ImportDataset | null>(null);
+  const [openAnalysis, setOpenAnalysis] = useState<SupportedAnalysisType | null>(null);
   const [analysisSelectResetKey, setAnalysisSelectResetKey] = useState(0);
 
   const analysisRunner = useAnalysisRunner();
@@ -80,7 +86,7 @@ const DataWindow: FC = () => {
    * モーダルから受け取った分析条件を executeAnalysis に渡す画面側ハンドラ
    */
   const runAnalysis = useCallback(
-    async (type: AnalysisModalKey, variables: string[], options: Record<string, unknown>) => {
+    async (type: SupportedAnalysisType, variables: string[], options: AnalysisOptions) => {
       await executeAnalysis({
         analysisRunner,
         selection,
@@ -97,7 +103,7 @@ const DataWindow: FC = () => {
 
   const variables = table?.headers ?? [];
 
-  const handleLoaded = (nextTable: ParsedDataTable, nextSelection: DataImportSelection) => {
+  const handleLoaded = (nextTable: ParsedDataTable, nextSelection: ImportDataset) => {
     setTable(nextTable);
     setSelection(nextSelection);
     setOpenAnalysis(null);
@@ -147,7 +153,7 @@ const DataWindow: FC = () => {
             onClose: closeAnalysis,
             variables,
             onExecute: async (selectedVariables, options) => {
-              await runAnalysis(method.definition.key as AnalysisModalKey, selectedVariables, options);
+              await runAnalysis(method.definition.key as SupportedAnalysisType, selectedVariables, options);
             },
           })}
         </Fragment>

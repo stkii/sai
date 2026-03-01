@@ -7,9 +7,13 @@ export interface ParsedDataTable {
   title?: string;
 }
 
-export interface DataImportSelection {
+export interface ImportDataset {
   path: string;
   sheet?: string;
+}
+
+export interface AnalysisOptions {
+  [key: string]: unknown;
 }
 
 export interface RegressionResult {
@@ -51,7 +55,7 @@ export interface AnalysisRunResult {
 
 export interface AnalysisResultPayload {
   id: string;
-  type: AnalysisType;
+  type: SupportedAnalysisType;
   label: string;
   timestamp: string;
   result: AnalysisResult;
@@ -82,23 +86,21 @@ export interface AnalysisLogSummary {
 }
 
 export interface AnalysisLogEntry extends AnalysisLogSummary {
-  options: Record<string, unknown>;
+  options: AnalysisOptions;
   result: AnalysisResult;
 }
 
-export interface CorrelationOptions extends Record<string, unknown> {
+export interface CorrelationOptions extends AnalysisOptions {
   method: CorrelationMethod;
   alternative: CorrelationAlternative;
   use: CorrelationMissingValueUse;
 }
 
-export interface DescriptiveOptions extends Record<string, unknown> {
+export interface DescriptiveOptions extends AnalysisOptions {
   order: DescriptiveOrder;
 }
 
-export type AnalysisType = 'descriptive' | 'correlation' | 'regression' | 'reliability' | 'factor' | 'power';
-export type SupportedAnalysisType = 'descriptive' | 'correlation';
-export type AnalysisModalKey = SupportedAnalysisType;
+export type SupportedAnalysisType = 'correlation' | 'descriptive' | 'factor';
 export type DescriptiveOrder = 'default' | 'mean_asc' | 'mean_desc';
 export type CorrelationMethod = 'pearson' | 'kendall' | 'spearman';
 export type CorrelationAlternative = 'two.sided' | 'less' | 'greater';
