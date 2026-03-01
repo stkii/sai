@@ -1,5 +1,5 @@
 /// Common table helpers shared by CSV/Excel loaders.
-use crate::types::NormalizedRows;
+use super::types::NormalizedRows;
 use serde_json::Value;
 use std::collections::HashSet;
 

@@ -4,8 +4,11 @@ use ::csv::{
 };
 use indexmap::IndexMap;
 
+use super::{
+    numeric,
+    table,
+};
 use crate::dto::ParsedDataTable;
-use crate::table;
 
 pub fn parse_csv_table(path: &str) -> Result<ParsedDataTable, String> {
     let mut reader = ReaderBuilder::new().has_headers(true)
@@ -76,7 +79,10 @@ pub fn build_numeric_dataset_from_csv(path: &str,
         let record = record.map_err(|e| format!("Failed to read CSV row: {}", e))?;
         for (header, col_index) in selected_columns.iter() {
             let cell = record.get(*col_index);
-            let value = parse_numeric_cell(cell, row_index, *col_index, header)?;
+            let value = numeric::parse_csv_numeric_cell(cell,
+                                                        numeric::NumericCellContext::new(row_index,
+                                                                                         *col_index,
+                                                                                         header))?;
             dataset.get_mut(header)
                    .expect("dataset column exists")
                    .push(value);
@@ -115,41 +121,4 @@ fn csv_cell_to_json_value(cell: &str) -> serde_json::Value {
     } else {
         serde_json::Value::String(cell.to_string())
     }
-}
-
-fn parse_numeric_cell(cell: Option<&str>,
-                      row_index: usize,
-                      col_index: usize,
-                      header: &str)
-                      -> Result<Option<f64>, String> {
-    let row_no = row_index + 2;
-    let col_no = col_index + 1;
-    let to_err = |reason: &str| numeric_cell_error(row_no, col_no, header, reason);
-
-    let Some(raw) = cell else {
-        return Ok(None);
-    };
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        return Ok(None);
-    }
-    match trimmed.parse::<f64>() {
-        Ok(value) => {
-            if value.is_finite() {
-                Ok(Some(value))
-            } else {
-                Err(to_err("value is not finite"))
-            }
-        },
-        Err(_) => Err(to_err("value is not numeric")),
-    }
-}
-
-fn numeric_cell_error(row_no: usize,
-                      col_no: usize,
-                      header: &str,
-                      reason: &str)
-                      -> String {
-    format!("Numeric dataset validation error at row {} col {} ({}): {}",
-            row_no, col_no, header, reason)
 }

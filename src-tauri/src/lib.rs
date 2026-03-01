@@ -1,11 +1,12 @@
-mod analysis;
 mod cache;
 mod commands;
-mod csv;
 mod dto;
-mod excel;
-mod table;
-mod types;
+mod features;
+
+pub(crate) use features::{
+    analysis,
+    data,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

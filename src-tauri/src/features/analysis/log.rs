@@ -1,9 +1,12 @@
 use std::fs;
+use std::ops::ControlFlow;
 use std::path::{
     Path,
     PathBuf,
 };
 
+use chrono::NaiveDate;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use tauri::Manager;
 
@@ -126,39 +129,15 @@ pub fn list_recent_analysis_logs(app_handle: &tauri::AppHandle,
         return Ok(Vec::new());
     }
     let logs_dir = analysis_logs_dir(app_handle)?;
-    let files = list_log_files(&logs_dir)?;
     let mut entries = Vec::new();
-
-    for info in files {
-        let content = match fs::read_to_string(&info.path) {
-            Ok(content) => content,
-            Err(err) => {
-                log::warn!("analysis.list_recent read_failed path={} err={}",
-                           info.path.to_string_lossy(),
-                           err);
-                continue;
-            },
-        };
-        for line in content.lines().rev() {
-            let line = line.trim();
-            if line.is_empty() {
-                continue;
-            }
-            match serde_json::from_str::<AnalysisLogSummary>(line) {
-                Ok(entry) => {
-                    entries.push(entry);
-                    if entries.len() >= limit {
-                        return Ok(entries);
-                    }
-                },
-                Err(err) => {
-                    log::warn!("analysis.list_recent parse_failed err={}", err);
-                    continue;
-                },
-            }
+    visit_log_entries::<AnalysisLogSummary>(&logs_dir, "list_recent", |entry| {
+        entries.push(entry);
+        if entries.len() >= limit {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
         }
-    }
-
+    })?;
     Ok(entries)
 }
 
@@ -171,7 +150,6 @@ pub fn list_analysis_logs_by_period(app_handle: &tauri::AppHandle,
         return Ok(Vec::new());
     }
     let logs_dir = analysis_logs_dir(app_handle)?;
-    let files = list_log_files(&logs_dir)?;
     let from = normalize_period_date(from)?;
     let to = normalize_period_date(to)?;
     if let (Some(from), Some(to)) = (from.as_ref(), to.as_ref())
@@ -180,54 +158,31 @@ pub fn list_analysis_logs_by_period(app_handle: &tauri::AppHandle,
         return Err("開始日は終了日より前の日付を指定してください".to_string());
     }
     let mut entries = Vec::new();
-
-    for info in files {
-        let content = match fs::read_to_string(&info.path) {
-            Ok(content) => content,
-            Err(err) => {
-                log::warn!("analysis.list_by_period read_failed path={} err={}",
-                           info.path.to_string_lossy(),
-                           err);
-                continue;
+    visit_log_entries::<AnalysisLogSummary>(&logs_dir, "list_by_period", |entry| {
+        let entry_date = match extract_date_prefix(&entry.timestamp) {
+            Some(date) => date,
+            None => {
+                log::warn!("analysis.list_by_period invalid_timestamp ts={}", entry.timestamp);
+                return ControlFlow::Continue(());
             },
         };
-        for line in content.lines().rev() {
-            let line = line.trim();
-            if line.is_empty() {
-                continue;
-            }
-            match serde_json::from_str::<AnalysisLogSummary>(line) {
-                Ok(entry) => {
-                    let entry_date = match extract_date_prefix(&entry.timestamp) {
-                        Some(date) => date,
-                        None => {
-                            log::warn!("analysis.list_by_period invalid_timestamp ts={}", entry.timestamp);
-                            continue;
-                        },
-                    };
-                    if let Some(from) = from.as_ref()
-                       && entry_date < *from
-                    {
-                        continue;
-                    }
-                    if let Some(to) = to.as_ref()
-                       && entry_date > *to
-                    {
-                        continue;
-                    }
-                    entries.push(entry);
-                    if entries.len() >= limit {
-                        return Ok(entries);
-                    }
-                },
-                Err(err) => {
-                    log::warn!("analysis.list_by_period parse_failed err={}", err);
-                    continue;
-                },
-            }
+        if let Some(from) = from.as_ref()
+           && entry_date < *from
+        {
+            return ControlFlow::Continue(());
         }
-    }
-
+        if let Some(to) = to.as_ref()
+           && entry_date > *to
+        {
+            return ControlFlow::Continue(());
+        }
+        entries.push(entry);
+        if entries.len() >= limit {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    })?;
     Ok(entries)
 }
 
@@ -235,38 +190,16 @@ pub fn get_analysis_log_entry(app_handle: &tauri::AppHandle,
                               analysis_id: &str)
                               -> Result<Option<AnalysisLogEntry>, String> {
     let logs_dir = analysis_logs_dir(app_handle)?;
-    let files = list_log_files(&logs_dir)?;
-
-    for info in files {
-        let content = match fs::read_to_string(&info.path) {
-            Ok(content) => content,
-            Err(err) => {
-                log::warn!("analysis.get_entry read_failed path={} err={}",
-                           info.path.to_string_lossy(),
-                           err);
-                continue;
-            },
-        };
-        for line in content.lines().rev() {
-            let line = line.trim();
-            if line.is_empty() {
-                continue;
-            }
-            match serde_json::from_str::<AnalysisLogEntry>(line) {
-                Ok(entry) => {
-                    if entry.analysis_id == analysis_id {
-                        return Ok(Some(entry));
-                    }
-                },
-                Err(err) => {
-                    log::warn!("analysis.get_entry parse_failed err={}", err);
-                    continue;
-                },
-            }
+    let mut found = None;
+    visit_log_entries::<AnalysisLogEntry>(&logs_dir, "get_entry", |entry| {
+        if entry.analysis_id == analysis_id {
+            found = Some(entry);
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
         }
-    }
-
-    Ok(None)
+    })?;
+    Ok(found)
 }
 
 fn list_log_files(logs_dir: &Path) -> Result<Vec<LogFileInfo>, String> {
@@ -303,46 +236,57 @@ fn parse_log_file_name(name: &str) -> Option<usize> {
     Some(rotation)
 }
 
-fn normalize_period_date(input: Option<&str>) -> Result<Option<String>, String> {
+fn normalize_period_date(input: Option<&str>) -> Result<Option<NaiveDate>, String> {
     let Some(value) = input else { return Ok(None) };
     let trimmed = value.trim();
     if trimmed.is_empty() {
         return Ok(None);
     }
-    if trimmed.len() == 10 {
-        let bytes = trimmed.as_bytes();
-        if bytes[4] == b'-' && bytes[7] == b'-' {
-            let date = &trimmed[0..10];
-            if date.chars().enumerate().all(|(idx, c)| match idx {
-                                           4 | 7 => c == '-',
-                                           _ => c.is_ascii_digit(),
-                                       })
-            {
-                return Ok(Some(date.to_string()));
+    NaiveDate::parse_from_str(trimmed, "%Y-%m-%d").map(Some)
+                                                  .map_err(|_| {
+                                                      "日付の形式が不正です (YYYY-MM-DD)".to_string()
+                                                  })
+}
+
+fn extract_date_prefix(timestamp: &str) -> Option<NaiveDate> {
+    let prefix = timestamp.get(0..10)?;
+    NaiveDate::parse_from_str(prefix, "%Y-%m-%d").ok()
+}
+
+fn visit_log_entries<T>(logs_dir: &Path,
+                        context: &str,
+                        mut visit: impl FnMut(T) -> ControlFlow<()>)
+                        -> Result<(), String>
+    where T: DeserializeOwned
+{
+    let files = list_log_files(logs_dir)?;
+    for info in files {
+        let content = match fs::read_to_string(&info.path) {
+            Ok(content) => content,
+            Err(err) => {
+                log::warn!("analysis.{} read_failed path={} err={}",
+                           context,
+                           info.path.to_string_lossy(),
+                           err);
+                continue;
+            },
+        };
+        for line in content.lines().rev() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            match serde_json::from_str::<T>(line) {
+                Ok(entry) => {
+                    if visit(entry).is_break() {
+                        return Ok(());
+                    }
+                },
+                Err(err) => {
+                    log::warn!("analysis.{} parse_failed err={}", context, err);
+                },
             }
         }
     }
-    Err("日付の形式が不正です (YYYY-MM-DD)".to_string())
-}
-
-fn extract_date_prefix(timestamp: &str) -> Option<String> {
-    if timestamp.len() < 10 {
-        return None;
-    }
-    let prefix = &timestamp[0..10];
-    let bytes = prefix.as_bytes();
-    if bytes[4] != b'-' || bytes[7] != b'-' {
-        return None;
-    }
-    if !prefix.chars().enumerate().all(|(idx, c)| {
-                                      if idx == 4 || idx == 7 {
-                                          c == '-'
-                                      } else {
-                                          c.is_ascii_digit()
-                                      }
-                                  })
-    {
-        return None;
-    }
-    Some(prefix.to_string())
+    Ok(())
 }

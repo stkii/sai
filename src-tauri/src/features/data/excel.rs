@@ -6,8 +6,11 @@ use calamine::{
 };
 use indexmap::IndexMap;
 
+use super::{
+    numeric,
+    table,
+};
 use crate::dto::ParsedDataTable;
-use crate::table;
 
 pub fn build_numeric_dataset(rows_data: Vec<Vec<Data>>,
                              variables: &[String])
@@ -31,7 +34,10 @@ pub fn build_numeric_dataset(rows_data: Vec<Vec<Data>>,
     for (row_index, row) in rows_data.iter().skip(1).enumerate() {
         for (header, col_index) in selected_columns.iter() {
             let cell = row.get(*col_index);
-            let value = parse_numeric_cell(cell, row_index, *col_index, header)?;
+            let value = numeric::parse_excel_numeric_cell(cell,
+                                                          numeric::NumericCellContext::new(row_index,
+                                                                                           *col_index,
+                                                                                           header))?;
             dataset.get_mut(header)
                    .expect("dataset column exists")
                    .push(value);
@@ -173,61 +179,6 @@ fn cell_value_to_json_value(cell: Data) -> serde_json::Value {
         // Return string according to the type of Excel error
         Data::Error(e) => serde_json::Value::String(excel_error_to_str(&e).to_string()),
     }
-}
-
-fn parse_numeric_cell(cell: Option<&Data>,
-                      row_index: usize,
-                      col_index: usize,
-                      header: &str)
-                      -> Result<Option<f64>, String> {
-    let row_no = row_index + 2;
-    let col_no = col_index + 1;
-
-    let to_err = |reason: &str| numeric_cell_error(row_no, col_no, header, reason);
-
-    match cell {
-        None => Ok(None),
-        Some(Data::Empty) => Ok(None),
-        Some(Data::String(s)) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() {
-                return Ok(None);
-            }
-            match trimmed.parse::<f64>() {
-                Ok(value) => {
-                    if value.is_finite() {
-                        Ok(Some(value))
-                    } else {
-                        Err(to_err("value is not finite"))
-                    }
-                },
-                Err(_) => Err(to_err("value is not numeric")),
-            }
-        },
-        Some(Data::Float(value)) => {
-            if value.is_finite() {
-                Ok(Some(*value))
-            } else {
-                Err(to_err("value is not finite"))
-            }
-        },
-        #[allow(deprecated)]
-        Some(Data::Int(value)) => Ok(Some(*value as f64)),
-        Some(Data::Bool(_)) => Err(to_err("boolean value is not allowed")),
-        Some(Data::DateTime(_)) | Some(Data::DateTimeIso(_)) | Some(Data::DurationIso(_)) => {
-            Err(to_err("datetime value is not allowed"))
-        },
-        Some(Data::Error(_)) => Err(to_err("cell has an Excel error")),
-    }
-}
-
-fn numeric_cell_error(row_no: usize,
-                      col_no: usize,
-                      header: &str,
-                      reason: &str)
-                      -> String {
-    format!("Numeric dataset validation error at row {} col {} ({}): {}",
-            row_no, col_no, header, reason)
 }
 
 /// Map Excel error types to their string codes.

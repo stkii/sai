@@ -14,7 +14,7 @@
       {
         "label": "dataView",
         "title": "SAI (データビュー)",
-        "url": "/pages/data.html",
+        "url": "/windows/data-window.html",
         "width": 1024,
         "height": 768,
         "minWidth": 1024,
