@@ -2,6 +2,7 @@ import { Box, ChakraProvider, defaultSystem, HStack, Stack, Text } from '@chakra
 import type { FC } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { analysisCatalog } from '../analysis/catalog';
 import type { AnalysisRunner } from '../analysis/runtime/runner';
 import AnalysisSelect from '../components/AnalysisSelect';
 import DataTable from '../components/DataTable';
@@ -15,7 +16,6 @@ import type {
   ParsedDataTable,
   SupportedAnalysisType,
 } from '../types';
-import { analysisCatalog } from './analysisCatalog';
 import DataImportDialog from './views/DataImportDialog';
 
 interface ExecuteAnalysisArgs {

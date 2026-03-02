@@ -1,13 +1,13 @@
-import type { AnalysisMethodModule } from '../analysis/core/analysisMethodContracts';
-import correlationMethod from '../analysis/methods/correlation';
-import descriptiveMethod from '../analysis/methods/descriptive';
+import type { SupportedAnalysisType } from '../types';
+import type { AnalysisMethodModule } from './core/analysisMethodContracts';
+import correlationMethod from './methods/correlation';
+import descriptiveMethod from './methods/descriptive';
 import {
   buildAnalysisMethodMap,
   getAnalysisItems,
   getAnalysisLabelByKey,
   getAnalysisMethodByKey,
-} from '../analysis/registry/selectors';
-import type { SupportedAnalysisType } from '../types';
+} from './registry/selectors';
 
 const methods = [descriptiveMethod, correlationMethod] as const satisfies readonly AnalysisMethodModule[];
 const methodMap = buildAnalysisMethodMap(methods);
