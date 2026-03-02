@@ -1,11 +1,9 @@
 import { Box, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import { message } from '@tauri-apps/plugin-dialog';
 import { useCallback, useEffect, useState } from 'react';
 import AnalysisDialogShell from '../../../components/AnalysisDialogShell';
 import BaseRadioButton from '../../../components/BaseRadioButton';
 import VariableSelect from '../../../components/VariableSelect';
-import { useDialogError } from '../../../hooks/useDialogError';
-import { useExecuteWithDialogError } from '../../../hooks/useExecuteWithDialogError';
-import { useModalReset } from '../../../hooks/useModalReset';
 import type { AnalysisModalProps, DescriptiveOptions, DescriptiveOrder } from '../../../types';
 
 const SORT_OPTIONS = [
@@ -24,9 +22,32 @@ const DescriptiveModal = ({
   const [order, setOrder] = useState<DescriptiveOrder>(SORT_OPTIONS[0]?.value ?? 'default');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const variablesKey = variables.join('\u0000');
 
-  const { showValidationError, showAnalysisError } = useDialogError({ setError });
-  const runWithDialogError = useExecuteWithDialogError({ setLoading, setError, showAnalysisError });
+  const showValidationError = useCallback(async (text: string) => {
+    setError(text);
+    await message(text, { title: '入力エラー', kind: 'error' });
+  }, []);
+
+  const showAnalysisError = useCallback(async (text: string) => {
+    setError(text);
+    await message(text, { title: '分析エラー', kind: 'error' });
+  }, []);
+
+  const runWithDialogError = useCallback(
+    async (task: () => Promise<void>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await task();
+      } catch (runError: unknown) {
+        await showAnalysisError(runError instanceof Error ? runError.message : String(runError));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showAnalysisError]
+  );
 
   const resetOnClose = useCallback(() => {
     setSelectedVariables([]);
@@ -35,17 +56,20 @@ const DescriptiveModal = ({
     setLoading(false);
   }, []);
 
-  const resetOnVariablesChange = useCallback(() => {
+  const resetOnVariablesChange = useCallback((_: string) => {
     setSelectedVariables([]);
     setError(null);
   }, []);
 
-  useModalReset({
-    open,
-    variables,
-    resetOnClose,
-    resetOnVariablesChange,
-  });
+  useEffect(() => {
+    if (!open) {
+      resetOnClose();
+    }
+  }, [open, resetOnClose]);
+
+  useEffect(() => {
+    resetOnVariablesChange(variablesKey);
+  }, [variablesKey, resetOnVariablesChange]);
 
   useEffect(() => {
     if (open) {

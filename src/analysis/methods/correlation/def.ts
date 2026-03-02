@@ -1,4 +1,4 @@
-import type { AnalysisMethodDefinition } from '../../registry/types';
+import type { AnalysisMethodDefinition } from '../../core/analysisMethodContracts';
 
 export const correlationDefinition: AnalysisMethodDefinition<'correlation'> = {
   key: 'correlation',

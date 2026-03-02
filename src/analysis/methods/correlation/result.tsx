@@ -2,7 +2,7 @@ import { Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import DataTable from '../../../components/DataTable';
 import type { AnalysisResult } from '../../../types';
-import { createSingleTableExportSections, renderSingleTableResult } from '../../registry/types';
+import { createSingleTableExportSections, renderSingleTableResult } from '../../core/tableResultUtils';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;

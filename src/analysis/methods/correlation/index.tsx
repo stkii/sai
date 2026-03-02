@@ -1,4 +1,4 @@
-import type { AnalysisMethodModule } from '../../registry/types';
+import type { AnalysisMethodModule } from '../../core/analysisMethodContracts';
 import { correlationDefinition } from './def';
 import CorrelationModal from './modal';
 import { buildCorrelationExportSections, renderCorrelationResult } from './result';

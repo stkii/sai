@@ -2,11 +2,9 @@ import { Box, ChakraProvider, defaultSystem, HStack, Stack, Text } from '@chakra
 import type { FC } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getAnalysisLabelByKey } from '../analysis/registry/selectors';
 import type { AnalysisRunner } from '../analysis/runtime/runner';
 import AnalysisSelect from '../components/AnalysisSelect';
 import DataTable from '../components/DataTable';
-import { useAnalysisCatalog } from '../hooks/useAnalysisCatalog';
 import { useAnalysisRunner } from '../hooks/useAnalysisRunner';
 import { useResultWindowBridge } from '../hooks/useResultWindowBridge';
 import tauriIpc from '../tauriIpc';
@@ -17,6 +15,7 @@ import type {
   ParsedDataTable,
   SupportedAnalysisType,
 } from '../types';
+import { analysisCatalog } from './analysisCatalog';
 import DataImportDialog from './views/DataImportDialog';
 
 interface ExecuteAnalysisArgs {
@@ -57,7 +56,7 @@ const executeAnalysis = async ({
   const payload: AnalysisResultPayload = {
     id: analysis.analysisId,
     type,
-    label: getAnalysisLabelByKey(type),
+    label: analysisCatalog.getLabelByKey(type),
     timestamp: analysis.loggedAt,
     result: analysis.result,
   };
@@ -75,7 +74,7 @@ const DataWindow: FC = () => {
 
   const analysisRunner = useAnalysisRunner();
   const { openResultWindow, emitResult } = useResultWindowBridge();
-  const { items, methods } = useAnalysisCatalog();
+  const { items, methods } = analysisCatalog;
 
   const closeAnalysis = useCallback(() => {
     setOpenAnalysis(null);

@@ -1,4 +1,4 @@
-import type { AnalysisMethodModule } from '../../registry/types';
+import type { AnalysisMethodModule } from '../../core/analysisMethodContracts';
 import { descriptiveDefinition } from './def';
 import DescriptiveModal from './modal';
 import { buildDescriptiveExportSections, renderDescriptiveResult } from './result';

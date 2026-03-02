@@ -5,10 +5,10 @@ import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import BasePopoverList from '../components/BasePopoverList';
 import DataTable from '../components/DataTable';
-import { useAnalysisCatalog } from '../hooks/useAnalysisCatalog';
 import { useAnalysisResultStream } from '../hooks/useAnalysisResultStream';
 import tauriIpc from '../tauriIpc';
 import type { AnalysisExportLog, AnalysisResult, AnalysisResultPayload, ParsedDataTable } from '../types';
+import { analysisCatalog } from './analysisCatalog';
 
 const EXPORT_ITEMS = [{ label: 'Excel', value: 'xlsx' }] as const;
 const RESULT_ROW_HEIGHT = 40;
@@ -58,7 +58,7 @@ const ResultWindow: FC = () => {
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportResetKey, setExportResetKey] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
-  const { getMethodByKey } = useAnalysisCatalog();
+  const { getMethodByKey } = analysisCatalog;
 
   useAnalysisResultStream({
     onReceiveResult: (payload) => {

@@ -1,15 +1,8 @@
-import { useMemo } from 'react';
-import { ANALYSIS_METHODS } from '../analysis/registry';
-import { getAnalysisItems, getAnalysisMethodByKey } from '../analysis/registry/selectors';
-import type { SupportedAnalysisType } from '../types';
-
+/**
+ * @deprecated `analysisCatalog` を `src/windows/analysisCatalog.ts` から参照すること
+ */
 export const useAnalysisCatalog = () => {
-  return useMemo(
-    () => ({
-      items: getAnalysisItems(),
-      methods: ANALYSIS_METHODS,
-      getMethodByKey: (key: SupportedAnalysisType) => getAnalysisMethodByKey(key),
-    }),
-    []
+  throw new Error(
+    'useAnalysisCatalog is deprecated. Import analysisCatalog from windows/analysisCatalog instead.'
   );
 };
