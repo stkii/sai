@@ -1,7 +1,10 @@
+use indexmap::IndexMap;
 use serde::{
     Deserialize,
     Serialize,
 };
+
+pub type NumericDataset = IndexMap<String, Vec<Option<f64>>>;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ParsedDataTable {
