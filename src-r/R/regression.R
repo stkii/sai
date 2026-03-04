@@ -2,6 +2,18 @@
 # Regression analysis
 # =====================
 
+.QuoteFormulaName <- function(name) {
+  value <- base::as.character(name)
+  escaped <- base::gsub("`", "``", value, fixed = TRUE)
+  base::paste0("`", escaped, "`")
+}
+
+.QuoteInteractionTerm <- function(term) {
+  components <- base::strsplit(base::as.character(term), ":", fixed = TRUE)[[1]]
+  quoted <- base::vapply(components, .QuoteFormulaName, base::character(1))
+  base::paste(quoted, collapse = ":")
+}
+
 # Compute VIF for each predictor variable
 # Each variable is regressed on all other predictors to get R², then VIF = 1/(1-R²)
 .ComputeVIFs <- function(df, main_vars, interaction_terms = NULL) {
@@ -32,9 +44,9 @@
 
   for (var in all_vars) {
     other_vars <- base::setdiff(all_vars, var)
-    # Backtick-quote variable names to handle special characters like ':'
-    var_quoted <- base::sprintf("`%s`", var)
-    other_vars_quoted <- base::sprintf("`%s`", other_vars)
+    # Backtick-quote variable names to handle special characters safely.
+    var_quoted <- .QuoteFormulaName(var)
+    other_vars_quoted <- base::vapply(other_vars, .QuoteFormulaName, base::character(1))
     formula_str <- base::paste(var_quoted, "~", base::paste(other_vars_quoted, collapse = " + "))
     fit <- stats::lm(stats::as.formula(formula_str), data = df, na.action = stats::na.omit)
     r_sq <- base::summary(fit)$r.squared
@@ -65,7 +77,8 @@
     }
   }
 
-  main_effects <- paste(independents, collapse = " + ")
+  main_effect_terms <- base::vapply(independents, .QuoteFormulaName, base::character(1))
+  main_effects <- base::paste(main_effect_terms, collapse = " + ")
   if (!isTRUE(intercept)) {
     # Remove intercept via '0 +' (same as '-1')
     main_effects <- base::paste("0 +", main_effects)
@@ -94,9 +107,11 @@
     NULL
   }
 
-  formula <- paste(dependent, "~", main_effects)
+  dependent_term <- .QuoteFormulaName(dependent)
+  formula <- base::paste(dependent_term, "~", main_effects)
   if (!is.null(interaction_terms) && length(interaction_terms) > 0) {
-    formula <- base::paste(formula, "+", paste(interaction_terms, collapse = " + "))
+    interaction_formula_terms <- base::vapply(interaction_terms, .QuoteInteractionTerm, base::character(1))
+    formula <- base::paste(formula, "+", base::paste(interaction_formula_terms, collapse = " + "))
   }
 
   na_fun <- switch(base::as.character(na_action),
@@ -270,6 +285,14 @@ RunRegression <- function(df,
   dep_norm <- base::as.character(dependent)
   indep_norm <- base::as.character(independent)
 
+  # Ensure referenced columns exist before formula construction.
+  if (!dep_norm %in% base::colnames(df)) {
+    StopWithErrCode("ERR-920")
+  }
+  if (base::any(!indep_norm %in% base::colnames(df))) {
+    StopWithErrCode("ERR-920")
+  }
+
   inter_norm <- if (is.null(interactions) || identical(interactions, "none")) {
     NULL
   } else if (identical(interactions, "auto")) {
@@ -284,6 +307,13 @@ RunRegression <- function(df,
     if (base::length(interactions) == 0L) NULL else interactions
   } else {
     StopWithErrCode("ERR-920")
+  }
+
+  if (is.list(inter_norm) && base::length(inter_norm) > 0) {
+    inter_vars <- base::unique(base::unlist(inter_norm, use.names = FALSE))
+    if (base::any(!inter_vars %in% base::colnames(df))) {
+      StopWithErrCode("ERR-920")
+    }
   }
 
   intercept_norm <- .NormalizeLogicalOption(intercept, default = TRUE)

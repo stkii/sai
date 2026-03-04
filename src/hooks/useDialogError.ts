@@ -1,9 +1,11 @@
 import { message } from '@tauri-apps/plugin-dialog';
 import { useCallback } from 'react';
 
-type SetError = (value: string | null) => void;
+interface Args {
+  setError: (value: string | null) => void;
+}
 
-export const useDialogError = (setError: SetError) => {
+export const useDialogError = ({ setError }: Args) => {
   const showValidationError = useCallback(
     async (text: string) => {
       setError(text);

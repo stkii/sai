@@ -1,16 +1,15 @@
-mod analysis;
+mod bootstrap;
 mod cache;
-mod commands;
-mod csv;
+mod domain;
 mod dto;
-mod excel;
-mod table;
-mod types;
+mod features;
+mod infra;
+mod presentation;
+mod usecase;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .invoke_handler(crate::commands_handler!())
+    presentation::attach_handlers(tauri::Builder::default().manage(bootstrap::state::AppState::new()))
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::new()

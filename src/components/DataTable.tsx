@@ -1,26 +1,101 @@
-import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Paper, Table, TableCell, TableContainer, TableRow } from '@mui/material';
 import { forwardRef } from 'react';
-import type { TableComponents } from 'react-virtuoso';
-import { TableVirtuoso } from 'react-virtuoso';
-import type { ParsedDataTable } from '../dto';
+import { type TableComponents, TableVirtuoso } from 'react-virtuoso';
+import type { ParsedDataTable, ParsedTableCell } from '../types';
 
 type RowData = ParsedDataTable['rows'][number];
 
-interface DataTableProps {
-  table: ParsedDataTable | null;
-  height?: number;
-  showRowIndex?: boolean;
-  emptyMessage?: string;
-  highlightAbsThreshold?: number;
+interface BodyCellArgs {
+  dataOffset: number;
+  headers: string[];
+  row: RowData;
+  rowIndex: number;
+  showRowIndex: boolean;
+  boldValueThreshold?: number;
 }
 
-const CELL_WIDTH = 80;
-const ROW_HEIGHT = 40;
+interface Props {
+  table: ParsedDataTable | null;
+  boldValueThreshold?: number;
+  emptyMessage?: string;
+  height?: number | string;
+  showRowIndex?: boolean;
+}
 
-const formatCellValue = (value: RowData[number]): string => {
-  if (value === null) {
-    return '';
-  }
+const CELL_WIDTH = 80 as const;
+const ROW_HEIGHT = 40 as const;
+
+const CELL_BASE_SX = {
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  borderRight: '1px solid',
+  borderRightColor: 'divider',
+  fontWeight: 600,
+  height: ROW_HEIGHT,
+  py: 0,
+  '&:last-of-type': {
+    borderRight: 'none',
+  },
+} as const;
+
+const createBodyCells = ({
+  dataOffset,
+  headers,
+  row,
+  rowIndex,
+  showRowIndex,
+  boldValueThreshold,
+}: BodyCellArgs) => {
+  return headers.map((header, columnIndex) => {
+    const dataIndex = columnIndex - dataOffset;
+    const value =
+      showRowIndex && columnIndex === 0 ? String(rowIndex + 1) : showCellValue(row[dataIndex] ?? null);
+    const rawValue = row[dataIndex] ?? null;
+    const numericValue =
+      typeof rawValue === 'number' ? rawValue : typeof rawValue === 'string' ? Number(rawValue) : Number.NaN;
+    const isBold =
+      typeof boldValueThreshold === 'number' &&
+      dataIndex >= 1 &&
+      Number.isFinite(numericValue) &&
+      Math.abs(numericValue) >= boldValueThreshold;
+
+    return (
+      <TableCell
+        key={header}
+        align="left"
+        sx={{
+          ...CELL_BASE_SX,
+          fontWeight: isBold ? 700 : undefined,
+        }}
+      >
+        {value}
+      </TableCell>
+    );
+  });
+};
+
+const createHeaderRow = (headers: string[]) => {
+  return (
+    <TableRow>
+      {headers.map((header) => (
+        <TableCell
+          key={header}
+          variant="head"
+          align="left"
+          sx={{
+            ...CELL_BASE_SX,
+            backgroundColor: 'grey.100',
+            fontWeight: 600,
+          }}
+        >
+          {header}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+};
+
+const showCellValue = (value: ParsedTableCell) => {
   if (typeof value === 'string') {
     return value;
   }
@@ -30,25 +105,28 @@ const formatCellValue = (value: RowData[number]): string => {
   if (typeof value === 'boolean') {
     return value ? 'true' : 'false';
   }
+  if (value === null) {
+    return '';
+  }
   return '';
 };
 
 const DataTable = ({
   table,
+  boldValueThreshold,
+  emptyMessage = 'No data',
   height = 400,
   showRowIndex = true,
-  emptyMessage = 'データを選択して読み込んでください',
-  highlightAbsThreshold,
-}: DataTableProps) => {
+}: Props) => {
   if (!table) {
     return (
       <Paper
-        sx={{
-          height,
-          width: '100%',
-          display: 'flex',
+        style={{
           alignItems: 'center',
+          display: 'flex',
+          height,
           justifyContent: 'center',
+          width: '100%',
         }}
       >
         {emptyMessage}
@@ -56,10 +134,10 @@ const DataTable = ({
     );
   }
 
-  const headers = showRowIndex ? ['ID', ...table.headers] : table.headers;
-  const rows = table.rows;
-  const minTableWidth = Math.max(headers.length * CELL_WIDTH, 600);
   const dataOffset = showRowIndex ? 1 : 0;
+  const headers = showRowIndex ? ['ID', ...table.headers] : table.headers;
+  const minTableWidth = Math.max(headers.length * CELL_WIDTH, 600);
+  const rows = table.rows;
 
   const VirtuosoTableComponents: TableComponents<RowData> = {
     Scroller: forwardRef<HTMLDivElement>((props, ref) => (
@@ -76,96 +154,27 @@ const DataTable = ({
         sx={{
           borderCollapse: 'separate',
           borderSpacing: 0,
-          tableLayout: 'fixed',
           minWidth: minTableWidth,
+          tableLayout: 'fixed',
         }}
       />
     ),
-    TableHead: (props) => (
-      <TableHead
-        {...props}
-        sx={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-          backgroundColor: 'background.paper',
-        }}
-      />
-    ),
-    TableRow,
-    TableBody: forwardRef<HTMLTableSectionElement>((props, ref) => <TableBody {...props} ref={ref} />),
   };
 
   return (
-    <Paper sx={{ height, width: '100%' }}>
+    <Paper style={{ height, width: '100%' }}>
       <TableVirtuoso
         data={rows}
         components={VirtuosoTableComponents}
-        fixedHeaderContent={() => (
-          <TableRow>
-            {headers.map((header) => (
-              <TableCell
-                key={header}
-                variant="head"
-                align="left"
-                sx={{
-                  height: ROW_HEIGHT,
-                  backgroundColor: 'grey.100',
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  borderRight: '1px solid',
-                  borderRightColor: 'divider',
-                  fontWeight: 600,
-                  py: 0,
-                  '&:last-of-type': {
-                    borderRight: 'none',
-                  },
-                }}
-              >
-                {header}
-              </TableCell>
-            ))}
-          </TableRow>
-        )}
-        itemContent={(_index, row) =>
-          headers.map((header, columnIndex) => {
-            const dataIndex = columnIndex - dataOffset;
-            const value =
-              showRowIndex && columnIndex === 0
-                ? String(_index + 1)
-                : formatCellValue(row[dataIndex] ?? null);
-            const rawValue = row[dataIndex] ?? null;
-            const numericValue =
-              typeof rawValue === 'number'
-                ? rawValue
-                : typeof rawValue === 'string'
-                  ? Number.parseFloat(rawValue)
-                  : Number.NaN;
-            const isHighlight =
-              typeof highlightAbsThreshold === 'number' &&
-              dataIndex >= 1 &&
-              Number.isFinite(numericValue) &&
-              Math.abs(numericValue) >= highlightAbsThreshold;
-            return (
-              <TableCell
-                key={header}
-                align="left"
-                sx={{
-                  height: ROW_HEIGHT,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  borderRight: '1px solid',
-                  borderRightColor: 'divider',
-                  fontWeight: isHighlight ? 700 : undefined,
-                  py: 0,
-                  '&:last-of-type': {
-                    borderRight: 'none',
-                  },
-                }}
-              >
-                {value}
-              </TableCell>
-            );
+        fixedHeaderContent={() => createHeaderRow(headers)}
+        itemContent={(rowIndex, row) =>
+          createBodyCells({
+            dataOffset,
+            headers,
+            row,
+            rowIndex,
+            showRowIndex,
+            boldValueThreshold,
           })
         }
       />

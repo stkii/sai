@@ -10,8 +10,9 @@
 
 ## SAI の特長
 
-- **分析条件の記録**：どのデータに、どんな設定で、どの分析を実行したかを自動で記録し、後から確認することができます。
-- **コマンド不要**：データの読み込みから分析実行・結果確認までをクリック操作で完結します。
+- **分析条件の記録**：どのデータに、どんな設定で、どの分析を実行したかを自動で記録し、結果を後から確認することができます。
+- **コマンド不要**：データの読み込みから分析実行・結果の確認までクリック操作のみで完結します。
+
 
 ## 利用可能な分析
 
@@ -53,11 +54,6 @@
       <td>✅ Available</td>
     </tr>
     <tr>
-      <td>検出力</td>
-      <td>サンプルサイズや検出力を算出します</td>
-      <td>✅ Available</td>
-    </tr>
-    <tr>
       <td>信頼性</td>
       <td>Cronbach の alpha 係数を算出します</td>
       <td>🚧 In progress</td>
@@ -75,9 +71,42 @@
   </tbody>
 </table>
 
+上記分析に加えて、**サンプルサイズの設計**と**検出力の算出**が可能です。また、以下の機能も提供しています：
+
+- **分析ログ**：実行した分析を自動で記録し、後から結果を参照することができます（分析データの各値は保持しません）
+- **エクスポート**：Excel 形式で結果をエクスポートをすることができます
+
 ### 分析アルゴリズム
 
-原則として、Rの標準ライブラリ（ `base`、`stats` ）と、SAIで定義した前処理および分析フローを使用します。ただし、因子分析については、結果の解釈可能性のために統一的な処理を行う目的で、[EFAtools](https://cran.r-project.org/web/packages/EFAtools/index.html) パッケージを使用しています。また、R とのデータの受け渡しを JSON で行なうため、 [jsonlite](https://cran.r-project.org/web/packages/jsonlite/index.html) パッケージを使用しています。
+原則として、Rの標準パッケージ（ `base`、`stats` ）と、SAIで定義した前処理および分析フローを使用します。ただし、以下の分析については外部のパッケージを使用しています。
+
+<table>
+  <thead>
+    <tr>
+      <th>分析</th>
+      <th>パッケージ</th>
+      <th>使用理由</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>因子分析</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/EFAtools/index.html">EFAtools</a>
+      </td>
+      <td>ー</td>
+    </tr>
+    <tr>
+      <td>検出力分析</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/pwr/index.html">pwr</a>
+      </td>
+      <td>ー</td>
+    </tr>
+  </tbody>
+</table>
+
+また、R とのデータの受け渡しを JSON で行なうため、 [jsonlite](https://cran.r-project.org/web/packages/jsonlite/index.html) パッケージを使用しています。
 
 ## クイックスタート
 

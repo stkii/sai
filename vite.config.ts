@@ -13,8 +13,8 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       input: {
-        data: resolve(__dirname, 'pages/data.html'),
-        result: resolve(__dirname, 'pages/result.html'),
+        data: resolve(__dirname, 'windows/data-window.html'),
+        result: resolve(__dirname, 'windows/result-window.html'),
       },
     },
   },
