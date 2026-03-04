@@ -1,9 +1,11 @@
 #[tauri::command]
-pub fn get_sheets(path: String) -> Result<Vec<String>, String> {
+pub fn get_sheets(state: tauri::State<'_, crate::bootstrap::state::AppState>,
+                  path: String)
+                  -> Result<Vec<String>, String> {
     log::info!("get_sheets start path={}", path);
-    let kind = crate::usecase::DataSourceKind::from_path(&path)?;
+    let kind = crate::domain::input::source_kind::DataSourceKind::from_path(&path)?;
     log::info!("get_sheets start path={} kind={}", path, kind.as_str());
-    let result = crate::usecase::get_sheets(kind, &path);
+    let result = state.import_service.get_sheets(&path);
 
     match result {
         Ok(names) => {

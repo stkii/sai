@@ -1,17 +1,14 @@
 import type { SupportedAnalysisType } from '../types';
-import type { AnalysisMethodModule } from './core/analysisMethodContracts';
-import correlationMethod from './methods/correlation';
-import descriptiveMethod from './methods/descriptive';
+import { ANALYSIS_METHODS } from './methods';
 import {
   buildAnalysisMethodMap,
   getAnalysisItems,
   getAnalysisLabelByKey,
   getAnalysisMethodByKey,
-} from './registry/selectors';
+} from './selectors';
 
-const methods = [descriptiveMethod, correlationMethod] as const satisfies readonly AnalysisMethodModule[];
-const methodMap = buildAnalysisMethodMap(methods);
-const items = getAnalysisItems(methods);
+const methodMap = buildAnalysisMethodMap(ANALYSIS_METHODS);
+const items = getAnalysisItems(ANALYSIS_METHODS);
 
 const getMethodByKey = (key: SupportedAnalysisType) => {
   return getAnalysisMethodByKey(methodMap, key);
@@ -23,7 +20,7 @@ const getLabelByKey = (key: SupportedAnalysisType) => {
 
 export const analysisCatalog = {
   items,
-  methods,
+  methods: ANALYSIS_METHODS,
   getMethodByKey,
   getLabelByKey,
 };

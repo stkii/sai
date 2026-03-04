@@ -1,4 +1,4 @@
-import type { AnalysisMethodDefinition } from '../../core/analysisMethodContracts';
+import type { AnalysisMethodDefinition } from '../contracts';
 
 export const descriptiveDefinition: AnalysisMethodDefinition<'descriptive'> = {
   key: 'descriptive',

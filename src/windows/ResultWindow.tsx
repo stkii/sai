@@ -3,12 +3,13 @@ import { save } from '@tauri-apps/plugin-dialog';
 import type { FC, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { analysisCatalog } from '../analysis/catalog';
+import type { AnalysisExportLog, AnalysisResult, AnalysisResultPayload } from '../analysis/api';
+import { analysisCatalog } from '../analysis/api';
 import BasePopoverList from '../components/BasePopoverList';
 import DataTable from '../components/DataTable';
 import { useAnalysisResultStream } from '../hooks/useAnalysisResultStream';
 import tauriIpc from '../tauriIpc';
-import type { AnalysisExportLog, AnalysisResult, AnalysisResultPayload, ParsedDataTable } from '../types';
+import type { ParsedDataTable } from '../types';
 
 const EXPORT_ITEMS = [{ label: 'Excel', value: 'xlsx' }] as const;
 const RESULT_ROW_HEIGHT = 40;

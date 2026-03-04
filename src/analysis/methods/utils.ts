@@ -1,4 +1,5 @@
-import type { AnalysisExportSection, AnalysisResult, ParsedDataTable } from '../../types';
+import type { ParsedDataTable } from '../../types';
+import type { AnalysisExportSection, AnalysisResult } from '../types';
 
 export const createSingleTableExportSections = (result: AnalysisResult): AnalysisExportSection[] => {
   if (result.kind === 'table') {

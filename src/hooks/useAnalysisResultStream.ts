@@ -1,8 +1,8 @@
 import { emitTo } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useEffect, useEffectEvent } from 'react';
-import { ANALYSIS_READY_EVENT, ANALYSIS_RESULT_EVENT } from '../analysis/runtime/events';
-import type { AnalysisReadyPayload, AnalysisResultPayload } from '../types';
+import type { AnalysisReadyPayload, AnalysisResultPayload } from '../analysis/api';
+import { ANALYSIS_READY_EVENT, ANALYSIS_RESULT_EVENT } from '../analysis/api';
 
 interface Args {
   onReceiveResult: (payload: AnalysisResultPayload) => void;

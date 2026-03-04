@@ -1,10 +1,12 @@
 import type { ReactElement, ReactNode } from 'react';
-import type {
-  AnalysisExportSection,
-  AnalysisOptions,
-  AnalysisResult,
-  SupportedAnalysisType,
-} from '../../types';
+import type { AnalysisExportSection, AnalysisOptions, AnalysisResult, SupportedAnalysisType } from '../types';
+
+export interface AnalysisModalProps<TOptions = void> {
+  open: boolean;
+  onClose: () => void;
+  variables: string[];
+  onExecute?: (variables: string[], options: TOptions) => Promise<void>;
+}
 
 export interface AnalysisMethodDefinition<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
   key: TKey;

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import AnalysisDialogShell from '../../../components/AnalysisDialogShell';
 import BaseRadioButton from '../../../components/BaseRadioButton';
 import VariableSelect from '../../../components/VariableSelect';
-import type { AnalysisModalProps, DescriptiveOptions, DescriptiveOrder } from '../../../types';
+import type { DescriptiveOptions, DescriptiveOrder } from '../../types';
+import type { AnalysisModalProps } from '../contracts';
 
 const SORT_OPTIONS = [
   { label: '変数リスト順', value: 'default' },

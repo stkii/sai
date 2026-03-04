@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { createAnalysisRunner } from '../analysis/runtime/runner';
+import { createAnalysisRunner } from '../analysis/api';
 import tauriIpc from '../tauriIpc';
 
 export const useAnalysisRunner = () => {

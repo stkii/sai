@@ -5,9 +5,9 @@ import type {
   AnalysisLogSummary,
   AnalysisOptions,
   AnalysisRunResult,
-  ParsedDataTable,
   SupportedAnalysisType,
-} from './types';
+} from './analysis/api';
+import type { ParsedDataTable } from './types';
 
 class TauriIpc {
   async getSheets(path: string): Promise<string[]> {

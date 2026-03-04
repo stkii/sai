@@ -1,8 +1,8 @@
 import { emitTo } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useCallback } from 'react';
-import { ANALYSIS_READY_EVENT, ANALYSIS_RESULT_EVENT } from '../analysis/runtime/events';
-import type { AnalysisResultPayload } from '../types';
+import type { AnalysisResultPayload } from '../analysis/api';
+import { ANALYSIS_READY_EVENT, ANALYSIS_RESULT_EVENT } from '../analysis/api';
 
 interface Args {
   payload?: unknown;

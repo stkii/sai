@@ -5,12 +5,12 @@ import AnalysisDialogShell from '../../../components/AnalysisDialogShell';
 import BaseRadioButton from '../../../components/BaseRadioButton';
 import VariableSelect from '../../../components/VariableSelect';
 import type {
-  AnalysisModalProps,
   CorrelationAlternative,
   CorrelationMethod,
   CorrelationMissingValueUse,
   CorrelationOptions,
-} from '../../../types';
+} from '../../types';
+import type { AnalysisModalProps } from '../contracts';
 
 const METHOD_OPTIONS = [
   { label: 'Pearson', value: 'pearson' },

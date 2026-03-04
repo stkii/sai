@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { SupportedAnalysisType } from '../types';
+import type { SupportedAnalysisType } from '../analysis/api';
 import BasePopoverList from './BasePopoverList';
 
 interface AnalysisSelectItem {

@@ -1,17 +1,15 @@
+mod bootstrap;
 mod cache;
+mod domain;
 mod dto;
 mod features;
+mod infra;
 mod presentation;
 mod usecase;
 
-pub(crate) use features::{
-    analysis,
-    data,
-};
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    presentation::attach_handlers(tauri::Builder::default())
+    presentation::attach_handlers(tauri::Builder::default().manage(bootstrap::state::AppState::new()))
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::new()

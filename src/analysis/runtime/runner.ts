@@ -1,4 +1,5 @@
-import type { AnalysisOptions, AnalysisRunResult, ImportDataset, SupportedAnalysisType } from '../../types';
+import type { ImportDataset } from '../../types';
+import type { AnalysisOptions, AnalysisRunResult, SupportedAnalysisType } from '../types';
 
 export interface AnalysisInput {
   type: SupportedAnalysisType;

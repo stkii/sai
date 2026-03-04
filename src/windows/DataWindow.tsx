@@ -2,20 +2,19 @@ import { Box, ChakraProvider, defaultSystem, HStack, Stack, Text } from '@chakra
 import type { FC } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { analysisCatalog } from '../analysis/catalog';
-import type { AnalysisRunner } from '../analysis/runtime/runner';
+import type {
+  AnalysisOptions,
+  AnalysisResultPayload,
+  AnalysisRunner,
+  SupportedAnalysisType,
+} from '../analysis/api';
+import { analysisCatalog } from '../analysis/api';
 import AnalysisSelect from '../components/AnalysisSelect';
 import DataTable from '../components/DataTable';
 import { useAnalysisRunner } from '../hooks/useAnalysisRunner';
 import { useResultWindowBridge } from '../hooks/useResultWindowBridge';
 import tauriIpc from '../tauriIpc';
-import type {
-  AnalysisOptions,
-  AnalysisResultPayload,
-  ImportDataset,
-  ParsedDataTable,
-  SupportedAnalysisType,
-} from '../types';
+import type { ImportDataset, ParsedDataTable } from '../types';
 import DataImportDialog from './views/DataImportDialog';
 
 interface ExecuteAnalysisArgs {
