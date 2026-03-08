@@ -58,7 +58,7 @@ export const openResultWindow = async () => {
     return;
   }
 
-  const ready = await prepareResultWindowReadyWaiter();
+  const ready = prepareResultWindowReadyWaiter();
   const resultWindow = new WebviewWindow(RESULT_WINDOW_LABEL, {
     url: '/windows/result-window.html',
     title: 'SAI (結果ビュー)',
