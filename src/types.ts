@@ -1,13 +1,13 @@
-export type ParsedTableCell = string | number | boolean | null;
+export interface Dataset {
+  path: string;
+  sheet?: string;
+}
 
 export interface ParsedDataTable {
   headers: string[];
-  rows: ParsedTableCell[][];
+  rows: ParsedCell[][];
   note?: string;
   title?: string;
 }
 
-export interface ImportDataset {
-  path: string;
-  sheet?: string;
-}
+export type ParsedCell = string | number | boolean | null;
