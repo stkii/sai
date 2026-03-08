@@ -1,60 +1,11 @@
-import type { ParsedDataTable } from '../types';
+import type { Dataset, ParsedDataTable } from '../types';
 
-/* ===== CORRELATION ===== */
-export type CorrelationMethod = 'pearson' | 'kendall' | 'spearman';
-export type CorrelationAlternative = 'two.sided' | 'less' | 'greater';
-export type CorrelationMissingValueUse = 'complete.obs' | 'pairwise.complete.obs' | 'mean_imp';
-
-export interface CorrelationOptions extends AnalysisOptions {
-  method: CorrelationMethod;
-  alternative: CorrelationAlternative;
-  use: CorrelationMissingValueUse;
-}
-
-/* ===== DESCRIPTIVE ===== */
-export type DescriptiveOrder = 'default' | 'mean_asc' | 'mean_desc';
-
-export interface DescriptiveOptions extends AnalysisOptions {
-  order: DescriptiveOrder;
-}
-
-/* ===== FACTOR ===== */
-export interface FactorOptions extends AnalysisOptions {
-  extraction: 'ml';
-  rotation: 'none' | 'varimax' | 'promax';
-  sort: boolean;
-}
-
-export interface FactorResult {
-  eigen: ParsedDataTable;
-  pattern: ParsedDataTable;
-  rotmat: ParsedDataTable;
-  structure?: ParsedDataTable;
-  phi?: ParsedDataTable;
-}
-
-/* ===== ANALYSIS ===== */
 export interface AnalysisOptions {
   [key: string]: unknown;
 }
 
-export type AnalysisResult = AnalysisTableResult | AnalysisRegressionResult | AnalysisFactorResult;
-
-/**
- * Supported analysis types (single source of truth)
- */
-export type SupportedAnalysisType = 'correlation' | 'descriptive' | 'factor';
-
-export interface RegressionResult {
-  model_summary: ParsedDataTable;
-  coefficients: ParsedDataTable;
-  anova: ParsedDataTable;
-}
-
-export interface AnalysisRunResult {
-  result: AnalysisResult;
-  loggedAt: string;
-  analysisId: string;
+export interface AnalysisResult {
+  sections: AnalysisSection[]; // e.g., 記述統計=1件, 因子分析=複数件
 }
 
 export interface AnalysisResultPayload {
@@ -62,49 +13,32 @@ export interface AnalysisResultPayload {
   type: SupportedAnalysisType;
   label: string;
   timestamp: string;
+  options: AnalysisOptions; // 実行時オプションを必ず同梱
   result: AnalysisResult;
 }
 
-export interface AnalysisReadyPayload {
-  label: string;
-}
-
-export interface AnalysisExportSection {
-  sectionTitle?: string;
-  table: ParsedDataTable;
-}
-
-export interface AnalysisExportLog {
-  label: string;
-  timestamp: string;
-  sections: AnalysisExportSection[];
-}
-
-export interface AnalysisLogSummary {
-  analysisId: string;
-  timestamp: string;
-  analysisType: string;
-  filePath: string;
-  sheetName: string;
+export interface AnalysisRunRequest {
+  selection: Dataset;
+  type: SupportedAnalysisType;
   variables: string[];
+  options: AnalysisOptions; // モーダル指定値をそのまま保持
 }
 
-export interface AnalysisLogEntry extends AnalysisLogSummary {
-  options: AnalysisOptions;
-  result: AnalysisResult;
-}
-
-interface AnalysisFactorResult {
-  kind: 'factor';
-  factor: FactorResult;
-}
-
-interface AnalysisTableResult {
-  kind: 'table';
+export interface AnalysisSection {
+  key: string; // "eigen" など
+  label: string; // 画面表示名
   table: ParsedDataTable;
 }
 
-interface AnalysisRegressionResult {
-  kind: 'regression';
-  regression: RegressionResult;
-}
+/**
+ * Supported analysis types (single source of truth)
+ */
+export const SUPPORTED_ANALYSIS_TYPES = ['correlation', 'descriptive', 'factor'] as const;
+
+export type SupportedAnalysisType = (typeof SUPPORTED_ANALYSIS_TYPES)[number];
+
+const SUPPORTED_ANALYSIS_TYPE_SET: ReadonlySet<string> = new Set(SUPPORTED_ANALYSIS_TYPES);
+
+export const isSupportedAnalysisType = (value: string): value is SupportedAnalysisType => {
+  return SUPPORTED_ANALYSIS_TYPE_SET.has(value);
+};

@@ -1,11 +1,16 @@
 import { Box, SimpleGrid, Stack, Text } from '@chakra-ui/react';
-import { message } from '@tauri-apps/plugin-dialog';
-import { useCallback, useEffect, useState } from 'react';
-import AnalysisDialogShell from '../../../components/AnalysisDialogShell';
-import BaseRadioButton from '../../../components/BaseRadioButton';
-import VariableSelect from '../../../components/VariableSelect';
-import type { DescriptiveOptions, DescriptiveOrder } from '../../types';
-import type { AnalysisModalProps } from '../contracts';
+import { useEffect, useRef, useState } from 'react';
+import { BaseRadioButton } from '../../../components/BaseRadioButton';
+import { VariableSelector } from '../../../components/VariableSelector';
+import { ModalFrame } from '../../components/ModalFrame';
+import type { AnalysisOptions } from '../../types';
+import type { ModalProps } from '../contracts';
+
+export type DescriptiveOrder = 'default' | 'mean_asc' | 'mean_desc';
+
+export interface DescriptiveOptions extends AnalysisOptions {
+  order: DescriptiveOrder;
+}
 
 const SORT_OPTIONS = [
   { label: '変数リスト順', value: 'default' },
@@ -13,91 +18,61 @@ const SORT_OPTIONS = [
   { label: '平均値による降順', value: 'mean_desc' },
 ] as const satisfies ReadonlyArray<{ label: string; value: DescriptiveOrder }>;
 
-const DescriptiveModal = ({
+const DEFAULT_ORDER = SORT_OPTIONS[0]?.value ?? 'default';
+
+export const DescriptiveModal = ({
   open,
   onClose,
-  onExecute,
   variables,
-}: AnalysisModalProps<DescriptiveOptions>) => {
+  onExecute,
+}: ModalProps<DescriptiveOptions>) => {
   const [selectedVariables, setSelectedVariables] = useState<string[]>([]);
-  const [order, setOrder] = useState<DescriptiveOrder>(SORT_OPTIONS[0]?.value ?? 'default');
+  const [order, setOrder] = useState<DescriptiveOrder>(DEFAULT_ORDER);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const variablesKey = variables.join('\u0000');
-
-  const showValidationError = useCallback(async (text: string) => {
-    setError(text);
-    await message(text, { title: '入力エラー', kind: 'error' });
-  }, []);
-
-  const showAnalysisError = useCallback(async (text: string) => {
-    setError(text);
-    await message(text, { title: '分析エラー', kind: 'error' });
-  }, []);
-
-  const runWithDialogError = useCallback(
-    async (task: () => Promise<void>) => {
-      setLoading(true);
-      setError(null);
-      try {
-        await task();
-      } catch (runError: unknown) {
-        await showAnalysisError(runError instanceof Error ? runError.message : String(runError));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [showAnalysisError]
-  );
-
-  const resetOnClose = useCallback(() => {
-    setSelectedVariables([]);
-    setOrder(SORT_OPTIONS[0]?.value ?? 'default');
-    setError(null);
-    setLoading(false);
-  }, []);
-
-  const resetOnVariablesChange = useCallback((_: string) => {
-    setSelectedVariables([]);
-    setError(null);
-  }, []);
+  const previousVariablesKeyRef = useRef('');
 
   useEffect(() => {
     if (!open) {
-      resetOnClose();
-    }
-  }, [open, resetOnClose]);
-
-  useEffect(() => {
-    resetOnVariablesChange(variablesKey);
-  }, [variablesKey, resetOnVariablesChange]);
-
-  useEffect(() => {
-    if (open) {
-      setOrder(SORT_OPTIONS[0]?.value ?? 'default');
+      setSelectedVariables([]);
+      setOrder(DEFAULT_ORDER);
+      setError(null);
+      setLoading(false);
     }
   }, [open]);
 
-  const handleExecute = async () => {
-    if (selectedVariables.length === 0) {
-      await showValidationError('変数を選択してください');
+  useEffect(() => {
+    const nextVariablesKey = variables.join('\u0000');
+    if (previousVariablesKeyRef.current === nextVariablesKey) {
       return;
     }
-    if (!SORT_OPTIONS.some((option) => option.value === order)) {
-      await showValidationError('ソートの指定が不正です');
+    previousVariablesKeyRef.current = nextVariablesKey;
+    setSelectedVariables([]);
+    setError(null);
+  }, [variables]);
+
+  const handleExecute = async () => {
+    if (selectedVariables.length === 0) {
+      setError('変数を選択してください');
       return;
     }
     if (!onExecute) {
       return;
     }
 
-    await runWithDialogError(async () => {
+    setLoading(true);
+    setError(null);
+    try {
       await onExecute(selectedVariables, { order });
-    });
+    } catch (executeError: unknown) {
+      setError(executeError instanceof Error ? executeError.message : String(executeError));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <AnalysisDialogShell
+    <ModalFrame
       open={open}
       onClose={onClose}
       title="記述統計"
@@ -109,7 +84,7 @@ const DescriptiveModal = ({
         <Stack gap="3">
           <Text fontWeight="semibold">変数選択</Text>
           <Box overflowX="auto">
-            <VariableSelect variables={variables} onChange={setSelectedVariables} />
+            <VariableSelector variables={variables} onChange={setSelectedVariables} />
           </Box>
         </Stack>
         <Stack gap="3">
@@ -122,8 +97,6 @@ const DescriptiveModal = ({
           />
         </Stack>
       </SimpleGrid>
-    </AnalysisDialogShell>
+    </ModalFrame>
   );
 };
-
-export default DescriptiveModal;

@@ -1,16 +1,9 @@
-import type { ParsedDataTable } from '../../types';
-import type { AnalysisExportSection, AnalysisResult } from '../types';
+import type { AnalysisResult, AnalysisSection } from '../types';
 
-export const createSingleTableExportSections = (result: AnalysisResult): AnalysisExportSection[] => {
-  if (result.kind === 'table') {
-    return [{ table: result.table }];
-  }
-  return [];
+export const buildExportSectionsFromResult = (result: AnalysisResult): AnalysisSection[] => {
+  return result.sections;
 };
 
-export const renderSingleTableResult = (result: AnalysisResult): ParsedDataTable | null => {
-  if (result.kind === 'table') {
-    return result.table;
-  }
-  return null;
+export const getSingleSection = (result: AnalysisResult): AnalysisSection | null => {
+  return result.sections[0] ?? null;
 };
