@@ -11,7 +11,16 @@ interface Props {
   min?: number;
 }
 
-const BaseValueInput = ({ step, value, width, onChange, disabled = false, errText, max, min }: Props) => {
+export const BaseNumberInput = ({
+  step,
+  value,
+  width,
+  onChange,
+  disabled = false,
+  errText,
+  max,
+  min,
+}: Props) => {
   return (
     <Field.Root disabled={disabled}>
       <NumberInput.Root
@@ -30,5 +39,3 @@ const BaseValueInput = ({ step, value, width, onChange, disabled = false, errTex
     </Field.Root>
   );
 };
-
-export default BaseValueInput;

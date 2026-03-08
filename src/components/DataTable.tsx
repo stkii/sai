@@ -1,7 +1,7 @@
 import { Paper, Table, TableCell, TableContainer, TableRow } from '@mui/material';
 import { forwardRef } from 'react';
 import { type TableComponents, TableVirtuoso } from 'react-virtuoso';
-import type { ParsedDataTable, ParsedTableCell } from '../types';
+import type { ParsedCell, ParsedDataTable } from '../types';
 
 type RowData = ParsedDataTable['rows'][number];
 
@@ -38,80 +38,7 @@ const CELL_BASE_SX = {
   },
 } as const;
 
-const createBodyCells = ({
-  dataOffset,
-  headers,
-  row,
-  rowIndex,
-  showRowIndex,
-  boldValueThreshold,
-}: BodyCellArgs) => {
-  return headers.map((header, columnIndex) => {
-    const dataIndex = columnIndex - dataOffset;
-    const value =
-      showRowIndex && columnIndex === 0 ? String(rowIndex + 1) : showCellValue(row[dataIndex] ?? null);
-    const rawValue = row[dataIndex] ?? null;
-    const numericValue =
-      typeof rawValue === 'number' ? rawValue : typeof rawValue === 'string' ? Number(rawValue) : Number.NaN;
-    const isBold =
-      typeof boldValueThreshold === 'number' &&
-      dataIndex >= 1 &&
-      Number.isFinite(numericValue) &&
-      Math.abs(numericValue) >= boldValueThreshold;
-
-    return (
-      <TableCell
-        key={header}
-        align="left"
-        sx={{
-          ...CELL_BASE_SX,
-          fontWeight: isBold ? 700 : undefined,
-        }}
-      >
-        {value}
-      </TableCell>
-    );
-  });
-};
-
-const createHeaderRow = (headers: string[]) => {
-  return (
-    <TableRow>
-      {headers.map((header) => (
-        <TableCell
-          key={header}
-          variant="head"
-          align="left"
-          sx={{
-            ...CELL_BASE_SX,
-            backgroundColor: 'grey.100',
-            fontWeight: 600,
-          }}
-        >
-          {header}
-        </TableCell>
-      ))}
-    </TableRow>
-  );
-};
-
-const showCellValue = (value: ParsedTableCell) => {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value.toString() : '';
-  }
-  if (typeof value === 'boolean') {
-    return value ? 'true' : 'false';
-  }
-  if (value === null) {
-    return '';
-  }
-  return '';
-};
-
-const DataTable = ({
+export const DataTable = ({
   table,
   boldValueThreshold,
   emptyMessage = 'No data',
@@ -182,4 +109,81 @@ const DataTable = ({
   );
 };
 
-export default DataTable;
+const createBodyCells = ({
+  dataOffset,
+  headers,
+  row,
+  rowIndex,
+  showRowIndex,
+  boldValueThreshold,
+}: BodyCellArgs) => {
+  return headers.map((header, columnIndex) => {
+    const dataIndex = columnIndex - dataOffset;
+    const value =
+      showRowIndex && columnIndex === 0
+        ? String(rowIndex + 1)
+        : showCellValue(row[dataIndex] ?? null);
+    const rawValue = row[dataIndex] ?? null;
+    const numericValue =
+      typeof rawValue === 'number'
+        ? rawValue
+        : typeof rawValue === 'string'
+          ? Number(rawValue)
+          : Number.NaN;
+    const isBold =
+      typeof boldValueThreshold === 'number' &&
+      dataIndex >= 1 &&
+      Number.isFinite(numericValue) &&
+      Math.abs(numericValue) >= boldValueThreshold;
+
+    return (
+      <TableCell
+        key={header}
+        align="left"
+        sx={{
+          ...CELL_BASE_SX,
+          fontWeight: isBold ? 700 : undefined,
+        }}
+      >
+        {value}
+      </TableCell>
+    );
+  });
+};
+
+const createHeaderRow = (headers: string[]) => {
+  return (
+    <TableRow>
+      {headers.map((header) => (
+        <TableCell
+          key={header}
+          variant="head"
+          align="left"
+          sx={{
+            ...CELL_BASE_SX,
+            backgroundColor: 'grey.100',
+            fontWeight: 600,
+          }}
+        >
+          {header}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+};
+
+const showCellValue = (value: ParsedCell) => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value.toString() : '';
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+  if (value === null) {
+    return '';
+  }
+  return '';
+};

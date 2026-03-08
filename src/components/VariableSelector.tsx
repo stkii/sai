@@ -26,6 +26,57 @@ interface ListboxRenderProps<T> extends Listbox.RootProps<T> {
   contentRef: React.RefObject<HTMLDivElement | null>;
 }
 
+export const VariableSelector = ({ variables, onChange }: Props) => {
+  const items = useMemo(
+    () => variables.map((variable) => ({ label: variable, value: variable })),
+    [variables]
+  );
+  const state = useTransferListState<Contents>(items);
+
+  useEffect(() => {
+    onChange?.(state.target.items.map((item) => item.value));
+  }, [onChange, state.target]);
+
+  return (
+    <Flex gap="4" maxW="600px" align="stretch">
+      <ListboxRender
+        contentRef={state.sourceContentRef}
+        collection={state.source}
+        value={state.selectedSource.map((item) => item.value)}
+        onValueChange={(e) => state.setSelectedSource(e.items)}
+      />
+      <VStack justify="center" gap="2" py="8">
+        <IconButton
+          size="xs"
+          variant="subtle"
+          disabled={state.selectedSource.length === 0}
+          onClick={() => {
+            state.moveToTarget(state.selectedSource);
+          }}
+        >
+          <LuChevronRight />
+        </IconButton>
+        <IconButton
+          size="xs"
+          variant="subtle"
+          disabled={state.selectedTarget.length === 0}
+          onClick={() => {
+            state.moveToSource(state.selectedTarget);
+          }}
+        >
+          <LuChevronLeft />
+        </IconButton>
+      </VStack>
+      <ListboxRender
+        contentRef={state.targetContentRef}
+        collection={state.target}
+        value={state.selectedTarget.map((item) => item.value)}
+        onValueChange={(e) => state.setSelectedTarget(e.items)}
+      />
+    </Flex>
+  );
+};
+
 function ListboxRender<T>(props: ListboxRenderProps<T>) {
   const { collection, contentRef, ...rest } = props;
   return (
@@ -109,56 +160,3 @@ function useTransferListState<T>(items: T[], options?: Omit<CollectionOptions<T>
     targetContentRef,
   };
 }
-
-const VariableSelect = ({ variables, onChange }: Props) => {
-  const items = useMemo(
-    () => variables.map((variable) => ({ label: variable, value: variable })),
-    [variables]
-  );
-  const state = useTransferListState<Contents>(items);
-
-  useEffect(() => {
-    onChange?.(state.target.items.map((item) => item.value));
-  }, [onChange, state.target]);
-
-  return (
-    <Flex gap="4" maxW="600px" align="stretch">
-      <ListboxRender
-        contentRef={state.sourceContentRef}
-        collection={state.source}
-        value={state.selectedSource.map((item) => item.value)}
-        onValueChange={(e) => state.setSelectedSource(e.items)}
-      />
-      <VStack justify="center" gap="2" py="8">
-        <IconButton
-          size="xs"
-          variant="subtle"
-          disabled={state.selectedSource.length === 0}
-          onClick={() => {
-            state.moveToTarget(state.selectedSource);
-          }}
-        >
-          <LuChevronRight />
-        </IconButton>
-        <IconButton
-          size="xs"
-          variant="subtle"
-          disabled={state.selectedTarget.length === 0}
-          onClick={() => {
-            state.moveToSource(state.selectedTarget);
-          }}
-        >
-          <LuChevronLeft />
-        </IconButton>
-      </VStack>
-      <ListboxRender
-        contentRef={state.targetContentRef}
-        collection={state.target}
-        value={state.selectedTarget.map((item) => item.value)}
-        onValueChange={(e) => state.setSelectedTarget(e.items)}
-      />
-    </Flex>
-  );
-};
-
-export default VariableSelect;

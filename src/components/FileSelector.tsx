@@ -7,7 +7,7 @@ interface Props {
   placeholder?: string;
 }
 
-const FileSelect = ({
+export const FileSelector = ({
   selectedPath,
   onPick,
   buttonLabel = 'ファイルを選択',
@@ -18,11 +18,15 @@ const FileSelect = ({
       <Button onClick={onPick} size="sm" variant="outline">
         {buttonLabel}
       </Button>
-      <Text color="gray.600" fontSize="sm" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+      <Text
+        color="gray.600"
+        fontSize="sm"
+        overflow="hidden"
+        textOverflow="ellipsis"
+        whiteSpace="nowrap"
+      >
         {selectedPath ?? placeholder}
       </Text>
     </HStack>
   );
 };
-
-export default FileSelect;
