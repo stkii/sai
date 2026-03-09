@@ -12,32 +12,33 @@
     "lint": "biome lint --write ./src",
     "preview": "vite preview",
     "start": "RENV_PROFILE=default RENV_PROJECT=\"$PWD/src-r\" PATH=\"/usr/local/bin:$PATH\" tauri dev",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "ts": "tsc --noEmit"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.31.0",
+    "@chakra-ui/react": "^3.34.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/material": "^7.3.7",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@mui/material": "^7.3.8",
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-log": "~2.8.0",
-    "@tauri-apps/plugin-opener": "^2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-icons": "^5.5.0",
-    "react-virtuoso": "^4.18.1",
-    "zod": "^4.3.5"
+    "@tauri-apps/plugin-opener": "^2.5.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-icons": "^5.6.0",
+    "react-virtuoso": "^4.18.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^25.0.8",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
+    "@tauri-apps/cli": "^2.10.1",
+    "@types/node": "^25.3.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "typescript": "~5.8.3",
-    "vite": "^7.0.4"
+    "vite": "^7.3.1"
   },
   "volta": {
     "node": "24.13.0"
