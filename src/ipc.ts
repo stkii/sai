@@ -2,16 +2,15 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   AnalysisExecutionRecord,
   AnalysisOptions,
-  RawBackendAnalysisResult,
+  AnalysisResult,
   SupportedAnalysisType,
 } from './analysis/api';
-import { mapBackendAnalysisResult } from './analysis/api';
 import type { Dataset, ParsedDataTable } from './types';
 
-interface RawAnalysisRunResult {
+interface IpcResponse {
   analysisId: string;
   loggedAt: string;
-  result: RawBackendAnalysisResult;
+  result: AnalysisResult;
 }
 
 class TauriIpc {
@@ -40,15 +39,15 @@ class TauriIpc {
     datasetCacheId: string,
     options: AnalysisOptions
   ): Promise<AnalysisExecutionRecord> {
-    const raw = await invoke<RawAnalysisRunResult>('run_analysis', {
+    const response = await invoke<IpcResponse>('run_analysis', {
       analysisType: type,
       datasetCacheId,
       options,
     });
     return {
-      executionId: raw.analysisId,
-      executedAt: raw.loggedAt,
-      output: mapBackendAnalysisResult(raw.result),
+      executionId: response.analysisId,
+      executedAt: response.loggedAt,
+      output: response.result,
     };
   }
 }

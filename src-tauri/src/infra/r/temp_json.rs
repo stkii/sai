@@ -6,7 +6,8 @@ use tempfile::{
     NamedTempFile,
 };
 
-use crate::dto::NumericDataset;
+use crate::domain::analysis::method::Method;
+use crate::domain::input::numeric::NumericDataset;
 
 pub(crate) struct JsonTempFile {
     file: NamedTempFile,
@@ -32,7 +33,7 @@ impl JsonTempFile {
 }
 
 pub(crate) struct RAnalysisJob<'a> {
-    pub(crate) analysis_type: &'a str,
+    pub(crate) method: Method,
     pub(crate) dataset: Option<&'a NumericDataset>,
     pub(crate) options: &'a Value,
 }

@@ -1,4 +1,7 @@
-use crate::domain::input::numeric::NumericDataset;
+use crate::domain::input::numeric::{
+    NumericDataset,
+    NumericDatasetEntry,
+};
 use crate::domain::input::source_kind::DataSourceKind;
 use crate::domain::input::table::ParsedDataTable;
 
@@ -26,4 +29,12 @@ pub(crate) trait TableReader: Send + Sync {
                              sheet: Option<&str>,
                              variables: &[String])
                              -> Result<LoadedNumericDataset, String>;
+}
+
+pub(crate) trait NumericDatasetCacheStore: Send + Sync {
+    fn insert_numeric_dataset(&self,
+                              entry: NumericDatasetEntry)
+                              -> Result<String, String>;
+
+    fn clear_numeric_dataset_cache(&self) -> Result<(), String>;
 }
