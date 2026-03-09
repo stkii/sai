@@ -1,28 +1,33 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { AnalysisExportSection, AnalysisOptions, AnalysisResult, SupportedAnalysisType } from '../types';
+import type {
+  AnalysisOptions,
+  AnalysisResult,
+  AnalysisSection,
+  SupportedAnalysisType,
+} from '../types';
 
-export interface AnalysisModalProps<TOptions = void> {
+export interface ModalProps<TOptions extends AnalysisOptions = AnalysisOptions> {
   open: boolean;
   onClose: () => void;
   variables: string[];
   onExecute?: (variables: string[], options: TOptions) => Promise<void>;
 }
 
-export interface AnalysisMethodDefinition<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
-  key: TKey;
-  label: string;
-}
-
-export interface AnalysisModalRenderArgs {
+export interface ModalRenderArgs {
   open: boolean;
   onClose: () => void;
   variables: string[];
   onExecute: (variables: string[], options: AnalysisOptions) => Promise<void>;
 }
 
-export interface AnalysisMethodModule<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
-  definition: AnalysisMethodDefinition<TKey>;
-  renderModal: (args: AnalysisModalRenderArgs) => ReactElement;
+export interface MethodDefinition<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
+  key: TKey;
+  label: string;
+}
+
+export interface MethodModule<TKey extends SupportedAnalysisType = SupportedAnalysisType> {
+  definition: MethodDefinition<TKey>;
+  renderModal: (args: ModalRenderArgs) => ReactElement;
   renderResult: (result: AnalysisResult) => ReactNode;
-  buildExportSections: (result: AnalysisResult) => AnalysisExportSection[];
+  buildExportSections: (result: AnalysisResult) => AnalysisSection[];
 }

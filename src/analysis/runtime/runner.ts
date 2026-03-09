@@ -1,28 +1,32 @@
-import type { ImportDataset } from '../../types';
-import type { AnalysisOptions, AnalysisRunResult, SupportedAnalysisType } from '../types';
+import type { Dataset } from '../../types';
+import type {
+  AnalysisOptions,
+  AnalysisResult,
+  AnalysisRunRequest,
+  SupportedAnalysisType,
+} from '../types';
 
-export interface AnalysisInput {
-  type: SupportedAnalysisType;
-  selection: ImportDataset;
-  variables: string[];
-  options?: AnalysisOptions;
+export interface AnalysisExecutionRecord {
+  executionId: string;
+  executedAt: string;
+  output: AnalysisResult;
 }
 
 export interface AnalysisRunnerDeps {
-  buildNumericDataset: (selection: ImportDataset, variables: string[]) => Promise<string>;
+  buildNumericDataset: (selection: Dataset, variables: string[]) => Promise<string>;
   runAnalysis: (
     type: SupportedAnalysisType,
     datasetCacheId: string,
     options: AnalysisOptions
-  ) => Promise<AnalysisRunResult>;
+  ) => Promise<AnalysisExecutionRecord>;
 }
 
 export interface AnalysisRunner {
-  run: (input: AnalysisInput) => Promise<AnalysisRunResult>;
+  run: (request: AnalysisRunRequest) => Promise<AnalysisExecutionRecord>;
   clearCache: () => void;
 }
 
-const buildDatasetCacheKey = (selection: ImportDataset, variables: string[]) => {
+const buildDatasetCacheKey = (selection: Dataset, variables: string[]) => {
   const uniqueVariables = Array.from(new Set(variables));
   uniqueVariables.sort();
   return [selection.path, selection.sheet ?? '', ...uniqueVariables].join('||');
@@ -34,7 +38,12 @@ export const createAnalysisRunner = ({
 }: AnalysisRunnerDeps): AnalysisRunner => {
   const datasetCache = new Map<string, string>();
 
-  const run = async ({ type, selection, variables, options }: AnalysisInput): Promise<AnalysisRunResult> => {
+  const run = async ({
+    type,
+    selection,
+    variables,
+    options,
+  }: AnalysisRunRequest): Promise<AnalysisExecutionRecord> => {
     if (variables.length === 0) {
       throw new Error('変数を選択してください');
     }
@@ -47,7 +56,7 @@ export const createAnalysisRunner = ({
       datasetCache.set(cacheKey, datasetCacheId);
     }
 
-    return runAnalysis(type, datasetCacheId, options ?? {});
+    return runAnalysis(type, datasetCacheId, options);
   };
 
   const clearCache = () => {

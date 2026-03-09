@@ -13,7 +13,7 @@ interface Props {
   onChange?: (value: string) => void;
 }
 
-const BaseRadioButton = ({ contents, orientation, value, onChange }: Props) => {
+export const BaseRadioButton = ({ contents, orientation, value, onChange }: Props) => {
   const direction = orientation === 'vertical' ? 'column' : 'row';
   const defaultValue = contents[0]?.value;
   const isControlled = typeof value !== 'undefined';
@@ -41,5 +41,3 @@ const BaseRadioButton = ({ contents, orientation, value, onChange }: Props) => {
     </RadioGroup.Root>
   );
 };
-
-export default BaseRadioButton;

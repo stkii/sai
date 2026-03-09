@@ -1,6 +1,14 @@
 'use client';
 
-import { Button, Listbox, Popover, Portal, useFilter, useListbox, useListCollection } from '@chakra-ui/react';
+import {
+  Button,
+  Listbox,
+  Popover,
+  Portal,
+  useFilter,
+  useListbox,
+  useListCollection,
+} from '@chakra-ui/react';
 import { useEffect, useRef, useState } from 'react';
 import { LuChevronDown } from 'react-icons/lu';
 
@@ -17,7 +25,13 @@ interface Props {
   onSelect?: (item: Contents | null) => void;
 }
 
-const BasePopoverList = ({ contents, disabled = false, placeholder, resetKey, onSelect }: Props) => {
+export const BasePopoverList = ({
+  contents,
+  disabled = false,
+  placeholder,
+  resetKey,
+  onSelect,
+}: Props) => {
   const [inputValue, setInputValue] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -121,5 +135,3 @@ const BasePopoverList = ({ contents, disabled = false, placeholder, resetKey, on
     </Popover.Root>
   );
 };
-
-export default BasePopoverList;

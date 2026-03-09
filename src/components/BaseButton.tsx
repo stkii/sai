@@ -12,7 +12,15 @@ interface Props {
   variant?: ButtonProps['variant'];
 }
 
-const BaseButton = ({ label, onClick, colorPalette, disabled, loading, spinner, variant }: Props) => {
+export const BaseButton = ({
+  label,
+  onClick,
+  colorPalette,
+  disabled,
+  loading,
+  spinner,
+  variant,
+}: Props) => {
   return (
     <Button
       onClick={onClick}
@@ -26,5 +34,3 @@ const BaseButton = ({ label, onClick, colorPalette, disabled, loading, spinner, 
     </Button>
   );
 };
-
-export default BaseButton;

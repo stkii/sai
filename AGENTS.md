@@ -11,13 +11,16 @@ It allows users to perform data analysis through point-and-click operations with
 2. `<!impl>` directive - Direct code implementation allowed only when explicitly requested with this tag. Must clarify any ambiguities first.
 3. `<!nocode>` directive - Do not edit code directly when this tag is present.
 4. File/folder deletion - Must explain impact and get user consent before deleting.
-5. After writing TypeScript, run `pnpm fixall`, `pnpm check`, and `pnpm tsc --noEmit` at the repo root to catch TypeScript errors. After writing Rust, run `cargo +nightly fmt`, `cargo clippy --fix`, and `cargo check` in `src-tauri/` to verify formatting, linting, and errors, then fix any issues found.
+5. After writing TypeScript, run `pnpm fixall`, `pnpm check`, and `pnpm ts` at the repo root to catch TypeScript errors. After writing Rust, run `cargo +nightly fmt`, `cargo clippy --fix`, and `cargo check` in `src-tauri/` to verify formatting, linting, and errors, then fix any issues found.
 6. `<!ref-docs>` directive - When user instructions include this tag, consult the documentation in `docs/llms-txt/` and base your opinions, code, or other work on that material.
 
 ## Coding Standard & Naming Conventions
 
 - TypeScript
   - Use `interface` for object shapes unless a `type` is required (for example, unions, tuples, mapped types, or primitive aliases).
+  - Do not use default exports. Always use named exports.
+- Rust
+  - Do not use `mod.rs`. Define modules in the `<name>.rs` format.
 
 ## Dark Patterns Prohibited
 

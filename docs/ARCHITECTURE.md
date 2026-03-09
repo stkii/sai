@@ -1,220 +1,218 @@
-# Architecture (Current Dependency Direction)
+# Architecture
 
-このドキュメントは、現在のディレクトリ構成に基づく依存方向を示す。
-矢印は「参照・呼び出し」の向き。
 
----
+### `src/`
 
-## 1) マクロ視点（src / src-r / src-tauri/src）
+```mermaid
+flowchart TB
+  direction TB
+
+  subgraph P["Window"]
+    direction TB
+
+    W["windows/**Window.tsx"]
+    WE["windows/events.ts"]
+
+    subgraph modules
+      direction LR
+      WC["windows/components/"]
+      WS["windows/services/"]
+    end
+  end
+
+  subgraph A["Analysis"]
+    direction TB
+
+    subgraph AP["public"]
+      direction LR
+      AA["analysis/api.ts"]
+    end
+
+    subgraph AI["internals"]
+      direction LR
+      AC["analysis/components/"]
+      AM["analysis/methods/"]
+      AR["analysis/runtime/"]
+      AT["analysis/types.ts"]
+    end
+  end
+
+  subgraph C["Shared"]
+    direction LR
+    CC["components/"]
+    CT["types.ts"]
+  end
+
+  subgraph X["Tauri IPC"]
+    direction TB
+    I["ipc.ts"]
+  end
+
+  W --> AA
+  W --> I
+  W --> CT
+  W --> WC
+  W --> WS
+  W --> WE
+
+  WC --> I
+  WS --> AA
+
+  W --> CC
+  WC --> CC
+  AC --> CC
+  AM --> CC
+
+  WC --> CT
+  WS --> CT
+  I --> CT
+  AR --> CT
+
+  WS --> WE
+  I --> AA
+
+  AA --> AC
+  AA --> AM
+  AA --> AR
+  AA --> AT
+  AC --> AT
+  AM --> AC
+  AM --> AT
+  AR --> AT
+  AT --> CT
+
+```
+
+### `src-tauri/src/`
 
 ```mermaid
 flowchart TD
-  UI["src (Frontend UI)"] --> IPC["src/tauriIpc.ts"]
-  IPC --> CMD["src-tauri/src/commands/* (tauri::command)"]
 
-  CMD --> ANALYSIS["src-tauri/src/features/analysis/*"]
-  CMD --> DATA["src-tauri/src/features/data/*"]
-  CMD --> EXPORT["src-tauri/src/commands/export.rs"]
+  subgraph Entry[" Entry / Wiring "]
+    direction LR
+    M[main.rs] --> L[lib.rs]
+    L --> P[presentation.rs]
+    L --> B["bootstrap/state.rs\n(AppState)"]
+  end
 
-  ANALYSIS --> CACHE["src-tauri/src/cache.rs"]
-  ANALYSIS --> RCLI["Rscript -> src-r/cli.R"]
-  RCLI --> RMODS["src-r/R/*.R (analysis modules)"]
+  subgraph Pres[" presentation/commands/ "]
+    direction LR
+    C1[build_numeric_dataset]
+    C2[creare_dataset_cache]
+    C3[get_sheets]
+    C4[parse_table]
+    C5[run_analysis]
+  end
 
-  EXPORT --> XLSX["rust_xlsxwriter"]
+  subgraph UC[" usecase/ "]
+    direction LR
+
+    subgraph UCImport[" import/ "]
+      direction TB
+
+      U1[service.rs]
+      U2[ports.rs]
+      U1 --> U2
+    end
+
+    subgraph UCAnalysis[" analysis/ "]
+      direction TB
+
+      U3[service.rs]
+      U4["handlers/*"]
+      U5[ports.rs]
+      U3 --> U4
+      U3 --> U5
+    end
+  end
+
+  subgraph Infra[" infra/ "]
+    direction LR
+
+    subgraph InfraReader[" reader/ "]
+      I1["reader.rs\n(csv, xlsx)"]
+    end
+
+    subgraph InfraCache[" cache/ "]
+      direction TB
+      I3[repository.rs] --> I2[dataset_cache.rs]
+    end
+
+    subgraph InfraR[" r/ "]
+      direction LR
+      I4[analyzer.rs] --> I5[runner.rs]
+      I5 --> I6[process.rs]
+      I5 --> I7[temp_json.rs]
+    end
+  end
+
+  subgraph Dom[" domain/ "]
+    direction LR
+
+    subgraph DomAnalysis[" analysis/ "]
+      D1[method.rs]
+      D2[error.rs]
+      D3[model.rs]
+      D4[rule.rs]
+    end
+
+    subgraph DomInput[" input/ "]
+      D5[source_kind.rs]
+      D6[table.rs]
+      D7[numeric.rs]
+    end
+  end
+
+  %% Entry → Presentation
+  P --> C1
+  P --> C2
+  P --> C3
+  P --> C4
+  P --> C5
+
+  %% Presentation → Usecase
+  C1 --> U1
+  C2 --> U1
+  C3 --> U1
+  C4 --> U1
+  C5 --> U3
+
+  %% Presentation → Domain
+  C5 --> D1
+  C5 --> D3
+
+  %% Usecase import → Domain
+  U1 --> D5
+  U1 --> D6
+  U1 --> D7
+
+  %% Usecase analysis → Domain
+  U3 --> D1
+  U3 --> D2
+  U3 --> D3
+  U4 --> D3
+  U4 --> D4
+
+  %% Ports -.impl.-> Infra
+  U2 -.impl.-> I1
+  U2 -.impl.-> I3
+  U5 -.impl.-> I3
+  U5 -.impl.-> I4
+
+  %% Infra → Domain
+  I1 --> D5
+  I1 --> D6
+  I1 --> D7
+  I2 --> D7
+  I5 --> D1
+  I5 --> D2
+  I5 --> D3
+  I6 --> D2
+
+  %% Bootstrap → DI wiring
+  B --> U1
+  B --> U3
+  B --> I1
+  B --> I3
+  B --> I4
 ```
-
-要点:
-- フロント (`src`) は `tauriIpc` 経由で Rust コマンドを呼ぶ。
-- 分析実行は Rust 側 `features/analysis` を通って `src-r/cli.R` に渡る。
-- データ入出力は Rust 側 `features/data` と `commands/export.rs` が担当する。
-
----
-
-## 2) src/ のミクロ視点（Frontend）
-
-### 2.1 主要ディレクトリ
-
-- `windows/` : 画面エントリと画面ロジック
-- `windows/views/` : 画面内の補助ビュー
-- `analysis/api.ts` : 分析機能の公開入口（Facade）
-- `analysis/catalog/` : 分析メソッドカタログの組み立て
-- `analysis/methods/` : 各分析手法の UI/表示実装・契約・共通関数
-- `analysis/runtime/` : 分析実行ランタイム
-- `analysis/types.ts` : 分析ドメインの型
-- `analysis/registry/` : 後方互換の再エクスポート（新規実装では直接使用しない）
-- `hooks/` : UI層の React Hook
-- `components/` : 共有 UI コンポーネント
-- `types.ts` : 分析以外でも使う共通データ型（`ParsedDataTable`, `ImportDataset` など）
-
-### 2.2 依存図
-
-```mermaid
-flowchart LR
-  subgraph L1["UIレイヤー"]
-    W["windows/*"]
-    WV["windows/views/*"]
-    H["hooks/*"]
-    C["components/*"]
-  end
-
-  subgraph L2["分析レイヤー"]
-    AAPI["analysis/api.ts"]
-    AC["analysis/catalog/*"]
-    AM["analysis/methods/*"]
-    ACont["analysis/methods/contracts.ts"]
-    AUtil["analysis/methods/utils.ts"]
-    AType["analysis/types.ts"]
-  end
-
-  subgraph L3["実行・連携レイヤー"]
-    ARun["analysis/runtime/*"]
-    TIPC["tauriIpc.ts"]
-  end
-
-  subgraph L4["共通レイヤー"]
-    TS["types.ts"]
-  end
-
-  W --> AAPI
-  W --> H
-  W --> C
-  W --> TIPC
-  W --> WV
-  W --> TS
-
-  WV --> C
-  WV --> TIPC
-  WV --> TS
-
-  H --> AAPI
-  H --> TIPC
-  H --> TS
-
-  C --> AAPI
-  C --> TS
-
-  TIPC --> AAPI
-  TIPC --> TS
-
-  AAPI --> AC
-  AAPI --> ARun
-  AAPI --> AType
-  AAPI --> ACont
-
-  AC --> AM
-  AC --> AType
-
-  AM --> ACont
-  AM --> AUtil
-  AM --> AType
-  AM --> C
-
-  ARun --> AType
-  ARun --> TS
-```
-
-要点:
-- `analysis/api.ts` を分析機能の唯一の公開入口として扱う。
-- 分析ドメイン型は `analysis/types.ts`、共通データ型は `types.ts` に分離している。
-- 分析メソッドの契約は `analysis/methods/contracts.ts`、共通関数は `analysis/methods/utils.ts` に集約している。
-
----
-
-## 3) src-tauri/src/ のミクロ視点（Backend）
-
-### 3.1 主要ディレクトリ
-
-- `lib.rs` / `main.rs` : Tauri アプリの起動と command 登録
-- `commands/` : フロントから呼ばれる `tauri::command` の入口
-- `features/analysis/` : 分析実行・オプション正規化・分析ログ管理
-- `features/data/` : CSV/Excel の読み込みと数値データセット構築
-- `cache.rs` : 分析用の数値データセットキャッシュ
-- `dto.rs` : IPC 入出力で使う共通データ構造
-
-### 3.2 依存図
-
-```mermaid
-flowchart LR
-  subgraph B1["コマンド層"]
-    CAn["commands/analysis.rs"]
-    CData["commands/data.rs"]
-    CExcel["commands/excel.rs"]
-    CExp["commands/export.rs"]
-  end
-
-  subgraph B2["機能層"]
-    FAn["features/analysis/*"]
-    FDs["features/data/data_source.rs"]
-  end
-
-  subgraph B3["データ処理層"]
-    FCsv["features/data/csv.rs"]
-    FExcel["features/data/excel.rs"]
-    FNum["features/data/numeric.rs"]
-    FTable["features/data/table.rs"]
-  end
-
-  subgraph B4["共通層"]
-    Cache["cache.rs"]
-    DTO["dto.rs"]
-    DType["features/data/types.rs"]
-    AType["features/analysis/types.rs"]
-  end
-
-  Lib["lib.rs"] --> CAn
-  Lib --> CData
-  Lib --> CExcel
-  Lib --> CExp
-
-  CAn --> FAn
-  CAn --> FDs
-  CAn --> Cache
-  CAn --> AType
-
-  CData --> FDs
-  CData --> DType
-  CData --> DTO
-
-  CExcel --> FDs
-  CExcel --> DTO
-
-  CExp --> DTO
-  CExp --> XLSX["rust_xlsxwriter"]
-
-  FAn --> Cache
-  FAn --> DTO
-  FAn --> RCLI["Rscript -> ../src-r/cli.R"]
-
-  FDs --> FCsv
-  FDs --> FExcel
-  FDs --> Cache
-  FDs --> DTO
-  FDs --> DType
-
-  FCsv --> FNum
-  FCsv --> FTable
-  FCsv --> DTO
-
-  FExcel --> FNum
-  FExcel --> FTable
-  FExcel --> DTO
-
-  AType --> DTO
-```
-
-要点:
-- `commands/*` は薄い入口で、実処理は `features/*` に委譲する。
-- `features/analysis` は `cache.rs` と `dto.rs` を介して分析実行結果を組み立てる。
-- `features/data/data_source.rs` が CSV/Excel 実装差分を吸収し、command 側は入力種別のみ意識する。
-
----
-
-## 4) 現在の依存ルール
-
-1. `analysis/*` から `hooks/*` を import しない。
-2. `windows/*`, `hooks/*`, `components/*` から分析機能を使うときは `analysis/api.ts` を経由する。
-3. `analysis/methods/*` の契約は `analysis/methods/contracts.ts` に置き、共通関数は `analysis/methods/utils.ts` に置く。
-4. 分析ドメイン型は `analysis/types.ts` に置き、`types.ts` は共通データ型に限定する。
-5. 分析メソッドの組み立て責務は `analysis/catalog/index.ts` が持つ。
-
-## Planning
