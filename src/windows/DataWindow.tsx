@@ -1,5 +1,5 @@
-import { Box, ChakraProvider, defaultSystem, HStack, Stack, Text } from '@chakra-ui/react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Box, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/react';
+import { useCallback, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   ANALYSIS_METHODS,
@@ -12,15 +12,12 @@ import {
 import { DataTable } from '../components/DataTable';
 import { tauriIpc } from '../ipc';
 import type { Dataset, ParsedDataTable } from '../types';
+import { AnalysisModalHost } from './components/AnalysisModalHost';
 import { DataImportDialog } from './components/DataImportDialog';
-import { createAnalyzeService } from './services/AnalyzeService';
-import {
-  buildAnalysisResultPayload,
-  buildMethodItems,
-  buildSelectedLabel,
-  findMethodLabel,
-} from './services/DisplayFormatter';
-import { emitResultToResultWindow, openResultWindow } from './services/ToResultWindow';
+import { LoadedDatasetBar } from './components/LoadedDatasetBar';
+import { createAnalyzeService } from './services/analyzeService';
+import { buildMethodItems } from './services/displayFormatter';
+import { runAnalysisFlow } from './services/runAnalysisFlow';
 
 const METHODS: readonly MethodModule[] = ANALYSIS_METHODS;
 
@@ -63,27 +60,18 @@ export const DataWindow = () => {
 
   const runAnalysis = useCallback(
     async (type: SupportedAnalysisType, selectedVariables: string[], options: AnalysisOptions) => {
-      const execution = await analyzeService.run({
+      await runAnalysisFlow({
+        analyzeService,
+        methods: METHODS,
         selection,
         type,
         variables: selectedVariables,
         options,
+        onCompleted: closeAnalysis,
       });
-      const label = findMethodLabel(METHODS, type);
-      const payload = buildAnalysisResultPayload({
-        execution,
-        type,
-        label,
-        options,
-      });
-      await openResultWindow();
-      await emitResultToResultWindow(payload);
-      closeAnalysis();
     },
     [analyzeService, closeAnalysis, selection]
   );
-
-  const selectedLabel = buildSelectedLabel(selection);
 
   return (
     <Stack p="4" gap="4" h="100vh">
@@ -97,35 +85,20 @@ export const DataWindow = () => {
             onSelect={setOpenAnalysis}
           />
         </HStack>
-        {selectedLabel ? (
-          <Text
-            color="gray.600"
-            fontSize="sm"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            whiteSpace="nowrap"
-          >
-            読み込み中データ: {selectedLabel}
-          </Text>
-        ) : null}
+        <LoadedDatasetBar selection={selection} onSheetLoaded={handleLoaded} />
       </Stack>
 
       <Box h="80vh" minH="400px" mt="auto">
         <DataTable table={table} emptyMessage="データを読み込んでください" height="100%" />
       </Box>
 
-      {METHODS.map((method) => (
-        <Fragment key={method.definition.key}>
-          {method.renderModal({
-            open: openAnalysis === method.definition.key,
-            onClose: closeAnalysis,
-            variables,
-            onExecute: async (selectedVariables, options) => {
-              await runAnalysis(method.definition.key, selectedVariables, options);
-            },
-          })}
-        </Fragment>
-      ))}
+      <AnalysisModalHost
+        methods={METHODS}
+        openAnalysis={openAnalysis}
+        onClose={closeAnalysis}
+        variables={variables}
+        onExecute={runAnalysis}
+      />
     </Stack>
   );
 };
