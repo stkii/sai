@@ -38,6 +38,7 @@ export const SUPPORTED_ANALYSIS_TYPES = [
   'descriptive',
   'factor',
   'regression',
+  'reliability',
 ] as const;
 
 export type SupportedAnalysisType = (typeof SUPPORTED_ANALYSIS_TYPES)[number];
