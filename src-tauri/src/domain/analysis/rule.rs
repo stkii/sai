@@ -51,17 +51,103 @@ pub(crate) fn option_bool_from_value(value: &Value) -> Option<bool> {
     }
 }
 
-pub(crate) fn sort_table_rows_by_abs_max(table: &mut ParsedDataTable) {
-    table.rows.sort_by(|left, right| {
-                  let left_score = row_abs_max(left);
-                  let right_score = row_abs_max(right);
-                  right_score.partial_cmp(&left_score).unwrap_or(Ordering::Equal)
-              });
+pub(crate) fn sort_table_rows_by_factor_group(table: &mut ParsedDataTable) {
+    table.rows.sort_by(|left, right| compare_factor_rows(left, right));
 }
 
-fn row_abs_max(row: &[Value]) -> f64 {
-    row.iter()
-       .filter_map(Value::as_f64)
-       .map(f64::abs)
-       .fold(0.0, f64::max)
+fn compare_factor_rows(left: &[Value],
+                       right: &[Value])
+                       -> Ordering {
+    let left_profile = factor_profile(left);
+    let right_profile = factor_profile(right);
+
+    match (left_profile.dominant_factor, right_profile.dominant_factor) {
+        (Some(left_factor), Some(right_factor)) => {
+            let by_group = left_factor.cmp(&right_factor);
+            if by_group != Ordering::Equal {
+                return by_group;
+            }
+        },
+        (Some(_), None) => return Ordering::Less,
+        (None, Some(_)) => return Ordering::Greater,
+        (None, None) => {},
+    }
+
+    let by_dominant_abs = right_profile.dominant_abs
+                                       .partial_cmp(&left_profile.dominant_abs)
+                                       .unwrap_or(Ordering::Equal);
+    if by_dominant_abs != Ordering::Equal {
+        return by_dominant_abs;
+    }
+
+    let by_max_abs = right_profile.max_abs
+                                  .partial_cmp(&left_profile.max_abs)
+                                  .unwrap_or(Ordering::Equal);
+    if by_max_abs != Ordering::Equal {
+        return by_max_abs;
+    }
+
+    first_cell_text(left).cmp(&first_cell_text(right))
+}
+
+#[derive(Debug, Clone, Copy)]
+struct FactorProfile {
+    dominant_factor: Option<usize>,
+    dominant_abs: f64,
+    max_abs: f64,
+}
+
+fn factor_profile(row: &[Value]) -> FactorProfile {
+    let mut dominant_factor: Option<usize> = None;
+    let mut dominant_abs = 0.0_f64;
+    let mut max_abs = 0.0_f64;
+
+    for (column_index, value) in row.iter().skip(1).enumerate() {
+        let Some(number) = option_f64_from_value(value) else {
+            continue;
+        };
+        let abs = number.abs();
+        if abs > max_abs {
+            max_abs = abs;
+        }
+
+        let should_replace = match dominant_factor {
+            None => true,
+            Some(current_index) => match abs.partial_cmp(&dominant_abs).unwrap_or(Ordering::Less) {
+                Ordering::Greater => true,
+                Ordering::Equal => column_index < current_index,
+                Ordering::Less => false,
+            },
+        };
+
+        if should_replace {
+            dominant_factor = Some(column_index);
+            dominant_abs = abs;
+        }
+    }
+
+    FactorProfile { dominant_factor,
+                    dominant_abs,
+                    max_abs }
+}
+
+fn option_f64_from_value(value: &Value) -> Option<f64> {
+    match value {
+        Value::Number(number) => number.as_f64(),
+        Value::String(text) => text.trim().parse::<f64>().ok(),
+        _ => None,
+    }
+}
+
+fn first_cell_text(row: &[Value]) -> String {
+    let Some(value) = row.first() else {
+        return String::new();
+    };
+    match value {
+        Value::String(text) => text.clone(),
+        Value::Number(number) => number.to_string(),
+        Value::Bool(flag) => flag.to_string(),
+        Value::Null => String::new(),
+        _ => value.to_string(),
+    }
 }

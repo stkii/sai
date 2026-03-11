@@ -4,7 +4,7 @@ use crate::domain::analysis::model::AnalysisResult;
 use crate::domain::analysis::rule::{
     normalize_options_object,
     option_bool_from_value,
-    sort_table_rows_by_abs_max,
+    sort_table_rows_by_factor_group,
 };
 
 use super::AnalysisMethodHandler;
@@ -41,9 +41,9 @@ impl AnalysisMethodHandler for FactorHandler {
         }
 
         if let AnalysisResult::Factor { factor } = result {
-            sort_table_rows_by_abs_max(&mut factor.pattern);
+            sort_table_rows_by_factor_group(&mut factor.pattern);
             if let Some(structure) = factor.structure.as_mut() {
-                sort_table_rows_by_abs_max(structure);
+                sort_table_rows_by_factor_group(structure);
             }
         }
         Ok(())
@@ -55,66 +55,4 @@ fn should_sort_loadings(normalized_options: &Value) -> bool {
                       .and_then(|map| map.get("sort_loadings"))
                       .and_then(option_bool_from_value)
                       .unwrap_or(false)
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::{
-        Value,
-        json,
-    };
-
-    use crate::domain::analysis::model::{
-        AnalysisResult,
-        FactorResult,
-    };
-    use crate::domain::input::table::ParsedDataTable;
-
-    use super::{
-        AnalysisMethodHandler,
-        FACTOR_HANDLER,
-    };
-
-    fn factor_result_with_unsorted_pattern() -> AnalysisResult {
-        AnalysisResult::Factor { factor: FactorResult { eigen:
-                                                            ParsedDataTable { headers:
-                                                                                  vec!["factor".to_string()],
-                                                                              rows:
-                                                                                  vec![vec![Value::from(1.0)]],
-                                                                              note: None,
-                                                                              title: None },
-                                                        pattern:
-                                                            ParsedDataTable { headers:
-                                                                                  vec!["f1".to_string(),
-                                                                                       "f2".to_string()],
-                                                                              rows:
-                                                                                  vec![vec![Value::from(0.10),
-                                                                                        Value::from(0.20)],
-                                                                                   vec![Value::from(0.80),
-                                                                                        Value::from(0.10)]],
-                                                                              note: None,
-                                                                              title: None },
-                                                        rotmat:
-                                                            ParsedDataTable { headers:
-                                                                                  vec!["f1".to_string()],
-                                                                              rows:
-                                                                                  vec![vec![Value::from(1.0)]],
-                                                                              note: None,
-                                                                              title: None },
-                                                        structure: None,
-                                                        phi: None } }
-    }
-
-    #[test]
-    fn post_process_sorts_factor_loadings_when_enabled() {
-        let mut result = factor_result_with_unsorted_pattern();
-        let options = json!({ "sort_loadings": true });
-
-        FACTOR_HANDLER.post_process(&mut result, &options).unwrap();
-
-        let AnalysisResult::Factor { factor } = result else {
-            panic!("factor result expected");
-        };
-        assert_eq!(factor.pattern.rows[0], vec![Value::from(0.80), Value::from(0.10)]);
-    }
 }

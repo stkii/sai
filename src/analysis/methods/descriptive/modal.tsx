@@ -13,7 +13,7 @@ export interface DescriptiveOptions extends AnalysisOptions {
 }
 
 const SORT_OPTIONS = [
-  { label: '変数リスト順', value: 'default' },
+  { label: '変数リスト', value: 'default' },
   { label: '平均値による昇順', value: 'mean_asc' },
   { label: '平均値による降順', value: 'mean_desc' },
 ] as const satisfies ReadonlyArray<{ label: string; value: DescriptiveOrder }>;
@@ -79,23 +79,47 @@ export const DescriptiveModal = ({
       onExecute={handleExecute}
       loading={loading}
       error={error}
+      maxW="6xl"
     >
-      <SimpleGrid columns={{ base: 1, md: 2 }} gap="6" alignItems="start">
-        <Stack gap="3">
-          <Text fontWeight="semibold">変数選択</Text>
-          <Box overflowX="auto">
-            <VariableSelector variables={variables} onChange={setSelectedVariables} />
-          </Box>
-        </Stack>
-        <Stack gap="3">
-          <Text fontWeight="semibold">ソート</Text>
-          <BaseRadioButton
-            contents={SORT_OPTIONS}
-            orientation="vertical"
-            value={order}
-            onChange={(value) => setOrder(value as DescriptiveOrder)}
-          />
-        </Stack>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} gap="6" alignItems="start">
+        <Box overflowX="auto" maxW="full" minW={0}>
+          <VariableSelector variables={variables} onChange={setSelectedVariables} />
+        </Box>
+
+        <Box
+          position="relative"
+          borderWidth="1px"
+          borderColor="gray.200"
+          rounded="md"
+          px="4"
+          pt="6"
+          pb="4"
+          minW={0}
+        >
+          <Text
+            position="absolute"
+            top="0"
+            left="3"
+            transform="translateY(-50%)"
+            px="2"
+            bg="bg"
+            fontSize="sm"
+            fontWeight="semibold"
+            color="gray.600"
+          >
+            分析オプション
+          </Text>
+
+          <Stack gap="2">
+            <Text fontWeight="semibold">表示順</Text>
+            <BaseRadioButton
+              contents={SORT_OPTIONS}
+              orientation="horizontal"
+              value={order}
+              onChange={(value) => setOrder(value as DescriptiveOrder)}
+            />
+          </Stack>
+        </Box>
       </SimpleGrid>
     </ModalFrame>
   );
