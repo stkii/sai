@@ -7,7 +7,7 @@ import type { AnalysisOptions } from '../../types';
 import type { ModalProps } from '../contracts';
 
 export type CorrelationMethod = 'pearson' | 'spearman' | 'kendall';
-export type CorrelationUse = 'complete.obs' | 'pairwise.complete.obs' | 'mean_imp';
+export type CorrelationUse = 'complete.obs' | 'pairwise.complete.obs';
 export type CorrelationAlternative = 'two.sided' | 'less' | 'greater';
 
 export interface CorrelationOptions extends AnalysisOptions {
