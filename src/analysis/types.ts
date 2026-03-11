@@ -33,7 +33,12 @@ export interface AnalysisSection {
 /**
  * Supported analysis types (single source of truth)
  */
-export const SUPPORTED_ANALYSIS_TYPES = ['correlation', 'descriptive', 'factor'] as const;
+export const SUPPORTED_ANALYSIS_TYPES = [
+  'correlation',
+  'descriptive',
+  'factor',
+  'regression',
+] as const;
 
 export type SupportedAnalysisType = (typeof SUPPORTED_ANALYSIS_TYPES)[number];
 

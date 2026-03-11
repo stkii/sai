@@ -2,11 +2,13 @@ import type { MethodModule } from './contracts';
 import { correlationMethod } from './correlation';
 import { descriptiveMethod } from './descriptive';
 import { factorMethod } from './factor';
+import { regressionMethod } from './regression';
 
 export const ANALYSIS_METHODS = [
   correlationMethod,
   descriptiveMethod,
   factorMethod,
+  regressionMethod,
 ] as const satisfies readonly MethodModule[];
 
 export type {
@@ -19,4 +21,5 @@ export type {
 export { correlationMethod } from './correlation';
 export { descriptiveMethod } from './descriptive';
 export { factorMethod } from './factor';
+export { regressionMethod } from './regression';
 export { buildExportSectionsFromResult, getSingleSection } from './utils';
