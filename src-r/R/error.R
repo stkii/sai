@@ -31,6 +31,7 @@ ERR_MESSAGES <- base::list(
   "ERR-909" = "R module 'rotation.R' not found under src-r/R",
   "ERR-910" = "R module 'factor.R' not found under src-r/R",
   "ERR-911" = "R module 'power.R' not found under src-r/R",
+  "ERR-912" = "R module 'anova.R' not found under src-r/R",
   "ERR-920" = "Invalid analysis option",
   "ERR-925" = "EFAtools package is required for factor rotation",
   "ERR-926" = "pwr package is required for power analysis",
