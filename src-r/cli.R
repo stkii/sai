@@ -259,6 +259,23 @@
                      df = ctx$df,
                      u = ctx$u)
       }
+    ),
+    anova = list(
+      output_kind = "table",
+      # ANOVA datasets contain factor (categorical) columns alongside numeric ones,
+      # so the numeric-only validation must be skipped.
+      requires_numeric = FALSE,
+      options = list(
+        list(name = "dependent", payload_keys = c("dependent"), cli_key = NULL, default = NULL),
+        list(name = "independent", payload_keys = c("independent"), cli_key = NULL, default = NULL),
+        list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL)
+      ),
+      run = function(df, ctx) {
+        RunAnova(df,
+                 dependent = ctx$dependent,
+                 independent = ctx$independent,
+                 factors = ctx$factors)
+      }
     )
   )
 }
@@ -315,6 +332,7 @@ Main <- function() {
   .LoadModule(r_dir, "rotation.R", "ERR-909")
   .LoadModule(r_dir, "factor.R", "ERR-910")
   .LoadModule(r_dir, "power.R", "ERR-911")
+  .LoadModule(r_dir, "anova.R", "ERR-912")
 
   analysis <- .ResolveCliValue(opts, "analysis", "descriptive")
   input_path <- .ResolveCliValue(opts, "input", "-")
