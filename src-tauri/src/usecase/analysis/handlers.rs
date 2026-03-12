@@ -2,6 +2,7 @@ mod correlation;
 mod descriptive;
 mod factor;
 mod regression;
+mod reliability;
 
 use serde_json::Value;
 
@@ -28,6 +29,8 @@ pub(crate) fn resolve_handler(method: Method) -> &'static dyn AnalysisMethodHand
         &factor::FACTOR_HANDLER
     } else if method == Method::REGRESSION {
         &regression::REGRESSION_HANDLER
+    } else if method == Method::RELIABILITY {
+        &reliability::RELIABILITY_HANDLER
     } else {
         &correlation::CORRELATION_HANDLER
     }
