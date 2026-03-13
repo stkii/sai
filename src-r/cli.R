@@ -194,7 +194,8 @@
         list(name = "rotation", payload_keys = c("rotation"), cli_key = "rotation", default = ""),
         list(name = "method", payload_keys = c("method"), cli_key = "method", default = ""),
         list(name = "corr_use", payload_keys = c("corr_use", "corrUse", "use"), cli_key = "corr_use", default = ""),
-        list(name = "power", payload_keys = c("power"), cli_key = "power", default = "", post = .NormalizePower)
+        list(name = "power", payload_keys = c("power"), cli_key = "power", default = "", post = .NormalizePower),
+        list(name = "show_scree_plot", payload_keys = c("show_scree_plot", "showScreePlot"), cli_key = NULL, default = NULL)
       ),
       run = function(df, ctx) {
         RunFactor(df,
@@ -203,7 +204,8 @@
                   rotation = base::as.character(ctx$rotation),
                   method = base::as.character(ctx$method),
                   corr_use = base::as.character(ctx$corr_use),
-                  power = ctx$power)
+                  power = ctx$power,
+                  show_scree_plot = ctx$show_scree_plot)
       }
     ),
     regression = list(

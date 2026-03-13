@@ -40,6 +40,7 @@ export interface AnalysisSection {
   key: string; // "eigen" など
   label: string; // 画面表示名
   table: ParsedDataTable;
+  image?: string; // base64 data URL (e.g. scree plot)
 }
 
 /**

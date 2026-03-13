@@ -78,7 +78,8 @@ mod tests {
                                                                            vec![vec![1.into()]]),
                                                             rotmat: table(&["x"], vec![vec![1.into()]]),
                                                             structure: None,
-                                                            phi: None } };
+                                                            phi: None,
+                                                            scree_plot: None } };
 
         let error = extract_table(result).expect_err("non-table result should be rejected");
         assert!(error.contains("power analysis must return a table result"));

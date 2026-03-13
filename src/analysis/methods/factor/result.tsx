@@ -1,4 +1,4 @@
-import { Stack, Text } from '@chakra-ui/react';
+import { Box, Image, Stack, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { DataTable } from '../../../components/DataTable';
 import type { AnalysisResult, AnalysisSection } from '../../types';
@@ -49,6 +49,11 @@ export const renderFactorResult = (result: AnalysisResult): ReactNode => {
               <Text fontSize="sm" color="gray.600">
                 {table.note}
               </Text>
+            ) : null}
+            {section.image ? (
+              <Box>
+                <Image src={section.image} alt={section.label} maxW="600px" borderRadius="md" />
+              </Box>
             ) : null}
           </Stack>
         );

@@ -18,9 +18,16 @@
   return(list(R = corr_mtx, eig = eig, prop = prop, cum_prop = cum_prop))
 }
 
-.ScreePlot <- function(eig) {
-  # eig = eigen(R)$values
-  return(plot(eig, type = "b", bty = "l", tck = 0.02, las = 1, xlab = "Factor", ylab = "Eigen Values", main = "Scree Plot"))
+.ScreePlotBase64 <- function(eig) {
+  tmp <- base::tempfile(fileext = ".png")
+  base::on.exit(base::unlink(tmp), add = TRUE)
+  grDevices::png(tmp, width = 600, height = 400, res = 96)
+  graphics::plot(eig, type = "b", bty = "l", tck = 0.02, las = 1,
+                 xlab = "Factor", ylab = "Eigen Values", main = "Scree Plot")
+  graphics::abline(h = 1, lty = 2, col = "gray50")
+  grDevices::dev.off()
+  raw_bytes <- base::readBin(tmp, "raw", base::file.info(tmp)$size)
+  base::paste0("data:image/png;base64,", jsonlite::base64_enc(raw_bytes))
 }
 
 .MatrixToParsedTable <- function(mat, row_label = "変数") {
@@ -84,7 +91,7 @@
   list(headers = headers, rows = rows)
 }
 
-.FactorAnalysisParsed <- function(res, n_factors) {
+.FactorAnalysisParsed <- function(res, n_factors, show_scree_plot = FALSE) {
   loadings <- res$loadings
   structure <- res$structure
   Phi <- res$Phi
@@ -106,6 +113,10 @@
   }
   if (!is.null(Phi)) {
     output$phi <- .MatrixToParsedTable(Phi, row_label = "因子")
+  }
+
+  if (isTRUE(show_scree_plot)) {
+    output$scree_plot <- .ScreePlotBase64(res$eig)
   }
 
   output
@@ -154,8 +165,10 @@
 # Returns:
 # - list of ParsedDataTable-like objects
 #
-RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr_use = NULL, power = NULL, n_factors_auto = NULL) {
+RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr_use = NULL,
+                      power = NULL, n_factors_auto = NULL, show_scree_plot = NULL) {
   auto_norm <- .NormalizeLogicalOption(n_factors_auto, default = FALSE)
+  scree_norm <- .NormalizeLogicalOption(show_scree_plot, default = FALSE)
   rotation_norm <- .ValidateOptionInSet(
     rotation,
     c("none", "quartimax", "equamax", "varimax", "oblimin", "promax")
@@ -186,5 +199,5 @@ RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr
     eig_res = eig_res
   )
 
-  .FactorAnalysisParsed(res, n_factors_norm)
+  .FactorAnalysisParsed(res, n_factors_norm, show_scree_plot = scree_norm)
 }

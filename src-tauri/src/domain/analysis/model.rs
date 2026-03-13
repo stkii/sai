@@ -34,6 +34,8 @@ pub(crate) struct FactorResult {
     pub structure: Option<ParsedDataTable>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phi: Option<ParsedDataTable>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scree_plot: Option<String>,
 }
 
 impl FactorResult {

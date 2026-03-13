@@ -20,6 +20,7 @@ export interface FactorOptions extends AnalysisOptions {
   corr_use: FactorCorrUse;
   power?: number;
   sort_loadings: boolean;
+  showScreePlot: boolean;
 }
 
 const METHOD_OPTIONS = [{ label: '最尤法', value: 'ml' }] as const satisfies ReadonlyArray<{
@@ -78,6 +79,7 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
   const [corrUse, setCorrUse] = useState<FactorCorrUse>(DEFAULT_CORR_USE);
   const [promaxPower, setPromaxPower] = useState(DEFAULT_PROMAX_POWER);
   const [sortLoadings, setSortLoadings] = useState(false);
+  const [showScreePlot, setShowScreePlot] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const previousVariablesKeyRef = useRef('');
@@ -92,6 +94,7 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
       setCorrUse(DEFAULT_CORR_USE);
       setPromaxPower(DEFAULT_PROMAX_POWER);
       setSortLoadings(false);
+      setShowScreePlot(false);
       setError(null);
       setLoading(false);
     }
@@ -122,6 +125,7 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
       rotation,
       corr_use: corrUse,
       sort_loadings: sortLoadings,
+      showScreePlot,
     };
 
     if (factorNumberCriterion === 'fixed') {
@@ -307,6 +311,15 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
               <Checkbox.HiddenInput />
               <Checkbox.Control />
               <Checkbox.Label fontWeight="semibold">負荷量をソート</Checkbox.Label>
+            </Checkbox.Root>
+
+            <Checkbox.Root
+              checked={showScreePlot}
+              onCheckedChange={(e) => setShowScreePlot(!!e.checked)}
+            >
+              <Checkbox.HiddenInput />
+              <Checkbox.Control />
+              <Checkbox.Label fontWeight="semibold">スクリープロット</Checkbox.Label>
             </Checkbox.Root>
           </Stack>
         </Box>

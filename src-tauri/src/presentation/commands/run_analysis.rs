@@ -19,6 +19,8 @@ pub(crate) struct AnalysisSectionDto {
     key: String,
     label: String,
     table: ParsedDataTable,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,7 +86,8 @@ fn section(key: &str,
            -> AnalysisSectionDto {
     AnalysisSectionDto { key: key.to_string(),
                          label: label.to_string(),
-                         table }
+                         table,
+                         image: None }
 }
 
 pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
@@ -96,7 +99,10 @@ pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
                  section("anova", "ANOVA", regression.anova),]
         },
         AnalysisResult::Factor { factor } => {
-            let mut sections = vec![section("eigen", "固有値", factor.eigen),
+            let mut eigen_section = section("eigen", "固有値", factor.eigen);
+            eigen_section.image = factor.scree_plot;
+
+            let mut sections = vec![eigen_section,
                                     section("pattern", "因子負荷量", factor.pattern),
                                     section("rotmat", "回転行列", factor.rotmat),];
 
@@ -167,7 +173,8 @@ mod tests {
                                                             structure:
                                                                 Some(table(&["f1"], vec![vec![0.8.into()]])),
                                                             phi: Some(table(&["f1"],
-                                                                            vec![vec![0.2.into()]])) } };
+                                                                            vec![vec![0.2.into()]])),
+                                                            scree_plot: None } };
 
         let sections = map_sections(result);
         assert_eq!(sections.len(), 5);
