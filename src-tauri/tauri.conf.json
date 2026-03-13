@@ -15,10 +15,10 @@
         "label": "dataView",
         "title": "SAI (データビュー)",
         "url": "/windows/data-window.html",
-        "width": 1024,
-        "height": 768,
-        "minWidth": 1024,
-        "minHeight": 768
+        "width": 1200,
+        "height": 742,
+        "minWidth": 1200,
+        "minHeight": 742
       }
     ],
     "security": {

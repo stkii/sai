@@ -95,10 +95,10 @@ export const openResultWindow = async () => {
   const resultWindow = new WebviewWindow(RESULT_WINDOW_LABEL, {
     url: '/windows/result-window.html',
     title: 'SAI (結果ビュー)',
-    width: 960,
-    height: 720,
-    minWidth: 860,
-    minHeight: 600,
+    width: 1200,
+    height: 742,
+    minWidth: 1200,
+    minHeight: 742,
   });
 
   try {
