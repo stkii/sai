@@ -1,8 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
   AnalysisExecutionRecord,
+  AnalysisLogSummary,
   AnalysisOptions,
   AnalysisResult,
+  AnalysisResultPayload,
   SupportedAnalysisType,
 } from './analysis/api';
 import type { Dataset, ParsedDataTable } from './types';
@@ -61,6 +63,14 @@ class TauriIpc {
 
   async runPowerAnalysis(options: PowerAnalysisOptions): Promise<ParsedDataTable> {
     return invoke<ParsedDataTable>('run_power_analysis', { options });
+  }
+
+  async listAnalysisLogs(limit?: number): Promise<AnalysisLogSummary[]> {
+    return invoke<AnalysisLogSummary[]>('list_analysis_logs', { limit });
+  }
+
+  async getAnalysisLog(id: string): Promise<AnalysisResultPayload | null> {
+    return invoke<AnalysisResultPayload | null>('get_analysis_log', { id });
   }
 }
 

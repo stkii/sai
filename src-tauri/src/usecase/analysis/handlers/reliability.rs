@@ -18,8 +18,7 @@ impl AnalysisMethodHandler for ReliabilityHandler {
                          -> Value {
         let mut normalized = normalize_options_object(options);
 
-        let model =
-            option_string_from_value(normalized.get("model")).unwrap_or_else(|| "alpha".to_string());
+        let model = option_string_from_value(normalized.get("model")).unwrap_or_else(|| "alpha".to_string());
 
         normalized.insert("model".to_string(), Value::String(model));
 

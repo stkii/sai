@@ -57,9 +57,10 @@ pub(super) fn build_numeric_dataset_from_csv(path: &str,
     Ok(dataset)
 }
 
-pub(super) fn build_string_mixed_dataset_from_csv(path: &str,
-                                                   variables: &[String])
-                                                   -> Result<crate::domain::input::string_mixed::StringMixedDataset, String> {
+pub(super) fn build_string_mixed_dataset_from_csv(
+    path: &str,
+    variables: &[String])
+    -> Result<crate::domain::input::string_mixed::StringMixedDataset, String> {
     if variables.is_empty() {
         return Err("No variables selected".to_string());
     }
@@ -80,7 +81,8 @@ pub(super) fn build_string_mixed_dataset_from_csv(path: &str,
     let headers = compute_headers_from_record(&headers_record)?;
     let selected_columns = collect_ordered_selected_columns(&headers, variables)?;
 
-    let mut dataset = crate::domain::input::string_mixed::StringMixedDataset::with_capacity(selected_columns.len());
+    let mut dataset =
+        crate::domain::input::string_mixed::StringMixedDataset::with_capacity(selected_columns.len());
     for (header, _) in &selected_columns {
         dataset.insert(header.clone(), Vec::new());
     }

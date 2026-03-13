@@ -14,16 +14,17 @@ pub fn build_string_mixed_dataset(state: tauri::State<'_, crate::bootstrap::stat
                sheet_label,
                variables.len());
 
-    let built = state.import_service
-                     .build_string_mixed_dataset(&path, sheet.as_deref(), &variables)
-                     .map_err(|e| {
-                         log::error!("analysis.build_string_mixed_dataset failed path={} kind={} sheet={} err={}",
-                                     path,
-                                     kind.as_str(),
-                                     sheet_label,
-                                     e);
-                         e
-                     })?;
+    let built =
+        state.import_service
+             .build_string_mixed_dataset(&path, sheet.as_deref(), &variables)
+             .map_err(|e| {
+                 log::error!("analysis.build_string_mixed_dataset failed path={} kind={} sheet={} err={}",
+                             path,
+                             kind.as_str(),
+                             sheet_label,
+                             e);
+                 e
+             })?;
 
     log::info!("analysis.build_string_mixed_dataset ok path={} kind={} sheet={} dataset_cache_id={} vars={} rows={}",
                path,

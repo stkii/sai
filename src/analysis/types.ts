@@ -8,11 +8,20 @@ export interface AnalysisResult {
   sections: AnalysisSection[]; // e.g., 記述統計=1件, 因子分析=複数件
 }
 
-export interface AnalysisResultPayload {
+export interface AnalysisLogSummary {
   id: string;
   type: SupportedAnalysisType;
-  label: string;
   timestamp: string;
+  dataset: Dataset;
+}
+
+export interface AnalysisResultPayload {
+  schemaVersion: number;
+  id: string;
+  type: SupportedAnalysisType;
+  timestamp: string;
+  dataset: Dataset;
+  variables: string[];
   options: AnalysisOptions; // 実行時オプションを必ず同梱
   result: AnalysisResult;
 }

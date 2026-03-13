@@ -51,9 +51,10 @@ pub(super) fn build_numeric_dataset_from_xlsx(rows_data: Vec<Vec<Data>>,
     Ok(dataset)
 }
 
-pub(super) fn build_string_mixed_dataset_from_xlsx(rows_data: Vec<Vec<Data>>,
-                                                    variables: &[String])
-                                                    -> Result<crate::domain::input::string_mixed::StringMixedDataset, String> {
+pub(super) fn build_string_mixed_dataset_from_xlsx(
+    rows_data: Vec<Vec<Data>>,
+    variables: &[String])
+    -> Result<crate::domain::input::string_mixed::StringMixedDataset, String> {
     if rows_data.is_empty() {
         return Err("Sheet is empty".to_string());
     }
@@ -65,7 +66,8 @@ pub(super) fn build_string_mixed_dataset_from_xlsx(rows_data: Vec<Vec<Data>>,
     let selected_columns = collect_ordered_selected_columns(&headers, variables)?;
     let row_count = rows_data.len().saturating_sub(1);
 
-    let mut dataset = crate::domain::input::string_mixed::StringMixedDataset::with_capacity(selected_columns.len());
+    let mut dataset =
+        crate::domain::input::string_mixed::StringMixedDataset::with_capacity(selected_columns.len());
     for (header, _) in &selected_columns {
         dataset.insert(header.clone(), Vec::with_capacity(row_count));
     }
@@ -144,7 +146,11 @@ fn xlsx_cell_to_string(cell: &Data) -> Option<String> {
         Data::Empty => None,
         Data::String(value) => {
             let trimmed = value.trim();
-            if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
         },
         Data::Float(value) => {
             if let Some(special) = special_value_to_str(*value) {

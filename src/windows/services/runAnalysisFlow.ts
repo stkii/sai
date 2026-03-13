@@ -2,11 +2,10 @@ import type {
   AnalysisExecutionRecord,
   AnalysisOptions,
   DatasetKind,
-  MethodModule,
   SupportedAnalysisType,
 } from '../../analysis/api';
 import type { Dataset } from '../../types';
-import { buildAnalysisResultPayload, findMethodLabel } from './displayFormatter';
+import { buildAnalysisResultPayload } from './displayFormatter';
 import { emitResultToResultWindow, openResultWindow } from './toResultWindow';
 
 interface AnalyzeServiceLike {
@@ -21,7 +20,6 @@ interface AnalyzeServiceLike {
 
 interface RunAnalysisFlowParams {
   analyzeService: AnalyzeServiceLike;
-  methods: readonly MethodModule[];
   selection: Dataset | null;
   type: SupportedAnalysisType;
   variables: string[];
@@ -32,7 +30,6 @@ interface RunAnalysisFlowParams {
 
 export const runAnalysisFlow = async ({
   analyzeService,
-  methods,
   selection,
   type,
   variables,
@@ -47,11 +44,14 @@ export const runAnalysisFlow = async ({
     options,
     datasetKind,
   });
-  const label = findMethodLabel(methods, type);
+  if (!selection) {
+    throw new Error('データが読み込まれていません');
+  }
   const payload = buildAnalysisResultPayload({
     execution,
+    selection,
     type,
-    label,
+    variables,
     options,
   });
   await openResultWindow();

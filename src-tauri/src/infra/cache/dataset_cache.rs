@@ -59,7 +59,8 @@ pub fn get_numeric_dataset(dataset_cache_id: &str) -> Result<Option<Arc<NumericD
     }
 }
 
-pub fn get_string_mixed_dataset(dataset_cache_id: &str) -> Result<Option<Arc<StringMixedDatasetEntry>>, String> {
+pub fn get_string_mixed_dataset(dataset_cache_id: &str)
+                                -> Result<Option<Arc<StringMixedDatasetEntry>>, String> {
     let cached = get_entry(dataset_cache_id)?;
     match cached {
         Some(CachedDataset::StringMixed(entry)) => Ok(Some(entry)),

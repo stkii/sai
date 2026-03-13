@@ -68,12 +68,13 @@ impl<R: TableReader, C: NumericDatasetCacheStore> ImportService<R, C> {
     }
 
     pub(crate) fn build_string_mixed_dataset(&self,
-                                              path: &str,
-                                              sheet: Option<&str>,
-                                              variables: &[String])
-                                              -> Result<BuiltStringMixedDataset, String> {
+                                             path: &str,
+                                             sheet: Option<&str>,
+                                             variables: &[String])
+                                             -> Result<BuiltStringMixedDataset, String> {
         let kind = DataSourceKind::from_path(path)?;
-        let loaded = self.reader.build_string_mixed_dataset(kind, path, sheet, variables)?;
+        let loaded = self.reader
+                         .build_string_mixed_dataset(kind, path, sheet, variables)?;
         self.cache_loaded_string_mixed_dataset(path, loaded)
     }
 

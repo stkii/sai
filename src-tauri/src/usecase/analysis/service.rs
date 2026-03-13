@@ -15,17 +15,27 @@ use crate::domain::analysis::error::{
 };
 use crate::domain::analysis::method::Method;
 use crate::domain::analysis::model::AnalysisRunResult;
+use crate::domain::analysis_log::model::{
+    ANALYSIS_LOG_SCHEMA_VERSION,
+    AnalysisDatasetRef,
+    AnalysisLogRecord,
+};
+use crate::usecase::analysis_log::ports::AnalysisLogStore;
 
-pub(crate) struct AnalysisService<C: DatasetCacheStore, R: AnalysisRunner> {
+pub(crate) struct AnalysisService<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogStore> {
     cache: C,
     runner: R,
+    log_store: L,
 }
 
-impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
+impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogStore> AnalysisService<C, R, L> {
     pub(crate) fn new(cache: C,
-                      runner: R)
+                      runner: R,
+                      log_store: L)
                       -> Self {
-        Self { cache, runner }
+        Self { cache,
+               runner,
+               log_store }
     }
 
     pub(crate) fn run_analysis(&self,
@@ -42,36 +52,56 @@ impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
 
         // Try string_mixed first, then numeric.
         // The dataset type is determined by which build command the frontend called.
-        let mut result = if let Some(entry) = self.try_get_string_mixed(dataset_cache_id)? {
-            log::info!("analysis.run_analysis (string_mixed) source path={} sheet={} vars={}",
-                       entry.path.as_str(),
-                       entry.sheet.as_str(),
-                       entry.variables.len());
-            self.runner
-                .run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?
-        } else {
-            let entry = self.cache
-                            .get_numeric_dataset(dataset_cache_id)
-                            .map_err(|e| {
-                                classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
-                                                             "failed to read dataset cache",
-                                                             e)
-                            })?
-                            .ok_or_else(|| {
-                                classified_error(AnalysisErrorKind::DatasetNotFound,
-                                                 format!("dataset cache id '{}' was not found",
-                                                         dataset_cache_id))
-                            })?;
-            log::info!("analysis.run_analysis source path={} sheet={} vars={}",
-                       entry.path.as_str(),
-                       entry.sheet.as_str(),
-                       entry.variables.len());
-            self.runner.run_r_analysis(method, &entry.dataset, &normalized)?
-        };
+        let (dataset_ref, variables, mut result) =
+            if let Some(entry) = self.try_get_string_mixed(dataset_cache_id)? {
+                log::info!("analysis.run_analysis (string_mixed) source path={} sheet={} vars={}",
+                           entry.path.as_str(),
+                           entry.sheet.as_str(),
+                           entry.variables.len());
+                (to_dataset_ref(entry.path.as_str(), entry.sheet.as_str()),
+                 entry.variables.clone(),
+                 self.runner
+                     .run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?)
+            } else {
+                let entry = self.cache
+                                .get_numeric_dataset(dataset_cache_id)
+                                .map_err(|e| {
+                                    classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
+                                                                 "failed to read dataset cache",
+                                                                 e)
+                                })?
+                                .ok_or_else(|| {
+                                    classified_error(AnalysisErrorKind::DatasetNotFound,
+                                                     format!("dataset cache id '{}' was not found",
+                                                             dataset_cache_id))
+                                })?;
+                log::info!("analysis.run_analysis source path={} sheet={} vars={}",
+                           entry.path.as_str(),
+                           entry.sheet.as_str(),
+                           entry.variables.len());
+                (to_dataset_ref(entry.path.as_str(), entry.sheet.as_str()),
+                 entry.variables.clone(),
+                 self.runner.run_r_analysis(method, &entry.dataset, &normalized)?)
+            };
 
         handler.post_process(&mut result, &normalized)?;
 
-        Ok(build_run_result(result))
+        let run_result = build_run_result(result);
+        let log_record = AnalysisLogRecord { schema_version: ANALYSIS_LOG_SCHEMA_VERSION,
+                                             id: run_result.analysis_id.clone(),
+                                             timestamp: run_result.logged_at.clone(),
+                                             analysis_type: method.as_str().to_string(),
+                                             dataset: dataset_ref,
+                                             variables,
+                                             options: normalized,
+                                             result: run_result.result.clone() };
+        self.log_store.append(&log_record).map_err(|e| {
+                                         classified_error_with_source(AnalysisErrorKind::AnalysisLogFailure,
+                                                                      "failed to append analysis log",
+                                                                      e)
+                                     })?;
+
+        Ok(run_result)
     }
 
     pub(crate) fn run_standalone_analysis(&self,
@@ -108,4 +138,16 @@ fn build_run_result(result: crate::domain::analysis::model::AnalysisResult) -> A
     AnalysisRunResult { analysis_id,
                         logged_at,
                         result }
+}
+
+fn to_dataset_ref(path: &str,
+                  sheet: &str)
+                  -> AnalysisDatasetRef {
+    let sheet = sheet.trim();
+    AnalysisDatasetRef { path: path.to_string(),
+                         sheet: if sheet.is_empty() {
+                             None
+                         } else {
+                             Some(sheet.to_string())
+                         } }
 }

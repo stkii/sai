@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/react';
+import { Box, Button, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/react';
 import { useCallback, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -20,6 +20,7 @@ import { PowerAnalysisDialog } from './components/PowerAnalysisDialog';
 import { createAnalyzeService } from './services/analyzeService';
 import { buildMethodItems } from './services/displayFormatter';
 import { runAnalysisFlow } from './services/runAnalysisFlow';
+import { openResultWindow } from './services/toResultWindow';
 
 const METHODS: readonly MethodModule[] = ANALYSIS_METHODS;
 
@@ -70,7 +71,6 @@ export const DataWindow = () => {
     ) => {
       await runAnalysisFlow({
         analyzeService,
-        methods: METHODS,
         selection,
         type,
         variables: selectedVariables,
@@ -88,6 +88,9 @@ export const DataWindow = () => {
         <HStack gap="2" flexWrap="wrap">
           <DataImportDialog onLoaded={handleLoaded} />
           <PowerAnalysisDialog />
+          <Button variant="outline" onClick={() => void openResultWindow()}>
+            分析ログ
+          </Button>
           <MethodSelector
             items={methodItems}
             disabled={variables.length === 0}

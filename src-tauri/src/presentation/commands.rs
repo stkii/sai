@@ -1,7 +1,9 @@
 pub(super) mod build_numeric_dataset;
 pub(super) mod build_string_mixed_dataset;
 pub(super) mod clear_numeric_dataset_cache;
+pub(super) mod get_analysis_log;
 pub(super) mod get_sheets;
+pub(super) mod list_analysis_logs;
 pub(super) mod parse_table;
 pub(super) mod run_analysis;
 pub(super) mod run_power_analysis;

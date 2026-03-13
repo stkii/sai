@@ -23,7 +23,7 @@ pub(crate) struct AnalysisSectionDto {
 
 #[derive(Debug, Serialize)]
 pub(crate) struct AnalysisResultDto {
-    sections: Vec<AnalysisSectionDto>,
+    pub(super) sections: Vec<AnalysisSectionDto>,
 }
 
 #[derive(Debug, Serialize)]
@@ -87,7 +87,7 @@ fn section(key: &str,
                          table }
 }
 
-fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
+pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
     match result {
         AnalysisResult::Table { table } => vec![section("table", "結果", table)],
         AnalysisResult::Regression { regression } => {

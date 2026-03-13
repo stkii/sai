@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub(crate) enum AnalysisErrorKind {
     InputValidation,
     DatasetNotFound,
+    AnalysisLogFailure,
     RExecutionFailure,
     InvalidAnalysisResult,
 }
@@ -13,6 +14,7 @@ impl AnalysisErrorKind {
         match self {
             AnalysisErrorKind::InputValidation => "ANALYSIS_INPUT_VALIDATION",
             AnalysisErrorKind::DatasetNotFound => "ANALYSIS_DATASET_NOT_FOUND",
+            AnalysisErrorKind::AnalysisLogFailure => "ANALYSIS_LOG_FAILURE",
             AnalysisErrorKind::RExecutionFailure => "ANALYSIS_R_EXECUTION_FAILURE",
             AnalysisErrorKind::InvalidAnalysisResult => "ANALYSIS_INVALID_RESULT",
         }

@@ -60,11 +60,11 @@ impl TableReader for DataResolver {
         }
     }
     fn build_string_mixed_dataset(&self,
-                                   kind: DataSourceKind,
-                                   path: &str,
-                                   sheet: Option<&str>,
-                                   variables: &[String])
-                                   -> Result<LoadedStringMixedDataset, String> {
+                                  kind: DataSourceKind,
+                                  path: &str,
+                                  sheet: Option<&str>,
+                                  variables: &[String])
+                                  -> Result<LoadedStringMixedDataset, String> {
         match kind {
             DataSourceKind::Csv => {
                 let dataset = csv::build_string_mixed_dataset_from_csv(path, variables)?;

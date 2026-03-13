@@ -14,6 +14,7 @@ export type {
 } from './runtime/runner';
 export { createAnalysisRunner } from './runtime/runner';
 export type {
+  AnalysisLogSummary,
   AnalysisOptions,
   AnalysisResult,
   AnalysisResultPayload,

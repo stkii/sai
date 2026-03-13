@@ -18,6 +18,7 @@ ERR_MESSAGES <- base::list(
   "ERR-852" = "n must be > 0",
   "ERR-853" = "Specify either power or n (not both)",
   "ERR-854" = "n must be > u + 1 for f2",
+  "ERR-855" = "ANOVA dependent variable and covariates must contain only finite numeric values",
   # 900 - 999 represents NO user-caused errors
   # R module loading
   "ERR-901" = "R module 'constants.R' not found under src-r/R",

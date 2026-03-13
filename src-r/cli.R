@@ -268,13 +268,17 @@
       options = list(
         list(name = "dependent", payload_keys = c("dependent"), cli_key = NULL, default = NULL),
         list(name = "independent", payload_keys = c("independent"), cli_key = NULL, default = NULL),
-        list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL)
+        list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL),
+        list(name = "covariates", payload_keys = c("covariates"), cli_key = NULL, default = NULL),
+        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "factor_only")
       ),
       run = function(df, ctx) {
         RunAnova(df,
                  dependent = ctx$dependent,
                  independent = ctx$independent,
-                 factors = ctx$factors)
+                 factors = ctx$factors,
+                 covariates = ctx$covariates,
+                 interactions = ctx$interactions)
       }
     )
   )

@@ -4,9 +4,16 @@ mod infra;
 mod presentation;
 mod usecase;
 
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    presentation::attach_handlers(tauri::Builder::default().manage(bootstrap::state::AppState::new()))
+    presentation::attach_handlers(tauri::Builder::default().setup(|app| {
+                                      let state = bootstrap::state::AppState::new(app.handle().clone())
+                                          .map_err(std::io::Error::other)?;
+                                      app.manage(state);
+                                      Ok(())
+                                  }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::new()
