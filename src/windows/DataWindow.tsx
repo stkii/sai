@@ -5,6 +5,7 @@ import {
   ANALYSIS_METHODS,
   type AnalysisOptions,
   createAnalysisRunner,
+  type DatasetKind,
   type MethodModule,
   MethodSelector,
   type SupportedAnalysisType,
@@ -33,6 +34,7 @@ export const DataWindow = () => {
   const analysisRunner = useMemo(() => {
     return createAnalysisRunner({
       buildNumericDataset: tauriIpc.buildNumericDataset.bind(tauriIpc),
+      buildStringMixedDataset: tauriIpc.buildStringMixedDataset.bind(tauriIpc),
       runAnalysis: tauriIpc.runAnalysis.bind(tauriIpc),
     });
   }, []);
@@ -59,7 +61,12 @@ export const DataWindow = () => {
   );
 
   const runAnalysis = useCallback(
-    async (type: SupportedAnalysisType, selectedVariables: string[], options: AnalysisOptions) => {
+    async (
+      type: SupportedAnalysisType,
+      selectedVariables: string[],
+      options: AnalysisOptions,
+      datasetKind?: DatasetKind
+    ) => {
       await runAnalysisFlow({
         analyzeService,
         methods: METHODS,
@@ -67,6 +74,7 @@ export const DataWindow = () => {
         type,
         variables: selectedVariables,
         options,
+        datasetKind,
         onCompleted: closeAnalysis,
       });
     },

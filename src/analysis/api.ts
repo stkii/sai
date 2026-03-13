@@ -19,5 +19,6 @@ export type {
   AnalysisResultPayload,
   AnalysisRunRequest,
   AnalysisSection,
+  DatasetKind,
   SupportedAnalysisType,
 } from './types';

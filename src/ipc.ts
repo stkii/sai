@@ -21,6 +21,13 @@ class TauriIpc {
     return invoke<string>('build_numeric_dataset', payload);
   }
 
+  async buildStringMixedDataset(selection: Dataset, variables: string[]): Promise<string> {
+    const payload = selection.sheet
+      ? { path: selection.path, sheet: selection.sheet, variables }
+      : { path: selection.path, variables };
+    return invoke<string>('build_string_mixed_dataset', payload);
+  }
+
   async clearNumericDatasetCache(): Promise<void> {
     await invoke('clear_numeric_dataset_cache');
   }

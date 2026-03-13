@@ -1,4 +1,5 @@
 pub(super) mod build_numeric_dataset;
+pub(super) mod build_string_mixed_dataset;
 pub(super) mod clear_numeric_dataset_cache;
 pub(super) mod get_sheets;
 pub(super) mod parse_table;

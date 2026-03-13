@@ -51,6 +51,37 @@ pub(super) fn build_numeric_dataset_from_xlsx(rows_data: Vec<Vec<Data>>,
     Ok(dataset)
 }
 
+pub(super) fn build_string_mixed_dataset_from_xlsx(rows_data: Vec<Vec<Data>>,
+                                                    variables: &[String])
+                                                    -> Result<crate::domain::input::string_mixed::StringMixedDataset, String> {
+    if rows_data.is_empty() {
+        return Err("Sheet is empty".to_string());
+    }
+    if variables.is_empty() {
+        return Err("No variables selected".to_string());
+    }
+
+    let headers = compute_headers_from_first_row(&rows_data[0])?;
+    let selected_columns = collect_ordered_selected_columns(&headers, variables)?;
+    let row_count = rows_data.len().saturating_sub(1);
+
+    let mut dataset = crate::domain::input::string_mixed::StringMixedDataset::with_capacity(selected_columns.len());
+    for (header, _) in &selected_columns {
+        dataset.insert(header.clone(), Vec::with_capacity(row_count));
+    }
+
+    for row in rows_data.iter().skip(1) {
+        for (header, col_index) in &selected_columns {
+            let value = row.get(*col_index).and_then(xlsx_cell_to_string);
+            dataset.get_mut(header)
+                   .expect("dataset column exists")
+                   .push(value);
+        }
+    }
+
+    Ok(dataset)
+}
+
 pub(super) fn create_parsed_data_table(rows_data: Vec<Vec<Data>>) -> Result<ParsedDataTable, String> {
     if rows_data.is_empty() {
         return Ok(ParsedDataTable { headers: vec![],
@@ -105,6 +136,30 @@ fn parse_xlsx_numeric_cell(cell: Option<&Data>,
             Err(context.error("datetime value is not allowed"))
         },
         Some(Data::Error(_)) => Err(context.error("cell has an Excel error")),
+    }
+}
+
+fn xlsx_cell_to_string(cell: &Data) -> Option<String> {
+    match cell {
+        Data::Empty => None,
+        Data::String(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() { None } else { Some(trimmed.to_string()) }
+        },
+        Data::Float(value) => {
+            if let Some(special) = special_value_to_str(*value) {
+                Some(special.to_string())
+            } else {
+                Some(value.to_string())
+            }
+        },
+        #[allow(deprecated)]
+        Data::Int(value) => Some(value.to_string()),
+        Data::Bool(value) => Some(value.to_string()),
+        Data::DateTime(value) => Some(value.to_string()),
+        Data::DateTimeIso(value) => Some(value.clone()),
+        Data::DurationIso(value) => Some(value.clone()),
+        Data::Error(value) => Some(error_to_str(value).to_string()),
     }
 }
 

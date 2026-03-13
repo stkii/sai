@@ -5,6 +5,7 @@ use crate::domain::input::source_kind::DataSourceKind;
 use crate::domain::input::table::ParsedDataTable;
 use crate::usecase::import::ports::{
     LoadedNumericDataset,
+    LoadedStringMixedDataset,
     TableReader,
 };
 
@@ -55,6 +56,27 @@ impl TableReader for DataResolver {
                 let dataset = xlsx::build_numeric_dataset_from_xlsx(rows, variables)?;
                 Ok(LoadedNumericDataset { dataset,
                                           sheet_name: sheet.to_string() })
+            },
+        }
+    }
+    fn build_string_mixed_dataset(&self,
+                                   kind: DataSourceKind,
+                                   path: &str,
+                                   sheet: Option<&str>,
+                                   variables: &[String])
+                                   -> Result<LoadedStringMixedDataset, String> {
+        match kind {
+            DataSourceKind::Csv => {
+                let dataset = csv::build_string_mixed_dataset_from_csv(path, variables)?;
+                Ok(LoadedStringMixedDataset { dataset,
+                                              sheet_name: "CSV".to_string() })
+            },
+            DataSourceKind::Xlsx => {
+                let sheet = required_xlsx_sheet(sheet)?;
+                let rows = xlsx::read_xlsx_sheet_rows(path, sheet)?;
+                let dataset = xlsx::build_string_mixed_dataset_from_xlsx(rows, variables)?;
+                Ok(LoadedStringMixedDataset { dataset,
+                                              sheet_name: sheet.to_string() })
             },
         }
     }

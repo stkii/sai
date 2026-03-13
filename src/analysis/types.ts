@@ -17,11 +17,14 @@ export interface AnalysisResultPayload {
   result: AnalysisResult;
 }
 
+export type DatasetKind = 'numeric' | 'string_mixed';
+
 export interface AnalysisRunRequest {
   selection: Dataset;
   type: SupportedAnalysisType;
   variables: string[];
   options: AnalysisOptions; // モーダル指定値をそのまま保持
+  datasetKind?: DatasetKind; // 省略時は 'numeric'
 }
 
 export interface AnalysisSection {
@@ -34,6 +37,7 @@ export interface AnalysisSection {
  * Supported analysis types (single source of truth)
  */
 export const SUPPORTED_ANALYSIS_TYPES = [
+  'anova',
   'correlation',
   'descriptive',
   'factor',

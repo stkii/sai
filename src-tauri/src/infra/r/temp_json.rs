@@ -1,13 +1,9 @@
 use serde::Serialize;
-use serde_json::Value;
 use std::path::Path;
 use tempfile::{
     Builder,
     NamedTempFile,
 };
-
-use crate::domain::analysis::method::Method;
-use crate::domain::input::numeric::NumericDataset;
 
 pub(crate) struct JsonTempFile {
     file: NamedTempFile,
@@ -30,10 +26,4 @@ impl JsonTempFile {
                                                         })?;
         Ok(Self { file })
     }
-}
-
-pub(crate) struct RAnalysisJob<'a> {
-    pub(crate) method: Method,
-    pub(crate) dataset: Option<&'a NumericDataset>,
-    pub(crate) options: &'a Value,
 }

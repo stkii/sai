@@ -37,25 +37,37 @@ impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
             return Err(classified_error(AnalysisErrorKind::InputValidation, "dataset cache id is empty"));
         }
 
-        let entry = self.cache
-                        .get_numeric_dataset(dataset_cache_id)
-                        .map_err(|e| {
-                            classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
-                                                         "failed to read dataset cache",
-                                                         e)
-                        })?
-                        .ok_or_else(|| {
-                            classified_error(AnalysisErrorKind::DatasetNotFound,
-                                             format!("dataset cache id '{}' was not found", dataset_cache_id))
-                        })?;
-        log::info!("analysis.run_analysis source path={} sheet={} vars={}",
-                   entry.path.as_str(),
-                   entry.sheet.as_str(),
-                   entry.variables.len());
-
         let handler = resolve_handler(method);
         let normalized = handler.normalize_options(options);
-        let mut result = self.runner.run_r_analysis(method, &entry.dataset, &normalized)?;
+
+        // Try string_mixed first, then numeric.
+        // The dataset type is determined by which build command the frontend called.
+        let mut result = if let Some(entry) = self.try_get_string_mixed(dataset_cache_id)? {
+            log::info!("analysis.run_analysis (string_mixed) source path={} sheet={} vars={}",
+                       entry.path.as_str(),
+                       entry.sheet.as_str(),
+                       entry.variables.len());
+            self.runner.run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?
+        } else {
+            let entry = self.cache
+                            .get_numeric_dataset(dataset_cache_id)
+                            .map_err(|e| {
+                                classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
+                                                             "failed to read dataset cache",
+                                                             e)
+                            })?
+                            .ok_or_else(|| {
+                                classified_error(AnalysisErrorKind::DatasetNotFound,
+                                                 format!("dataset cache id '{}' was not found",
+                                                         dataset_cache_id))
+                            })?;
+            log::info!("analysis.run_analysis source path={} sheet={} vars={}",
+                       entry.path.as_str(),
+                       entry.sheet.as_str(),
+                       entry.variables.len());
+            self.runner.run_r_analysis(method, &entry.dataset, &normalized)?
+        };
+
         handler.post_process(&mut result, &normalized)?;
 
         let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -63,5 +75,17 @@ impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
         Ok(AnalysisRunResult { analysis_id,
                                logged_at,
                                result })
+    }
+
+    fn try_get_string_mixed(&self,
+                            dataset_cache_id: &str)
+                            -> Result<Option<std::sync::Arc<crate::domain::input::string_mixed::StringMixedDatasetEntry>>, String> {
+        self.cache
+            .get_string_mixed_dataset(dataset_cache_id)
+            .map_err(|e| {
+                classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
+                                             "failed to read dataset cache",
+                                             e)
+            })
     }
 }

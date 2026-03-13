@@ -48,7 +48,7 @@
   term_names <- base::rownames(tbl)
   if (is.null(term_names)) term_names <- base::paste0("V", base::seq_len(base::nrow(tbl)))
 
-  headers <- base::c("要因", "自由度", "平方和", "平均平方", "F値", "p値")
+  headers <- base::c("要因", "平方和", "自由度", "平均平方", "F値", "p値")
 
   format_f_cell <- function(value, p_value) {
     formatted <- FormatNum(value)
@@ -72,8 +72,8 @@
     p_val <- tbl[i, "Pr(>F)"]
     base::c(
       term,
-      df_val,
       ss_val,
+      df_val,
       ms_val,
       format_f_cell(f_val, p_val),
       FormatPval(p_val)

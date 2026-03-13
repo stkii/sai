@@ -2,6 +2,7 @@ import type {
   AnalysisExecutionRecord,
   AnalysisOptions,
   AnalysisRunner,
+  DatasetKind,
   SupportedAnalysisType,
 } from '../../analysis/api';
 import type { Dataset } from '../../types';
@@ -16,6 +17,7 @@ interface AnalyzeParams {
   type: SupportedAnalysisType;
   variables: string[];
   options: AnalysisOptions;
+  datasetKind?: DatasetKind;
 }
 
 export const createAnalyzeService = ({ analysisRunner, clearNumericDatasetCache }: AnalyzeDeps) => {
@@ -24,6 +26,7 @@ export const createAnalyzeService = ({ analysisRunner, clearNumericDatasetCache 
     type,
     variables,
     options,
+    datasetKind,
   }: AnalyzeParams): Promise<AnalysisExecutionRecord> => {
     if (!selection) {
       throw new Error('データが読み込まれていません');
@@ -33,6 +36,7 @@ export const createAnalyzeService = ({ analysisRunner, clearNumericDatasetCache 
       type,
       variables,
       options,
+      datasetKind,
     });
   };
 

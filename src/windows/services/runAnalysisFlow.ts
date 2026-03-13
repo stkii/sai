@@ -1,6 +1,7 @@
 import type {
   AnalysisExecutionRecord,
   AnalysisOptions,
+  DatasetKind,
   MethodModule,
   SupportedAnalysisType,
 } from '../../analysis/api';
@@ -14,6 +15,7 @@ interface AnalyzeServiceLike {
     type: SupportedAnalysisType;
     variables: string[];
     options: AnalysisOptions;
+    datasetKind?: DatasetKind;
   }) => Promise<AnalysisExecutionRecord>;
 }
 
@@ -24,6 +26,7 @@ interface RunAnalysisFlowParams {
   type: SupportedAnalysisType;
   variables: string[];
   options: AnalysisOptions;
+  datasetKind?: DatasetKind;
   onCompleted: () => void;
 }
 
@@ -34,6 +37,7 @@ export const runAnalysisFlow = async ({
   type,
   variables,
   options,
+  datasetKind,
   onCompleted,
 }: RunAnalysisFlowParams): Promise<void> => {
   const execution = await analyzeService.run({
@@ -41,6 +45,7 @@ export const runAnalysisFlow = async ({
     type,
     variables,
     options,
+    datasetKind,
   });
   const label = findMethodLabel(methods, type);
   const payload = buildAnalysisResultPayload({

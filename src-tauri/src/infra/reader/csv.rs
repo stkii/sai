@@ -57,6 +57,50 @@ pub(super) fn build_numeric_dataset_from_csv(path: &str,
     Ok(dataset)
 }
 
+pub(super) fn build_string_mixed_dataset_from_csv(path: &str,
+                                                   variables: &[String])
+                                                   -> Result<crate::domain::input::string_mixed::StringMixedDataset, String> {
+    if variables.is_empty() {
+        return Err("No variables selected".to_string());
+    }
+
+    let mut reader = ReaderBuilder::new().has_headers(true)
+                                         .flexible(true)
+                                         .from_path(path)
+                                         .map_err(|e| format!("Failed to open CSV file: {}", e))?;
+
+    let headers_record = reader.headers()
+                               .map_err(|e| format!("Failed to read CSV headers: {}", e))?
+                               .clone();
+
+    if headers_record.is_empty() {
+        return Err("CSV is empty".to_string());
+    }
+
+    let headers = compute_headers_from_record(&headers_record)?;
+    let selected_columns = collect_ordered_selected_columns(&headers, variables)?;
+
+    let mut dataset = crate::domain::input::string_mixed::StringMixedDataset::with_capacity(selected_columns.len());
+    for (header, _) in &selected_columns {
+        dataset.insert(header.clone(), Vec::new());
+    }
+
+    for record in reader.records() {
+        let record = record.map_err(|e| format!("Failed to read CSV row: {}", e))?;
+        for (header, col_index) in &selected_columns {
+            let value = record.get(*col_index)
+                              .map(|cell| cell.trim())
+                              .filter(|cell| !cell.is_empty())
+                              .map(|cell| cell.to_string());
+            dataset.get_mut(header)
+                   .expect("dataset column exists")
+                   .push(value);
+        }
+    }
+
+    Ok(dataset)
+}
+
 pub(super) fn parse_csv_table(path: &str) -> Result<ParsedDataTable, String> {
     let mut reader = ReaderBuilder::new().has_headers(true)
                                          .flexible(true)

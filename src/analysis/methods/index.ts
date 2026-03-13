@@ -1,3 +1,4 @@
+import { anovaMethod } from './anova';
 import type { MethodModule } from './contracts';
 import { correlationMethod } from './correlation';
 import { descriptiveMethod } from './descriptive';
@@ -6,6 +7,7 @@ import { regressionMethod } from './regression';
 import { reliabilityMethod } from './reliability';
 
 export const ANALYSIS_METHODS = [
+  anovaMethod,
   correlationMethod,
   descriptiveMethod,
   factorMethod,
@@ -13,6 +15,7 @@ export const ANALYSIS_METHODS = [
   reliabilityMethod,
 ] as const satisfies readonly MethodModule[];
 
+export { anovaMethod } from './anova';
 export type {
   MethodDefinition,
   MethodModule,

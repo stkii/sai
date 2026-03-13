@@ -1,3 +1,4 @@
+mod anova;
 mod correlation;
 mod descriptive;
 mod factor;
@@ -23,7 +24,9 @@ pub(crate) trait AnalysisMethodHandler: Send + Sync {
 }
 
 pub(crate) fn resolve_handler(method: Method) -> &'static dyn AnalysisMethodHandler {
-    if method == Method::DESCRIPTIVE {
+    if method == Method::ANOVA {
+        &anova::ANOVA_HANDLER
+    } else if method == Method::DESCRIPTIVE {
         &descriptive::DESCRIPTIVE_HANDLER
     } else if method == Method::FACTOR {
         &factor::FACTOR_HANDLER
