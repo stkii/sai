@@ -20,6 +20,11 @@ pub(crate) trait AnalysisRunner: Send + Sync {
                       options: &Value)
                       -> Result<AnalysisResult, String>;
 
+    fn run_r_analysis_without_dataset(&self,
+                                      method: Method,
+                                      options: &Value)
+                                      -> Result<AnalysisResult, String>;
+
     fn run_r_analysis_string_mixed(&self,
                                    method: Method,
                                    dataset: &StringMixedDataset,

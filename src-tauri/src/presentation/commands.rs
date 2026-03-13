@@ -4,3 +4,4 @@ pub(super) mod clear_numeric_dataset_cache;
 pub(super) mod get_sheets;
 pub(super) mod parse_table;
 pub(super) mod run_analysis;
+pub(super) mod run_power_analysis;

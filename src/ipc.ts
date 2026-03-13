@@ -6,6 +6,7 @@ import type {
   SupportedAnalysisType,
 } from './analysis/api';
 import type { Dataset, ParsedDataTable } from './types';
+import type { PowerAnalysisOptions } from './windows/components/PowerAnalysisDialog';
 
 interface IpcResponse {
   analysisId: string;
@@ -56,6 +57,10 @@ class TauriIpc {
       executedAt: response.loggedAt,
       output: response.result,
     };
+  }
+
+  async runPowerAnalysis(options: PowerAnalysisOptions): Promise<ParsedDataTable> {
+    return invoke<ParsedDataTable>('run_power_analysis', { options });
   }
 }
 

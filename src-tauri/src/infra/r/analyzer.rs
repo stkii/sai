@@ -20,6 +20,13 @@ impl AnalysisRunner for RAnalyzer {
         runner::run_r_analysis(method, dataset, options)
     }
 
+    fn run_r_analysis_without_dataset(&self,
+                                      method: Method,
+                                      options: &Value)
+                                      -> Result<AnalysisResult, String> {
+        runner::run_r_analysis_without_dataset(method, options)
+    }
+
     fn run_r_analysis_string_mixed(&self,
                                    method: Method,
                                    dataset: &StringMixedDataset,

@@ -23,6 +23,12 @@ pub fn run_r_analysis(method: Method,
     run_r_job(method, Some(dataset), options)
 }
 
+pub fn run_r_analysis_without_dataset(method: Method,
+                                      options: &Value)
+                                      -> Result<AnalysisResult, String> {
+    run_r_job::<Value>(method, None, options)
+}
+
 pub fn run_r_analysis_string_mixed(method: Method,
                                    dataset: &StringMixedDataset,
                                    options: &Value)
@@ -40,10 +46,10 @@ fn resolve_cli_path() -> Result<PathBuf, String> {
                        })
 }
 
-fn run_r_job(method: Method,
-             dataset: Option<&impl Serialize>,
-             options: &Value)
-             -> Result<AnalysisResult, String> {
+fn run_r_job<T: Serialize>(method: Method,
+                           dataset: Option<&T>,
+                           options: &Value)
+                           -> Result<AnalysisResult, String> {
     let dataset_file = match dataset {
         Some(ds) => Some(JsonTempFile::create("sai_dataset", ds).map_err(|e| {
                              classified_error_with_source(AnalysisErrorKind::RExecutionFailure,

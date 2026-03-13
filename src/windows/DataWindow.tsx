@@ -16,6 +16,7 @@ import type { Dataset, ParsedDataTable } from '../types';
 import { AnalysisModalHost } from './components/AnalysisModalHost';
 import { DataImportDialog } from './components/DataImportDialog';
 import { LoadedDatasetBar } from './components/LoadedDatasetBar';
+import { PowerAnalysisDialog } from './components/PowerAnalysisDialog';
 import { createAnalyzeService } from './services/analyzeService';
 import { buildMethodItems } from './services/displayFormatter';
 import { runAnalysisFlow } from './services/runAnalysisFlow';
@@ -86,6 +87,7 @@ export const DataWindow = () => {
       <Stack gap="3">
         <HStack gap="2" flexWrap="wrap">
           <DataImportDialog onLoaded={handleLoaded} />
+          <PowerAnalysisDialog />
           <MethodSelector
             items={methodItems}
             disabled={variables.length === 0}

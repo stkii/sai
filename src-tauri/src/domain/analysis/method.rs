@@ -8,6 +8,7 @@ impl Method {
     pub(crate) const CORRELATION: Self = Self("correlation");
     pub(crate) const DESCRIPTIVE: Self = Self("descriptive");
     pub(crate) const FACTOR: Self = Self("factor");
+    pub(crate) const POWER: Self = Self("power");
     pub(crate) const REGRESSION: Self = Self("regression");
     pub(crate) const RELIABILITY: Self = Self("reliability");
 
@@ -26,6 +27,7 @@ impl FromStr for Method {
             "correlation" => Ok(Method::CORRELATION),
             "descriptive" => Ok(Method::DESCRIPTIVE),
             "factor" => Ok(Method::FACTOR),
+            "power" => Ok(Method::POWER),
             "regression" => Ok(Method::REGRESSION),
             "reliability" => Ok(Method::RELIABILITY),
             _ => Err(format!("Unsupported method: {}", value)),

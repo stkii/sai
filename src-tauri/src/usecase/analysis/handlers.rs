@@ -2,6 +2,7 @@ mod anova;
 mod correlation;
 mod descriptive;
 mod factor;
+mod power;
 mod regression;
 mod reliability;
 
@@ -30,6 +31,8 @@ pub(crate) fn resolve_handler(method: Method) -> &'static dyn AnalysisMethodHand
         &descriptive::DESCRIPTIVE_HANDLER
     } else if method == Method::FACTOR {
         &factor::FACTOR_HANDLER
+    } else if method == Method::POWER {
+        &power::POWER_HANDLER
     } else if method == Method::REGRESSION {
         &regression::REGRESSION_HANDLER
     } else if method == Method::RELIABILITY {

@@ -47,7 +47,8 @@ impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
                        entry.path.as_str(),
                        entry.sheet.as_str(),
                        entry.variables.len());
-            self.runner.run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?
+            self.runner
+                .run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?
         } else {
             let entry = self.cache
                             .get_numeric_dataset(dataset_cache_id)
@@ -70,16 +71,27 @@ impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
 
         handler.post_process(&mut result, &normalized)?;
 
-        let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let analysis_id = Uuid::new_v4().to_string();
-        Ok(AnalysisRunResult { analysis_id,
-                               logged_at,
-                               result })
+        Ok(build_run_result(result))
     }
 
-    fn try_get_string_mixed(&self,
-                            dataset_cache_id: &str)
-                            -> Result<Option<std::sync::Arc<crate::domain::input::string_mixed::StringMixedDatasetEntry>>, String> {
+    pub(crate) fn run_standalone_analysis(&self,
+                                          method: Method,
+                                          options: Option<Value>)
+                                          -> Result<AnalysisRunResult, String> {
+        let handler = resolve_handler(method);
+        let normalized = handler.normalize_options(options);
+
+        let mut result = self.runner.run_r_analysis_without_dataset(method, &normalized)?;
+        handler.post_process(&mut result, &normalized)?;
+
+        Ok(build_run_result(result))
+    }
+
+    fn try_get_string_mixed(
+        &self,
+        dataset_cache_id: &str)
+        -> Result<Option<std::sync::Arc<crate::domain::input::string_mixed::StringMixedDatasetEntry>>, String>
+    {
         self.cache
             .get_string_mixed_dataset(dataset_cache_id)
             .map_err(|e| {
@@ -88,4 +100,12 @@ impl<C: DatasetCacheStore, R: AnalysisRunner> AnalysisService<C, R> {
                                              e)
             })
     }
+}
+
+fn build_run_result(result: crate::domain::analysis::model::AnalysisResult) -> AnalysisRunResult {
+    let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let analysis_id = Uuid::new_v4().to_string();
+    AnalysisRunResult { analysis_id,
+                        logged_at,
+                        result }
 }

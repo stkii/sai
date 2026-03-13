@@ -185,7 +185,7 @@ COHEN_ES_LARGE <- c(
 
   power_value <- if (has_n) res$power else power
 
-  headers <- c("サンプルサイズ N", "効果量", "有意水準", "検出力")
+  headers <- c("サンプルサイズ", "効果量", "有意水準", "検出力")
   row <- base::c(
     FormatNum(n_value),
     FormatNum(effect),

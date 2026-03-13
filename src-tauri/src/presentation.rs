@@ -6,5 +6,6 @@ pub(crate) fn attach_handlers(builder: tauri::Builder<tauri::Wry>) -> tauri::Bui
                                                     commands::clear_numeric_dataset_cache::clear_numeric_dataset_cache,
                                                     commands::get_sheets::get_sheets,
                                                     commands::parse_table::parse_table,
-                                                    commands::run_analysis::run_analysis,])
+                                                    commands::run_analysis::run_analysis,
+                                                    commands::run_power_analysis::run_power_analysis,])
 }
