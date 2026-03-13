@@ -1,11 +1,11 @@
 import type {
   AnalysisExecutionRecord,
   AnalysisOptions,
-  MethodModule,
+  DatasetKind,
   SupportedAnalysisType,
 } from '../../analysis/api';
 import type { Dataset } from '../../types';
-import { buildAnalysisResultPayload, findMethodLabel } from './displayFormatter';
+import { buildAnalysisResultPayload } from './displayFormatter';
 import { emitResultToResultWindow, openResultWindow } from './toResultWindow';
 
 interface AnalyzeServiceLike {
@@ -14,26 +14,27 @@ interface AnalyzeServiceLike {
     type: SupportedAnalysisType;
     variables: string[];
     options: AnalysisOptions;
+    datasetKind?: DatasetKind;
   }) => Promise<AnalysisExecutionRecord>;
 }
 
 interface RunAnalysisFlowParams {
   analyzeService: AnalyzeServiceLike;
-  methods: readonly MethodModule[];
   selection: Dataset | null;
   type: SupportedAnalysisType;
   variables: string[];
   options: AnalysisOptions;
+  datasetKind?: DatasetKind;
   onCompleted: () => void;
 }
 
 export const runAnalysisFlow = async ({
   analyzeService,
-  methods,
   selection,
   type,
   variables,
   options,
+  datasetKind,
   onCompleted,
 }: RunAnalysisFlowParams): Promise<void> => {
   const execution = await analyzeService.run({
@@ -41,12 +42,16 @@ export const runAnalysisFlow = async ({
     type,
     variables,
     options,
+    datasetKind,
   });
-  const label = findMethodLabel(methods, type);
+  if (!selection) {
+    throw new Error('データが読み込まれていません');
+  }
   const payload = buildAnalysisResultPayload({
     execution,
+    selection,
     type,
-    label,
+    variables,
     options,
   });
   await openResultWindow();

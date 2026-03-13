@@ -1,4 +1,4 @@
-import { Box, HStack, RadioGroup, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import { Box, Checkbox, HStack, RadioGroup, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useRef, useState } from 'react';
 import { BaseNumberInput } from '../../../components/BaseNumberInput';
 import { BaseRadioButton } from '../../../components/BaseRadioButton';
@@ -20,6 +20,7 @@ export interface FactorOptions extends AnalysisOptions {
   corr_use: FactorCorrUse;
   power?: number;
   sort_loadings: boolean;
+  showScreePlot: boolean;
 }
 
 const METHOD_OPTIONS = [{ label: '最尤法', value: 'ml' }] as const satisfies ReadonlyArray<{
@@ -48,16 +49,10 @@ const CORR_USE_OPTIONS = [
   { label: 'ペアごとに除外', value: 'pairwise.complete.obs' },
 ] as const satisfies ReadonlyArray<{ label: string; value: FactorCorrUse }>;
 
-const SORT_LOADINGS_OPTIONS = [
-  { label: '並び替えない', value: 'off' },
-  { label: '並び替える', value: 'on' },
-] as const satisfies ReadonlyArray<{ label: string; value: 'off' | 'on' }>;
-
 const DEFAULT_METHOD = METHOD_OPTIONS[0]?.value ?? 'ml';
 const DEFAULT_FACTOR_NUMBER_CRITERION = FACTOR_NUMBER_CRITERION_OPTIONS[0]?.value ?? 'guttman';
 const DEFAULT_ROTATION = ROTATION_OPTIONS[0]?.value ?? 'none';
 const DEFAULT_CORR_USE = CORR_USE_OPTIONS[1]?.value ?? 'complete.obs';
-const DEFAULT_SORT_LOADINGS: 'off' | 'on' = 'off';
 const DEFAULT_FIXED_FACTOR_COUNT = '2';
 const DEFAULT_PROMAX_POWER = '4';
 
@@ -83,7 +78,8 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
   const [rotation, setRotation] = useState<FactorRotation>(DEFAULT_ROTATION);
   const [corrUse, setCorrUse] = useState<FactorCorrUse>(DEFAULT_CORR_USE);
   const [promaxPower, setPromaxPower] = useState(DEFAULT_PROMAX_POWER);
-  const [sortLoadings, setSortLoadings] = useState<'off' | 'on'>(DEFAULT_SORT_LOADINGS);
+  const [sortLoadings, setSortLoadings] = useState(false);
+  const [showScreePlot, setShowScreePlot] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const previousVariablesKeyRef = useRef('');
@@ -97,7 +93,8 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
       setRotation(DEFAULT_ROTATION);
       setCorrUse(DEFAULT_CORR_USE);
       setPromaxPower(DEFAULT_PROMAX_POWER);
-      setSortLoadings(DEFAULT_SORT_LOADINGS);
+      setSortLoadings(false);
+      setShowScreePlot(false);
       setError(null);
       setLoading(false);
     }
@@ -127,7 +124,8 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
       n_factors_auto: factorNumberCriterion === 'guttman',
       rotation,
       corr_use: corrUse,
-      sort_loadings: sortLoadings === 'on',
+      sort_loadings: sortLoadings,
+      showScreePlot,
     };
 
     if (factorNumberCriterion === 'fixed') {
@@ -306,15 +304,23 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
               />
             </Stack>
 
-            <Stack gap="2">
-              <Text fontWeight="semibold">負荷量の並び替え</Text>
-              <BaseRadioButton
-                contents={SORT_LOADINGS_OPTIONS}
-                orientation="horizontal"
-                value={sortLoadings}
-                onChange={(value) => setSortLoadings(value as 'off' | 'on')}
-              />
-            </Stack>
+            <Checkbox.Root
+              checked={sortLoadings}
+              onCheckedChange={(e) => setSortLoadings(!!e.checked)}
+            >
+              <Checkbox.HiddenInput />
+              <Checkbox.Control />
+              <Checkbox.Label fontWeight="semibold">負荷量をソート</Checkbox.Label>
+            </Checkbox.Root>
+
+            <Checkbox.Root
+              checked={showScreePlot}
+              onCheckedChange={(e) => setShowScreePlot(!!e.checked)}
+            >
+              <Checkbox.HiddenInput />
+              <Checkbox.Control />
+              <Checkbox.Label fontWeight="semibold">スクリープロット</Checkbox.Label>
+            </Checkbox.Root>
           </Stack>
         </Box>
       </SimpleGrid>

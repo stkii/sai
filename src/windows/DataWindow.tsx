@@ -1,10 +1,11 @@
-import { Box, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/react';
+import { Box, Button, ChakraProvider, defaultSystem, HStack, Stack } from '@chakra-ui/react';
 import { useCallback, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   ANALYSIS_METHODS,
   type AnalysisOptions,
   createAnalysisRunner,
+  type DatasetKind,
   type MethodModule,
   MethodSelector,
   type SupportedAnalysisType,
@@ -15,9 +16,11 @@ import type { Dataset, ParsedDataTable } from '../types';
 import { AnalysisModalHost } from './components/AnalysisModalHost';
 import { DataImportDialog } from './components/DataImportDialog';
 import { LoadedDatasetBar } from './components/LoadedDatasetBar';
+import { PowerAnalysisDialog } from './components/PowerAnalysisDialog';
 import { createAnalyzeService } from './services/analyzeService';
 import { buildMethodItems } from './services/displayFormatter';
 import { runAnalysisFlow } from './services/runAnalysisFlow';
+import { openResultWindow } from './services/toResultWindow';
 
 const METHODS: readonly MethodModule[] = ANALYSIS_METHODS;
 
@@ -33,6 +36,7 @@ export const DataWindow = () => {
   const analysisRunner = useMemo(() => {
     return createAnalysisRunner({
       buildNumericDataset: tauriIpc.buildNumericDataset.bind(tauriIpc),
+      buildStringMixedDataset: tauriIpc.buildStringMixedDataset.bind(tauriIpc),
       runAnalysis: tauriIpc.runAnalysis.bind(tauriIpc),
     });
   }, []);
@@ -59,14 +63,19 @@ export const DataWindow = () => {
   );
 
   const runAnalysis = useCallback(
-    async (type: SupportedAnalysisType, selectedVariables: string[], options: AnalysisOptions) => {
+    async (
+      type: SupportedAnalysisType,
+      selectedVariables: string[],
+      options: AnalysisOptions,
+      datasetKind?: DatasetKind
+    ) => {
       await runAnalysisFlow({
         analyzeService,
-        methods: METHODS,
         selection,
         type,
         variables: selectedVariables,
         options,
+        datasetKind,
         onCompleted: closeAnalysis,
       });
     },
@@ -78,6 +87,10 @@ export const DataWindow = () => {
       <Stack gap="3">
         <HStack gap="2" flexWrap="wrap">
           <DataImportDialog onLoaded={handleLoaded} />
+          <PowerAnalysisDialog />
+          <Button variant="outline" onClick={() => void openResultWindow()}>
+            分析ログ
+          </Button>
           <MethodSelector
             items={methodItems}
             disabled={variables.length === 0}

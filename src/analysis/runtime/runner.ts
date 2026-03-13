@@ -14,6 +14,7 @@ export interface AnalysisExecutionRecord {
 
 export interface AnalysisRunnerDeps {
   buildNumericDataset: (selection: Dataset, variables: string[]) => Promise<string>;
+  buildStringMixedDataset: (selection: Dataset, variables: string[]) => Promise<string>;
   runAnalysis: (
     type: SupportedAnalysisType,
     datasetCacheId: string,
@@ -26,14 +27,15 @@ export interface AnalysisRunner {
   clearCache: () => void;
 }
 
-const buildDatasetCacheKey = (selection: Dataset, variables: string[]) => {
+const buildDatasetCacheKey = (selection: Dataset, variables: string[], datasetKind: string) => {
   const uniqueVariables = Array.from(new Set(variables));
   uniqueVariables.sort();
-  return [selection.path, selection.sheet ?? '', ...uniqueVariables].join('||');
+  return [datasetKind, selection.path, selection.sheet ?? '', ...uniqueVariables].join('||');
 };
 
 export const createAnalysisRunner = ({
   buildNumericDataset,
+  buildStringMixedDataset,
   runAnalysis,
 }: AnalysisRunnerDeps): AnalysisRunner => {
   const datasetCache = new Map<string, string>();
@@ -43,16 +45,20 @@ export const createAnalysisRunner = ({
     selection,
     variables,
     options,
+    datasetKind = 'numeric',
   }: AnalysisRunRequest): Promise<AnalysisExecutionRecord> => {
     if (variables.length === 0) {
       throw new Error('変数を選択してください');
     }
 
-    const cacheKey = buildDatasetCacheKey(selection, variables);
+    const cacheKey = buildDatasetCacheKey(selection, variables, datasetKind);
     let datasetCacheId = datasetCache.get(cacheKey) ?? null;
 
     if (!datasetCacheId) {
-      datasetCacheId = await buildNumericDataset(selection, variables);
+      datasetCacheId =
+        datasetKind === 'string_mixed'
+          ? await buildStringMixedDataset(selection, variables)
+          : await buildNumericDataset(selection, variables);
       datasetCache.set(cacheKey, datasetCacheId);
     }
 

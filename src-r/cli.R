@@ -194,7 +194,8 @@
         list(name = "rotation", payload_keys = c("rotation"), cli_key = "rotation", default = ""),
         list(name = "method", payload_keys = c("method"), cli_key = "method", default = ""),
         list(name = "corr_use", payload_keys = c("corr_use", "corrUse", "use"), cli_key = "corr_use", default = ""),
-        list(name = "power", payload_keys = c("power"), cli_key = "power", default = "", post = .NormalizePower)
+        list(name = "power", payload_keys = c("power"), cli_key = "power", default = "", post = .NormalizePower),
+        list(name = "show_scree_plot", payload_keys = c("show_scree_plot", "showScreePlot"), cli_key = NULL, default = NULL)
       ),
       run = function(df, ctx) {
         RunFactor(df,
@@ -203,7 +204,8 @@
                   rotation = base::as.character(ctx$rotation),
                   method = base::as.character(ctx$method),
                   corr_use = base::as.character(ctx$corr_use),
-                  power = ctx$power)
+                  power = ctx$power,
+                  show_scree_plot = ctx$show_scree_plot)
       }
     ),
     regression = list(
@@ -258,6 +260,27 @@
                      k = ctx$k,
                      df = ctx$df,
                      u = ctx$u)
+      }
+    ),
+    anova = list(
+      output_kind = "table",
+      # ANOVA datasets contain factor (categorical) columns alongside numeric ones,
+      # so the numeric-only validation must be skipped.
+      requires_numeric = FALSE,
+      options = list(
+        list(name = "dependent", payload_keys = c("dependent"), cli_key = NULL, default = NULL),
+        list(name = "independent", payload_keys = c("independent"), cli_key = NULL, default = NULL),
+        list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL),
+        list(name = "covariates", payload_keys = c("covariates"), cli_key = NULL, default = NULL),
+        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "factor_only")
+      ),
+      run = function(df, ctx) {
+        RunAnova(df,
+                 dependent = ctx$dependent,
+                 independent = ctx$independent,
+                 factors = ctx$factors,
+                 covariates = ctx$covariates,
+                 interactions = ctx$interactions)
       }
     )
   )
@@ -315,6 +338,7 @@ Main <- function() {
   .LoadModule(r_dir, "rotation.R", "ERR-909")
   .LoadModule(r_dir, "factor.R", "ERR-910")
   .LoadModule(r_dir, "power.R", "ERR-911")
+  .LoadModule(r_dir, "anova.R", "ERR-912")
 
   analysis <- .ResolveCliValue(opts, "analysis", "descriptive")
   input_path <- .ResolveCliValue(opts, "input", "-")

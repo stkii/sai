@@ -3,6 +3,7 @@ import type {
   AnalysisOptions,
   AnalysisResult,
   AnalysisSection,
+  DatasetKind,
   SupportedAnalysisType,
 } from '../types';
 
@@ -10,14 +11,18 @@ export interface ModalProps<TOptions extends AnalysisOptions = AnalysisOptions> 
   open: boolean;
   onClose: () => void;
   variables: string[];
-  onExecute?: (variables: string[], options: TOptions) => Promise<void>;
+  onExecute?: (variables: string[], options: TOptions, datasetKind?: DatasetKind) => Promise<void>;
 }
 
 export interface ModalRenderArgs {
   open: boolean;
   onClose: () => void;
   variables: string[];
-  onExecute: (variables: string[], options: AnalysisOptions) => Promise<void>;
+  onExecute: (
+    variables: string[],
+    options: AnalysisOptions,
+    datasetKind?: DatasetKind
+  ) => Promise<void>;
 }
 
 export interface MethodDefinition<TKey extends SupportedAnalysisType = SupportedAnalysisType> {

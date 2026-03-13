@@ -1,5 +1,10 @@
 import { Fragment } from 'react';
-import type { AnalysisOptions, MethodModule, SupportedAnalysisType } from '../../analysis/api';
+import type {
+  AnalysisOptions,
+  DatasetKind,
+  MethodModule,
+  SupportedAnalysisType,
+} from '../../analysis/api';
 
 interface Props {
   methods: readonly MethodModule[];
@@ -9,7 +14,8 @@ interface Props {
   onExecute: (
     type: SupportedAnalysisType,
     selectedVariables: string[],
-    options: AnalysisOptions
+    options: AnalysisOptions,
+    datasetKind?: DatasetKind
   ) => Promise<void>;
 }
 
@@ -28,8 +34,8 @@ export const AnalysisModalHost = ({
             open: openAnalysis === method.definition.key,
             onClose,
             variables,
-            onExecute: async (selectedVariables, options) => {
-              await onExecute(method.definition.key, selectedVariables, options);
+            onExecute: async (selectedVariables, options, datasetKind) => {
+              await onExecute(method.definition.key, selectedVariables, options, datasetKind);
             },
           })}
         </Fragment>

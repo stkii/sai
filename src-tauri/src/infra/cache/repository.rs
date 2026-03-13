@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::domain::input::numeric::NumericDatasetEntry;
+use crate::domain::input::string_mixed::StringMixedDatasetEntry;
 use crate::usecase::analysis::ports::DatasetCacheStore;
 use crate::usecase::import::ports::NumericDatasetCacheStore;
 
@@ -15,6 +16,12 @@ impl DatasetCacheStore for DatasetCacheRepository {
                            -> Result<Option<Arc<NumericDatasetEntry>>, String> {
         dataset_cache::get_numeric_dataset(dataset_cache_id)
     }
+
+    fn get_string_mixed_dataset(&self,
+                                dataset_cache_id: &str)
+                                -> Result<Option<Arc<StringMixedDatasetEntry>>, String> {
+        dataset_cache::get_string_mixed_dataset(dataset_cache_id)
+    }
 }
 
 impl NumericDatasetCacheStore for DatasetCacheRepository {
@@ -22,6 +29,12 @@ impl NumericDatasetCacheStore for DatasetCacheRepository {
                               entry: NumericDatasetEntry)
                               -> Result<String, String> {
         dataset_cache::insert_numeric_dataset(entry)
+    }
+
+    fn insert_string_mixed_dataset(&self,
+                                   entry: StringMixedDatasetEntry)
+                                   -> Result<String, String> {
+        dataset_cache::insert_string_mixed_dataset(entry)
     }
 
     fn clear_numeric_dataset_cache(&self) -> Result<(), String> {

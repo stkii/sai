@@ -1,6 +1,12 @@
 export { MethodSelector } from './components/MethodSelector';
 export type { MethodDefinition, MethodModule, ModalProps, ModalRenderArgs } from './methods';
-export { ANALYSIS_METHODS, correlationMethod, descriptiveMethod, factorMethod } from './methods';
+export {
+  ANALYSIS_METHODS,
+  correlationMethod,
+  descriptiveMethod,
+  factorMethod,
+  reliabilityMethod,
+} from './methods';
 export type {
   AnalysisExecutionRecord,
   AnalysisRunner,
@@ -8,10 +14,12 @@ export type {
 } from './runtime/runner';
 export { createAnalysisRunner } from './runtime/runner';
 export type {
+  AnalysisLogSummary,
   AnalysisOptions,
   AnalysisResult,
   AnalysisResultPayload,
   AnalysisRunRequest,
   AnalysisSection,
+  DatasetKind,
   SupportedAnalysisType,
 } from './types';

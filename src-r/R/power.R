@@ -4,7 +4,7 @@
 
 # Cohen's (conventional) effect size thresholds for "small" effect across different statistical tests
 COHEN_ES_SMALL <- c(
-  "anov" = 0.1,     # One-way ANOVA
+  "anov" = 0.1,      # One-way ANOVA
   "chisq" = 0.1,     # Chi-squared test
   "f2" = 0.02,       # General linear model
   "p" = 0.1,         # One-sample proportion test
@@ -22,7 +22,7 @@ COHEN_ES_MEDIUM <- c(
 )
 
 COHEN_ES_LARGE <- c(
-  "anov" = 0.4,     # One-way ANOVA
+  "anov" = 0.4,      # One-way ANOVA
   "chisq" = 0.5,     # Chi-squared test
   "f2" = 0.35,       # General linear model
   "p" = 0.5,         # One-sample proportion test
@@ -185,7 +185,7 @@ COHEN_ES_LARGE <- c(
 
   power_value <- if (has_n) res$power else power
 
-  headers <- c("サンプルサイズ N", "効果量", "有意水準", "検出力")
+  headers <- c("サンプルサイズ", "効果量", "有意水準", "検出力")
   row <- base::c(
     FormatNum(n_value),
     FormatNum(effect),

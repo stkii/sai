@@ -51,7 +51,7 @@
     <tr>
       <td>因子分析</td>
       <td>因子分析を行います</td>
-      <td>✅ Available</td>
+      <td>🚧 In progress</td>
     </tr>
     <tr>
       <td>信頼性</td>
@@ -61,7 +61,7 @@
     <tr>
       <td>分散分析</td>
       <td>分散分析を行います</td>
-      <td>📝 Planned</td>
+      <td>🚧 In progress</td>
     </tr>
     <tr>
       <td>...</td>

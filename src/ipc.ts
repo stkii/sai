@@ -1,11 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
   AnalysisExecutionRecord,
+  AnalysisLogSummary,
   AnalysisOptions,
   AnalysisResult,
+  AnalysisResultPayload,
   SupportedAnalysisType,
 } from './analysis/api';
 import type { Dataset, ParsedDataTable } from './types';
+import type { PowerAnalysisOptions } from './windows/components/PowerAnalysisDialog';
 
 interface IpcResponse {
   analysisId: string;
@@ -19,6 +22,13 @@ class TauriIpc {
       ? { path: selection.path, sheet: selection.sheet, variables }
       : { path: selection.path, variables };
     return invoke<string>('build_numeric_dataset', payload);
+  }
+
+  async buildStringMixedDataset(selection: Dataset, variables: string[]): Promise<string> {
+    const payload = selection.sheet
+      ? { path: selection.path, sheet: selection.sheet, variables }
+      : { path: selection.path, variables };
+    return invoke<string>('build_string_mixed_dataset', payload);
   }
 
   async clearNumericDatasetCache(): Promise<void> {
@@ -49,6 +59,18 @@ class TauriIpc {
       executedAt: response.loggedAt,
       output: response.result,
     };
+  }
+
+  async runPowerAnalysis(options: PowerAnalysisOptions): Promise<ParsedDataTable> {
+    return invoke<ParsedDataTable>('run_power_analysis', { options });
+  }
+
+  async listAnalysisLogs(limit?: number): Promise<AnalysisLogSummary[]> {
+    return invoke<AnalysisLogSummary[]>('list_analysis_logs', { limit });
+  }
+
+  async getAnalysisLog(id: string): Promise<AnalysisResultPayload | null> {
+    return invoke<AnalysisResultPayload | null>('get_analysis_log', { id });
   }
 }
 

@@ -9,8 +9,9 @@ import type { Dataset } from '../../types';
 
 interface BuildResultPayloadParams {
   execution: AnalysisExecutionRecord;
+  selection: Dataset;
   type: SupportedAnalysisType;
-  label: string;
+  variables: string[];
   options: AnalysisOptions;
 }
 
@@ -47,15 +48,21 @@ export const findMethodLabel = (
 
 export const buildAnalysisResultPayload = ({
   execution,
+  selection,
   type,
-  label,
+  variables,
   options,
 }: BuildResultPayloadParams): AnalysisResultPayload => {
   return {
+    schemaVersion: 1,
     id: execution.executionId,
     type,
-    label,
     timestamp: execution.executedAt,
+    dataset: {
+      path: selection.path,
+      sheet: selection.sheet,
+    },
+    variables: [...variables],
     options,
     result: execution.output,
   };
