@@ -24,7 +24,7 @@ const METHODS: readonly MethodModule[] = ANALYSIS_METHODS;
 
 export const ResultWindow = () => {
   const [summaries, setSummaries] = useState<AnalysisLogSummary[]>([]);
-  const [recordsById, setRecordsById] = useState<Record<string, AnalysisResultPayload>>({});
+  const [selectedRecord, setSelectedRecord] = useState<AnalysisResultPayload | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -38,8 +38,8 @@ export const ResultWindow = () => {
     return new Map(summaries.map((item) => [item.id, item] as const));
   }, [summaries]);
   const selected = useMemo(
-    () => (selectedId ? (recordsById[selectedId] ?? null) : null),
-    [recordsById, selectedId]
+    () => (selectedRecord?.id === selectedId ? selectedRecord : null),
+    [selectedId, selectedRecord]
   );
   const selectedSummary = useMemo(
     () => (selectedId ? (summariesById.get(selectedId) ?? null) : null),
@@ -63,15 +63,16 @@ export const ResultWindow = () => {
             };
             return [nextSummary, ...prev.filter((item) => item.id !== nextSummary.id)];
           });
-          setRecordsById((prev) => ({
-            ...prev,
-            [event.payload.id]: event.payload,
-          }));
+          setSelectedRecord(event.payload);
           setSelectedId(event.payload.id);
           setDetailError(null);
         });
 
-        const initialSummaries = await tauriIpc.listAnalysisLogs();
+        await emitTo<AnalysisReadyPayload>(DATA_WINDOW_LABEL, ANALYSIS_READY_EVENT, {
+          label: RESULT_WINDOW_LABEL,
+        });
+
+        const initialSummaries = await tauriIpc.listSessionAnalysisLogs();
 
         if (!active) {
           if (unlisten) {
@@ -87,12 +88,6 @@ export const ResultWindow = () => {
         if (active) {
           setDetailError(error instanceof Error ? error.message : String(error));
         }
-      } finally {
-        if (active) {
-          await emitTo<AnalysisReadyPayload>(DATA_WINDOW_LABEL, ANALYSIS_READY_EVENT, {
-            label: RESULT_WINDOW_LABEL,
-          });
-        }
       }
     };
 
@@ -107,7 +102,7 @@ export const ResultWindow = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedId || recordsById[selectedId]) {
+    if (!selectedId || selectedRecord?.id === selectedId) {
       return;
     }
 
@@ -116,7 +111,7 @@ export const ResultWindow = () => {
     setDetailError(null);
 
     void tauriIpc
-      .getAnalysisLog(selectedId)
+      .getSessionAnalysisLog(selectedId)
       .then((record) => {
         if (cancelled) {
           return;
@@ -125,10 +120,7 @@ export const ResultWindow = () => {
           setDetailError('分析ログが見つかりません');
           return;
         }
-        setRecordsById((prev) => ({
-          ...prev,
-          [record.id]: record,
-        }));
+        setSelectedRecord(record);
       })
       .catch((error: unknown) => {
         if (cancelled) {
@@ -145,7 +137,7 @@ export const ResultWindow = () => {
     return () => {
       cancelled = true;
     };
-  }, [recordsById, selectedId]);
+  }, [selectedId, selectedRecord]);
 
   const renderResult = () => {
     if (detailLoading && !selected) {

@@ -21,7 +21,10 @@ use crate::domain::analysis_log::model::{
     AnalysisLogRecord,
     AnalysisLogSummary,
 };
-use crate::usecase::analysis_log::ports::AnalysisLogStore;
+use crate::usecase::analysis_log::ports::{
+    AnalysisLogReader,
+    AnalysisLogWriter,
+};
 
 const LOG_FILE_PREFIX: &str = "analysis-log-";
 const LOG_FILE_SUFFIX: &str = ".jsonl";
@@ -132,7 +135,7 @@ impl JsonlAnalysisLogRepository {
     }
 }
 
-impl AnalysisLogStore for JsonlAnalysisLogRepository {
+impl AnalysisLogWriter for JsonlAnalysisLogRepository {
     fn append(&self,
               record: &AnalysisLogRecord)
               -> Result<(), String> {
@@ -161,7 +164,9 @@ impl AnalysisLogStore for JsonlAnalysisLogRepository {
                                                    e)
                                        })
     }
+}
 
+impl AnalysisLogReader for JsonlAnalysisLogRepository {
     fn list(&self,
             limit: Option<usize>)
             -> Result<Vec<AnalysisLogSummary>, String> {
@@ -238,7 +243,10 @@ mod tests {
         AnalysisLogRecord,
     };
     use crate::domain::input::table::ParsedDataTable;
-    use crate::usecase::analysis_log::ports::AnalysisLogStore;
+    use crate::usecase::analysis_log::ports::{
+        AnalysisLogReader,
+        AnalysisLogWriter,
+    };
 
     use super::JsonlAnalysisLogRepository;
 

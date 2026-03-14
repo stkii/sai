@@ -2,21 +2,20 @@
 
 ## Frontend
 
-### `src/` — 簡易版
+### `src/`
 
->  `types.ts`・`components/` (共有モジュール) への依存は全レイヤーから参照されるため省略。
+> `types.ts`・`components/` (共有モジュール) への依存は全レイヤーから参照されるため省略。
 
 ```mermaid
 flowchart TB
-  direction TB
-
   subgraph P["Window"]
     direction TB
 
-    W["windows/**Window.tsx"]
+    DW["DataWindow.tsx"]
+    RW["ResultWindow.tsx"]
     WE["windows/events.ts"]
 
-    subgraph modules
+    subgraph modules[" "]
       direction LR
       WC["windows/components/"]
       WS["windows/services/"]
@@ -27,7 +26,6 @@ flowchart TB
     direction TB
 
     subgraph AP["public"]
-      direction LR
       AA["analysis/api.ts"]
     end
 
@@ -40,27 +38,30 @@ flowchart TB
     end
   end
 
-  subgraph C["Shared"]
-    direction LR
-    CC["components/"]
-    CT["types.ts"]
-  end
-
   subgraph X["Tauri IPC"]
-    direction TB
     I["ipc.ts"]
   end
 
-  %% Window layer
-  W --> AA
-  W --> I
-  W --> WC
-  W --> WS
+  %% DataWindow dependencies
+  DW --> AA
+  DW --> I
+  DW --> WC
+  DW --> WS
+
+  %% ResultWindow dependencies
+  RW --> I
+  RW --> WS
+
+  %% windows/components
   WC --> I
   WC --> AA
-  WC --> WS
+  WC --> AC
+
+  %% windows/services
   WS --> AA
   WS --> WE
+
+  %% ipc → analysis
   I --> AA
 
   %% Analysis internals
@@ -73,107 +74,26 @@ flowchart TB
   AM --> AT
   AR --> AT
 ```
----
-
-### `src/` — 詳細版
-
-```mermaid
-flowchart TB
-  direction TB
-
-  subgraph P["Window"]
-    direction TB
-
-    W["windows/**Window.tsx"]
-    WE["windows/events.ts"]
-
-    subgraph modules
-      direction LR
-      WC["windows/components/"]
-      WS["windows/services/"]
-    end
-  end
-
-  subgraph A["Analysis"]
-    direction TB
-
-    subgraph AP["public"]
-      direction LR
-      AA["analysis/api.ts"]
-    end
-
-    subgraph AI["internals"]
-      direction LR
-      AC["analysis/components/"]
-      AM["analysis/methods/"]
-      AR["analysis/runtime/"]
-      AT["analysis/types.ts"]
-    end
-  end
-
-  subgraph C["Shared"]
-    direction LR
-    CC["components/"]
-    CT["types.ts"]
-  end
-
-  subgraph X["Tauri IPC"]
-    direction TB
-    I["ipc.ts"]
-  end
-
-  W --> AA
-  W --> I
-  W --> CT
-  W --> WC
-  W --> WS
-  WC --> I
-  WS --> AA
-
-  W --> CC
-  WC --> CC
-  AC --> CC
-  AM --> CC
-
-  WC --> CT
-  WC --> AA
-  WC --> WS
-  WS --> CT
-  I --> CT
-  AR --> CT
-
-  WS --> WE
-  I --> AA
-
-  AA --> AC
-  AA --> AM
-  AA --> AR
-  AA --> AT
-  AC --> AT
-  AM --> AC
-  AM --> AT
-  AR --> AT
-  AT --> CT
-
-```
 
 > 補足
 >
 > - 通常分析のモーダルは `analysis/api.ts` を公開面として使い、データセット構築と `run_analysis` を伴うフローに接続されます。
-> - `windows/components/PowerAnalysisDialog.tsx` は通常分析フローとは別系統の小さなツールです。`analysis/api.ts` や `windows/services/` を通らず、`ipc.ts` の `run_power_analysis` を直接呼び、結果はダイアログ内だけに一時表示します。
-> - `windows/ResultWindow.tsx` の分析ログは一時 state を唯一の保存元にはしていません。起動時に `ipc.ts` の `list_analysis_logs` で一覧を読み、選択時に `get_analysis_log` で詳細を読む構成です。
-> - `windows/services/runAnalysisFlow.ts` は分析成功後に結果ウィンドウへ event を送りますが、永続化そのものは frontend ではなく backend 側の JSONL ログで行います。
+> - `windows/components/PowerAnalysisDialog.tsx` は通常分析フローとは別系統の小さなツールです。`analysis/api.ts` や `windows/services/` を通らず、`ipc.ts` の `run_power_analysis` を直接呼び、結果はダイアログ内だけに一時表示します。ただし `analysis/components/ModalFrame` は共有しています (`WC --> AC`)。
+> - `windows/ResultWindow.tsx` の分析ログは起動中セッション専用です。起動時に `ipc.ts` の `list_session_analysis_logs` で一覧を読み、選択時に `get_session_analysis_log` で詳細を読む構成です。
+> - `windows/services/toResultWindow.ts` は結果ウィンドウの `ANALYSIS_READY_EVENT` を待ってから結果 event を送ります。`ready` は `ResultWindow` が event listener を登録した時点で返し、セッション一覧の読込はそのあと非同期で進みます。
+> - `windows/services/runAnalysisFlow.ts` は分析成功後に結果ウィンドウへ event を送ります。永続化とセッション履歴への保存は frontend ではなく backend 側で行います。
 > - `windows/DataWindow.tsx` には分析実行前でも結果ウィンドウを開ける `分析ログ` ボタンがあります。
+
+---
 
 ## Backend
 
 ### `src-tauri/src/` — 簡易版
 
->  `domain/` への依存は全レイヤーから参照されるため省略。Ports の impl 関係は点線で表示。
+> `domain/` への依存は全レイヤーから参照されるため省略。Ports の impl 関係は点線で表示。
 
 ```mermaid
 flowchart TD
-
   subgraph Entry[" Entry / Wiring "]
     direction LR
     M[main.rs] --> L[lib.rs]
@@ -183,14 +103,9 @@ flowchart TD
 
   subgraph Pres[" presentation/commands/ "]
     direction LR
-    C1[build_numeric_dataset]
-    C2[clear_numeric_dataset_cache]
-    C3[get_sheets]
-    C4[parse_table]
-    C5[run_analysis]
-    C6[run_power_analysis]
-    C7[list_analysis_logs]
-    C8[get_analysis_log]
+    CI["Import\nbuild_numeric_dataset\nbuild_string_mixed_dataset\nclear_numeric_dataset_cache\nget_sheets · parse_table"]
+    CA["Analysis\nrun_analysis\nrun_power_analysis"]
+    CL["Log\nlist_analysis_logs\nget_analysis_log\nlist_session_analysis_logs\nget_session_analysis_log"]
   end
 
   subgraph UC[" usecase/ "]
@@ -216,7 +131,9 @@ flowchart TD
       direction TB
       U6[service.rs]
       U7[ports.rs]
+      U8[multi_writer.rs]
       U6 --> U7
+      U8 --> U7
     end
   end
 
@@ -242,6 +159,7 @@ flowchart TD
     subgraph InfraAnalysisLog[" analysis_log/ "]
       direction LR
       I8[jsonl_repository.rs]
+      I9[session_repository.rs]
     end
   end
 
@@ -263,58 +181,53 @@ flowchart TD
       D5[source_kind.rs]
       D6[table.rs]
       D7[numeric.rs]
+      D10[string_mixed.rs]
     end
   end
 
   %% Entry → Presentation
-  PR --> C1
-  PR --> C2
-  PR --> C3
-  PR --> C4
-  PR --> C5
-  PR --> C6
-  PR --> C7
-  PR --> C8
+  PR --> CI
+  PR --> CA
+  PR --> CL
 
   %% Presentation → Usecase
-  C1 --> U1
-  C2 --> U1
-  C3 --> U1
-  C4 --> U1
-  C5 --> U3
-  C6 --> U3
-  C7 --> U6
-  C8 --> U6
+  CI --> U1
+  CA --> U3
+  CL --> U6
 
   %% Ports -.impl.-> Infra
   U2 -.impl.-> I1
   U2 -.impl.-> I3
   U5 -.impl.-> I3
   U5 -.impl.-> I4
-  U3 -.impl.-> I8
   U7 -.impl.-> I8
+  U7 -.impl.-> I9
 
   %% Bootstrap → DI wiring
   B --> U1
   B --> U3
   B --> U6
+  B --> U8
   B --> I1
   B --> I3
   B --> I4
   B --> I8
+  B --> I9
 
-  %% Domain references
+  %% Domain references (non-domain/ deps only)
   U3 --> D8
   U6 --> D8
+  U8 --> D8
   I8 --> D8
+  I9 --> D8
 ```
+
 ---
 
 ### `src-tauri/src/` — 詳細版
 
 ```mermaid
 flowchart TD
-
   subgraph Entry[" Entry / Wiring "]
     direction LR
     M[main.rs] --> L[lib.rs]
@@ -325,6 +238,7 @@ flowchart TD
   subgraph Pres[" presentation/commands/ "]
     direction LR
     C1[build_numeric_dataset]
+    C1b[build_string_mixed_dataset]
     C2[clear_numeric_dataset_cache]
     C3[get_sheets]
     C4[parse_table]
@@ -332,6 +246,8 @@ flowchart TD
     C6[run_power_analysis]
     C7[list_analysis_logs]
     C8[get_analysis_log]
+    C9[list_session_analysis_logs]
+    C10[get_session_analysis_log]
   end
 
   subgraph UC[" usecase/ "]
@@ -339,7 +255,6 @@ flowchart TD
 
     subgraph UCImport[" import/ "]
       direction TB
-
       U1[service.rs]
       U2[ports.rs]
       U1 --> U2
@@ -347,7 +262,6 @@ flowchart TD
 
     subgraph UCAnalysis[" analysis/ "]
       direction TB
-
       U3[service.rs]
       U4["handlers/*"]
       U5[ports.rs]
@@ -357,10 +271,11 @@ flowchart TD
 
     subgraph UCAnalysisLog[" analysis_log/ "]
       direction TB
-
       U6[service.rs]
       U7[ports.rs]
+      U8[multi_writer.rs]
       U6 --> U7
+      U8 --> U7
     end
   end
 
@@ -386,6 +301,7 @@ flowchart TD
     subgraph InfraAnalysisLog[" analysis_log/ "]
       direction LR
       I8[jsonl_repository.rs]
+      I9[session_repository.rs]
     end
   end
 
@@ -407,11 +323,13 @@ flowchart TD
       D5[source_kind.rs]
       D6[table.rs]
       D7[numeric.rs]
+      D10[string_mixed.rs]
     end
   end
 
   %% Entry → Presentation
   P --> C1
+  P --> C1b
   P --> C2
   P --> C3
   P --> C4
@@ -419,9 +337,12 @@ flowchart TD
   P --> C6
   P --> C7
   P --> C8
+  P --> C9
+  P --> C10
 
   %% Presentation → Usecase
   C1 --> U1
+  C1b --> U1
   C2 --> U1
   C3 --> U1
   C4 --> U1
@@ -429,6 +350,8 @@ flowchart TD
   C6 --> U3
   C7 --> U6
   C8 --> U6
+  C9 --> U6
+  C10 --> U6
 
   %% Presentation → Domain
   C5 --> D1
@@ -437,11 +360,14 @@ flowchart TD
   C6 --> D3
   C7 --> D8
   C8 --> D8
+  C9 --> D8
+  C10 --> D8
 
   %% Usecase import → Domain
   U1 --> D5
   U1 --> D6
   U1 --> D7
+  U1 --> D10
 
   %% Usecase analysis → Domain
   U3 --> D1
@@ -451,39 +377,46 @@ flowchart TD
   U4 --> D3
   U4 --> D4
   U6 --> D8
+  U8 --> D8
 
   %% Ports -.impl.-> Infra
   U2 -.impl.-> I1
   U2 -.impl.-> I3
   U5 -.impl.-> I3
   U5 -.impl.-> I4
-  U3 -.impl.-> I8
   U7 -.impl.-> I8
+  U7 -.impl.-> I9
 
   %% Infra → Domain
   I1 --> D5
   I1 --> D6
   I1 --> D7
+  I1 --> D10
   I2 --> D7
+  I2 --> D10
   I5 --> D1
   I5 --> D2
   I5 --> D3
   I6 --> D2
   I8 --> D8
+  I9 --> D8
 
   %% Bootstrap → DI wiring
   B --> U1
   B --> U3
   B --> U6
+  B --> U8
   B --> I1
   B --> I3
   B --> I4
   B --> I8
+  B --> I9
 ```
 
 > 補足
 >
-> - `run_analysis` はデータセットキャッシュを前提に `ImportService` / `DatasetCacheStore` を経由して R 実行へ進み、成功後は `analysis_log/jsonl_repository.rs` に分析ログを 1 行 JSON として追記します。
+> - `run_analysis` はデータセットキャッシュを前提に `ImportService` / `DatasetCacheStore` を経由して R 実行へ進み、成功後は `MultiAnalysisLogWriter` 経由で永続 JSONL ログとセッションメモリログの両方へ同じ `AnalysisLogRecord` を追記します。
 > - `run_power_analysis` は `AnalysisService::run_standalone_analysis()` を呼ぶ独立経路です。`import/` や dataset cache を使わず、`options` だけを `runner.rs` に渡して R CLI の `power` 分岐を実行します。
-> - 分析ログは `app_data_dir()/analysis-logs/` 配下の JSONL ファイル群として保存され、1 レコード 1 行で append されます。ファイルは約 5MB を目安にローテーションします。
-> - `list_analysis_logs` は要約一覧を返し、`get_analysis_log` は個別レコードを返します。ResultWindow はこの read API と `analysis:result` event を併用して、再起動後の復元と直後の反映を両立しています。
+> - 永続ログは `app_data_dir()/analysis-logs/` 配下の JSONL ファイル群として保存され、1 レコード 1 行で append されます。ファイルは約 5MB を目安にローテーションします。
+> - セッションログは `AppState` に束ねられた in-memory repository で、アプリ起動から終了までの分析履歴だけを保持します。ResultWindow はこの session read API と `analysis:result` event を併用して、起動中の全分析を表示します。
+> - `list_analysis_logs` / `get_analysis_log` は永続ログ参照用です。`list_session_analysis_logs` / `get_session_analysis_log` は結果ウィンドウ用で、アプリ終了時に内容は失われます。
