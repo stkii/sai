@@ -49,7 +49,7 @@ export const InteractionBuilder = ({ independentVariables, terms, onChange }: Pr
 
   const handleAdd = () => {
     if (!canAdd) return;
-    const newTerm = selected.map((item) => item.value).sort();
+    const newTerm = selected.map((item) => item.value);
     if (terms.some((t) => termKey(t) === termKey(newTerm))) return;
     onChange([...terms, newTerm]);
     setSelected([]);

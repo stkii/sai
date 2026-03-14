@@ -6,12 +6,11 @@ import { buildExportSectionsFromResult } from '../utils';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;
-const MIN_TABLE_HEIGHT = 160;
 const MAX_TABLE_HEIGHT = 420;
 
 const calcTableHeight = (rowCount: number): number => {
   const rawHeight = (rowCount + 1) * RESULT_ROW_HEIGHT + RESULT_TABLE_BORDER;
-  return Math.max(MIN_TABLE_HEIGHT, Math.min(rawHeight, MAX_TABLE_HEIGHT));
+  return Math.min(rawHeight, MAX_TABLE_HEIGHT);
 };
 
 export const buildRegressionExportSections = (result: AnalysisResult): AnalysisSection[] => {

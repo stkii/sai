@@ -12,7 +12,7 @@ import type { ModalProps } from '../contracts';
 
 type InteractionMode = 'none' | 'auto' | 'manual';
 
-export type RegressionInteractions = 'none' | 'auto' | InteractionTerm[];
+export type RegressionInteractions = 'none' | 'auto' | string[];
 
 type BinaryToggle = 'on' | 'off';
 
@@ -113,7 +113,7 @@ export const RegressionModal = ({
     }
 
     const interactions: RegressionInteractions =
-      interactionMode === 'manual' ? manualTerms : interactionMode;
+      interactionMode === 'manual' ? manualTerms.map((term) => term.join(':')) : interactionMode;
 
     setLoading(true);
     setError(null);

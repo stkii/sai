@@ -14,6 +14,52 @@
   base::paste(quoted, collapse = ":")
 }
 
+# Normalize interaction terms from JSON-deserialized input.
+#
+# jsonlite::fromJSON(simplifyVector = TRUE) converts nested arrays differently
+# depending on shape:
+#   [["A","B"],["A","C"]]  (same-length)   -> character matrix
+#   [["A","B"],["A","B","C"]] (diff-length) -> list of character vectors
+#   [["A","B"]]               (single)      -> character vector c("A", "B")
+#
+# This function normalizes all manual cases to a list of character vectors while
+# preserving the "auto" sentinel used by the UI.
+.NormalizeRegressionInteractions <- function(interactions) {
+  if (is.null(interactions) || identical(interactions, "none")) {
+    return(NULL)
+  }
+  if (identical(interactions, "auto")) {
+    return("auto")
+  }
+
+  if (base::is.matrix(interactions) && base::is.character(interactions)) {
+    return(base::lapply(base::seq_len(base::nrow(interactions)), function(i) {
+      base::as.character(interactions[i, ])
+    }))
+  }
+
+  if (base::is.character(interactions) && !base::is.matrix(interactions)) {
+    if (base::length(interactions) >= 2L && !base::any(base::grepl(":", interactions, fixed = TRUE))) {
+      return(base::list(base::as.character(interactions)))
+    }
+
+    terms <- base::strsplit(interactions, ":", fixed = TRUE)
+    if (base::any(base::lengths(terms) < 2L)) {
+      StopWithErrCode("ERR-920")
+    }
+    return(terms)
+  }
+
+  if (base::is.list(interactions)) {
+    if (base::length(interactions) == 0L) {
+      return(NULL)
+    }
+    return(base::lapply(interactions, base::as.character))
+  }
+
+  StopWithErrCode("ERR-920")
+}
+
 # Compute VIF for each predictor variable
 # Each variable is regressed on all other predictors to get R², then VIF = 1/(1-R²)
 .ComputeVIFs <- function(df, main_vars, interaction_terms = NULL) {
@@ -101,8 +147,12 @@
     }
     terms
   } else if (is.list(interactions) && length(interactions) > 0) {
-    # Manual specification
-    sapply(interactions, function(x) paste(x, collapse = ":"))
+    # Manual specification — reorder components to match the order in
+    # `independents` so that term names align with R's coefficient naming.
+    sapply(interactions, function(x) {
+      ordered <- x[base::order(base::match(x, independents))]
+      base::paste(ordered, collapse = ":")
+    })
   } else {
     NULL
   }
@@ -293,21 +343,7 @@ RunRegression <- function(df,
     StopWithErrCode("ERR-920")
   }
 
-  inter_norm <- if (is.null(interactions) || identical(interactions, "none")) {
-    NULL
-  } else if (identical(interactions, "auto")) {
-    "auto"
-  } else if (is.character(interactions) && base::length(interactions) > 0) {
-    terms <- base::strsplit(interactions, ":", fixed = TRUE)
-    if (base::any(base::lengths(terms) < 2L)) {
-      StopWithErrCode("ERR-920")
-    }
-    terms
-  } else if (is.list(interactions)) {
-    if (base::length(interactions) == 0L) NULL else interactions
-  } else {
-    StopWithErrCode("ERR-920")
-  }
+  inter_norm <- .NormalizeRegressionInteractions(interactions)
 
   if (is.list(inter_norm) && base::length(inter_norm) > 0) {
     inter_vars <- base::unique(base::unlist(inter_norm, use.names = FALSE))
