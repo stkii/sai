@@ -9,12 +9,15 @@
 }
 
 .QuoteInteractionTerm <- function(term) {
-  components <- base::strsplit(base::as.character(term), ":", fixed = TRUE)[[1]]
+  components <- base::as.character(term)
+  if (base::length(components) == 1L && base::grepl(":", components[[1]], fixed = TRUE)) {
+    components <- base::strsplit(components[[1]], ":", fixed = TRUE)[[1]]
+  }
   quoted <- base::vapply(components, .QuoteFormulaName, base::character(1))
   base::paste(quoted, collapse = ":")
 }
 
-# Normalize interaction terms from JSON-deserialized input.
+# Normalize manual interaction terms from JSON-deserialized input.
 #
 # jsonlite::fromJSON(simplifyVector = TRUE) converts nested arrays differently
 # depending on shape:
@@ -22,81 +25,150 @@
 #   [["A","B"],["A","B","C"]] (diff-length) -> list of character vectors
 #   [["A","B"]]               (single)      -> character vector c("A", "B")
 #
-# This function normalizes all manual cases to a list of character vectors while
-# preserving the "auto" sentinel used by the UI.
-.NormalizeRegressionInteractions <- function(interactions) {
-  if (is.null(interactions) || identical(interactions, "none")) {
+.ValidateRegressionInteractionTerms <- function(terms) {
+  if (is.null(terms) || base::length(terms) == 0L) {
     return(NULL)
   }
-  if (identical(interactions, "auto")) {
+
+  normalized <- base::lapply(terms, function(term) {
+    components <- base::as.character(term)
+    if (base::length(components) < 2L ||
+        base::any(base::is.na(components)) ||
+        base::any(!base::nzchar(components))) {
+      StopWithErrCode("ERR-920")
+    }
+    components
+  })
+
+  if (base::length(normalized) == 0L) {
+    return(NULL)
+  }
+
+  normalized
+}
+
+.NormalizeRegressionManualTerms <- function(terms) {
+  if (is.null(terms)) {
+    return(NULL)
+  }
+
+  if (base::is.matrix(terms) && base::is.character(terms)) {
+    return(.ValidateRegressionInteractionTerms(base::lapply(base::seq_len(base::nrow(terms)), function(i) {
+      base::as.character(terms[i, ])
+    })))
+  }
+
+  if (base::is.character(terms) && !base::is.matrix(terms)) {
+    return(.ValidateRegressionInteractionTerms(base::list(base::as.character(terms))))
+  }
+
+  if (base::is.list(terms)) {
+    return(.ValidateRegressionInteractionTerms(base::lapply(terms, base::as.character)))
+  }
+
+  StopWithErrCode("ERR-920")
+}
+
+# Normalize interaction config from JSON-deserialized input.
+#
+# New payloads are structured as:
+#   list(mode = "none" | "auto" | "manual", terms = list(...))
+#
+# Old payloads are still accepted for compatibility:
+#   "none" | "auto" | c("A:B", "A:C") | list(c("A", "B"))
+.NormalizeRegressionInteractions <- function(interactions) {
+  if (is.null(interactions)) {
+    return(NULL)
+  }
+
+  if (base::is.list(interactions) && !is.null(interactions[["mode"]])) {
+    mode_values <- base::as.character(interactions[["mode"]])
+    if (base::length(mode_values) == 0L || !base::nzchar(mode_values[[1]])) {
+      StopWithErrCode("ERR-920")
+    }
+    mode <- mode_values[[1]]
+
+    if (base::identical(mode, "none")) {
+      return(NULL)
+    }
+    if (base::identical(mode, "auto")) {
+      return("auto")
+    }
+    if (base::identical(mode, "manual")) {
+      return(.NormalizeRegressionManualTerms(interactions[["terms"]]))
+    }
+
+    StopWithErrCode("ERR-920")
+  }
+
+  if (base::identical(interactions, "none")) {
+    return(NULL)
+  }
+  if (base::identical(interactions, "auto")) {
     return("auto")
   }
 
   if (base::is.matrix(interactions) && base::is.character(interactions)) {
-    return(base::lapply(base::seq_len(base::nrow(interactions)), function(i) {
+    return(.ValidateRegressionInteractionTerms(base::lapply(base::seq_len(base::nrow(interactions)), function(i) {
       base::as.character(interactions[i, ])
-    }))
+    })))
   }
 
   if (base::is.character(interactions) && !base::is.matrix(interactions)) {
     if (base::length(interactions) >= 2L && !base::any(base::grepl(":", interactions, fixed = TRUE))) {
-      return(base::list(base::as.character(interactions)))
+      return(.ValidateRegressionInteractionTerms(base::list(base::as.character(interactions))))
     }
 
     terms <- base::strsplit(interactions, ":", fixed = TRUE)
-    if (base::any(base::lengths(terms) < 2L)) {
-      StopWithErrCode("ERR-920")
-    }
-    return(terms)
+    return(.ValidateRegressionInteractionTerms(terms))
   }
 
   if (base::is.list(interactions)) {
-    if (base::length(interactions) == 0L) {
-      return(NULL)
-    }
-    return(base::lapply(interactions, base::as.character))
+    return(.ValidateRegressionInteractionTerms(base::lapply(interactions, base::as.character)))
   }
 
   StopWithErrCode("ERR-920")
 }
 
 # Compute VIF for each predictor variable
-# Each variable is regressed on all other predictors to get R², then VIF = 1/(1-R²)
-.ComputeVIFs <- function(df, main_vars, interaction_terms = NULL) {
-  all_vars <- main_vars
+# Each predictor column in the model matrix is regressed on the remaining
+# predictor columns to get R², then VIF = 1 / (1 - R²).
+.ComputeVIFs <- function(fit) {
+  design_matrix <- stats::model.matrix(fit)
+  predictor_names <- base::colnames(design_matrix)
 
-  # Create interaction columns if needed
-  if (!is.null(interaction_terms) && base::length(interaction_terms) > 0) {
-    for (term in interaction_terms) {
-      components <- base::strsplit(term, ":")[[1]]
-      col_data <- df[[components[1]]]
-      for (comp in components[-1]) {
-        col_data <- col_data * df[[comp]]
-      }
-      df[[term]] <- col_data
-      all_vars <- base::c(all_vars, term)
-    }
+  if (is.null(predictor_names) || base::length(predictor_names) == 0L) {
+    return(base::setNames(base::numeric(0), base::character(0)))
   }
 
-  n_vars <- base::length(all_vars)
+  non_intercept <- predictor_names != "(Intercept)"
+  design_matrix <- design_matrix[, non_intercept, drop = FALSE]
+  predictor_names <- base::colnames(design_matrix)
+
+  n_vars <- base::ncol(design_matrix)
+  if (is.null(predictor_names) || n_vars == 0L) {
+    return(base::setNames(base::numeric(0), base::character(0)))
+  }
+
   if (n_vars < 2L) {
-    # Only one predictor, VIF is undefined (return 1 or NA)
-    vifs <- base::setNames(1, all_vars)
+    vifs <- base::setNames(1, predictor_names)
     return(vifs)
   }
 
-  vifs <- base::numeric(n_vars)
-  base::names(vifs) <- all_vars
+  design_df <- base::as.data.frame(design_matrix, check.names = FALSE, stringsAsFactors = FALSE)
+  safe_names <- base::paste0(".pred_", base::seq_len(n_vars))
+  base::names(design_df) <- safe_names
 
-  for (var in all_vars) {
-    other_vars <- base::setdiff(all_vars, var)
-    # Backtick-quote variable names to handle special characters safely.
-    var_quoted <- .QuoteFormulaName(var)
-    other_vars_quoted <- base::vapply(other_vars, .QuoteFormulaName, base::character(1))
-    formula_str <- base::paste(var_quoted, "~", base::paste(other_vars_quoted, collapse = " + "))
-    fit <- stats::lm(stats::as.formula(formula_str), data = df, na.action = stats::na.omit)
-    r_sq <- base::summary(fit)$r.squared
-    vifs[[var]] <- 1 / (1 - r_sq)
+  vifs <- base::numeric(n_vars)
+  base::names(vifs) <- predictor_names
+
+  for (i in base::seq_along(safe_names)) {
+    current <- safe_names[[i]]
+    other_vars <- safe_names[-i]
+    formula_str <- base::paste(current, "~", base::paste(other_vars, collapse = " + "))
+    vif_fit <- stats::lm(stats::as.formula(formula_str), data = design_df, na.action = stats::na.omit)
+    r_sq <- base::summary(vif_fit)$r.squared
+    vifs[[predictor_names[[i]]]] <- 1 / (1 - r_sq)
   }
 
   return(vifs)
@@ -136,22 +208,22 @@
     if (n_vars > 3L) {
       base::stop("交互作用の自動生成は独立変数3つまでです")
     }
-    terms <- character(0)
+    terms <- base::list()
     # 2-way interactions
     if (n_vars >= 2L) {
-      terms <- c(terms, combn(independents, 2, function(x) paste(x, collapse = ":"), simplify = TRUE))
+      terms <- base::c(terms, utils::combn(independents, 2, simplify = FALSE))
     }
     # 3-way interaction
     if (n_vars == 3L) {
-      terms <- c(terms, combn(independents, 3, function(x) paste(x, collapse = ":"), simplify = TRUE))
+      terms <- base::c(terms, utils::combn(independents, 3, simplify = FALSE))
     }
     terms
   } else if (is.list(interactions) && length(interactions) > 0) {
     # Manual specification — reorder components to match the order in
     # `independents` so that term names align with R's coefficient naming.
-    sapply(interactions, function(x) {
+    base::lapply(interactions, function(x) {
       ordered <- x[base::order(base::match(x, independents))]
-      base::paste(ordered, collapse = ":")
+      base::as.character(ordered)
     })
   } else {
     NULL
@@ -184,7 +256,7 @@
   anova_result <- anova(fit)
 
   # Compute VIFs for predictors (using the same df, post-centering if applicable)
-  vifs <- .ComputeVIFs(df, independents, interaction_terms)
+  vifs <- .ComputeVIFs(fit)
 
   return(
     list(
@@ -309,7 +381,7 @@
 # - df (data.frame): numeric dataset
 # - dependent (character): dependent variable name
 # - independent (character vector): independent variable names
-# - interactions (character or list): "auto" | "none" | list of pairs
+# - interactions (list): list(mode = "none" | "auto" | "manual", terms = list(...))
 # - intercept (logical): whether to include intercept (default TRUE)
 # - center (logical): whether to center independent variables (default FALSE)
 #

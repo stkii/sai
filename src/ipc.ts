@@ -72,6 +72,14 @@ class TauriIpc {
   async getAnalysisLog(id: string): Promise<AnalysisResultPayload | null> {
     return invoke<AnalysisResultPayload | null>('get_analysis_log', { id });
   }
+
+  async listSessionAnalysisLogs(limit?: number): Promise<AnalysisLogSummary[]> {
+    return invoke<AnalysisLogSummary[]>('list_session_analysis_logs', { limit });
+  }
+
+  async getSessionAnalysisLog(id: string): Promise<AnalysisResultPayload | null> {
+    return invoke<AnalysisResultPayload | null>('get_session_analysis_log', { id });
+  }
 }
 
 export const tauriIpc = new TauriIpc();

@@ -20,15 +20,15 @@ use crate::domain::analysis_log::model::{
     AnalysisDatasetRef,
     AnalysisLogRecord,
 };
-use crate::usecase::analysis_log::ports::AnalysisLogStore;
+use crate::usecase::analysis_log::ports::AnalysisLogWriter;
 
-pub(crate) struct AnalysisService<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogStore> {
+pub(crate) struct AnalysisService<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogWriter> {
     cache: C,
     runner: R,
     log_store: L,
 }
 
-impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogStore> AnalysisService<C, R, L> {
+impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogWriter> AnalysisService<C, R, L> {
     pub(crate) fn new(cache: C,
                       runner: R,
                       log_store: L)
