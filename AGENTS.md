@@ -13,6 +13,7 @@ It allows users to perform data analysis through point-and-click operations with
 4. File/folder deletion - Must explain impact and get user consent before deleting.
 5. After writing TypeScript, run `pnpm fixall`, `pnpm check`, and `pnpm ts` at the repo root to catch TypeScript errors. After writing Rust, run `cargo +nightly fmt`, `cargo clippy --fix`, and `cargo check` in `src-tauri/` to verify formatting, linting, and errors, then fix any issues found.
 6. `<!ref-docs>` directive - When user instructions include this tag, consult the documentation in `docs/llms-txt/` and base your opinions, code, or other work on that material.
+7. When editing `src-r/cli.R` or the R execution boundary, reserve `stdout` for the final JSON payload only. Do not allow `renv`, package startup messages, debug prints, or analysis-side logging to leak to `stdout`; capture them or send them to `stderr`. If this area is changed, verify that the CLI emits clean JSON with no leading output.
 
 ## Coding Standard & Naming Conventions
 
