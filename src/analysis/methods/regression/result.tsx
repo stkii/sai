@@ -97,6 +97,7 @@ export const renderRegressionResult = (result: AnalysisResult): ReactNode => {
               table={table}
               height={calcTableHeight(table.rows.length)}
               showRowIndex={false}
+              virtualize={false}
             />
             {table.note ? (
               <Text fontSize="sm" color="gray.600">

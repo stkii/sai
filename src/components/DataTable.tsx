@@ -1,4 +1,12 @@
-import { Paper, Table, TableCell, TableContainer, TableRow } from '@mui/material';
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
 import { forwardRef } from 'react';
 import { type TableComponents, TableVirtuoso } from 'react-virtuoso';
 import type { ParsedCell, ParsedDataTable } from '../types';
@@ -20,6 +28,7 @@ interface Props {
   emptyMessage?: string;
   height?: number | string;
   showRowIndex?: boolean;
+  virtualize?: boolean;
 }
 
 const CELL_WIDTH = 80 as const;
@@ -44,6 +53,7 @@ export const DataTable = ({
   emptyMessage = 'No data',
   height = 400,
   showRowIndex = true,
+  virtualize = true,
 }: Props) => {
   if (!table) {
     return (
@@ -65,27 +75,63 @@ export const DataTable = ({
   const headers = showRowIndex ? ['ID', ...table.headers] : table.headers;
   const minTableWidth = Math.max(headers.length * CELL_WIDTH, 600);
   const rows = table.rows;
+  const tableSx = {
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    minWidth: minTableWidth,
+    tableLayout: 'fixed',
+  } as const;
+  const scrollerSx = {
+    border: '1px solid',
+    borderColor: 'divider',
+    overflowX: 'auto',
+  } as const;
+
+  if (!virtualize) {
+    const rowKeyCounts = new Map<string, number>();
+
+    return (
+      <TableContainer
+        component={Paper}
+        sx={{
+          ...scrollerSx,
+          maxHeight: height,
+          width: '100%',
+        }}
+      >
+        <Table stickyHeader sx={tableSx}>
+          <TableHead>{createHeaderRow(headers)}</TableHead>
+          <TableBody>
+            {rows.map((row, rowIndex) => {
+              const baseKey = buildRowKey(row);
+              const duplicateCount = rowKeyCounts.get(baseKey) ?? 0;
+              rowKeyCounts.set(baseKey, duplicateCount + 1);
+              const rowKey = duplicateCount === 0 ? baseKey : `${baseKey}:${duplicateCount}`;
+
+              return (
+                <TableRow key={rowKey}>
+                  {createBodyCells({
+                    dataOffset,
+                    headers,
+                    row,
+                    rowIndex,
+                    showRowIndex,
+                    boldValueThreshold,
+                  })}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  }
 
   const VirtuosoTableComponents: TableComponents<RowData> = {
     Scroller: forwardRef<HTMLDivElement>((props, ref) => (
-      <TableContainer
-        component={Paper}
-        {...props}
-        ref={ref}
-        sx={{ border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}
-      />
+      <TableContainer component={Paper} {...props} ref={ref} sx={scrollerSx} />
     )),
-    Table: (props) => (
-      <Table
-        {...props}
-        sx={{
-          borderCollapse: 'separate',
-          borderSpacing: 0,
-          minWidth: minTableWidth,
-          tableLayout: 'fixed',
-        }}
-      />
-    ),
+    Table: (props) => <Table {...props} sx={tableSx} />,
   };
 
   return (
@@ -186,4 +232,8 @@ const showCellValue = (value: ParsedCell) => {
     return '';
   }
   return '';
+};
+
+const buildRowKey = (row: RowData) => {
+  return row.map((cell) => showCellValue(cell)).join('\u001f');
 };
