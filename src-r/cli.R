@@ -320,7 +320,8 @@ Main <- function() {
     if (!base::nzchar(Sys.getenv("RENV_PROJECT"))) {
       Sys.setenv(RENV_PROJECT = script_dir)
     }
-    base::source(renv_activate, local = FALSE)
+    # Reserve stdout for the final JSON payload only.
+    invisible(utils::capture.output(base::source(renv_activate, local = FALSE)))
   }
 
   error_path <- base::file.path(r_dir, "error.R")
@@ -382,7 +383,10 @@ Main <- function() {
 
     ctx <- resolved_options
 
-    result <- spec$run(df, ctx)
+    result <- NULL
+    utils::capture.output({
+      result <- spec$run(df, ctx)
+    })
     output_payload <- .BuildOutputPayload(spec$output_kind, result)
 
     output <- jsonlite::toJSON(output_payload, auto_unbox = TRUE, na = "null")

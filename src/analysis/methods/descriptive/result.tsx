@@ -31,7 +31,12 @@ export const renderDescriptiveResult = (result: AnalysisResult): ReactNode => {
       <Text fontWeight="medium" fontSize="sm">
         {section.label}
       </Text>
-      <DataTable table={table} height={calcTableHeight(table.rows.length)} showRowIndex={false} />
+      <DataTable
+        table={table}
+        height={calcTableHeight(table.rows.length)}
+        showRowIndex={false}
+        virtualize={false}
+      />
       {table.note ? (
         <Text fontSize="sm" color="gray.600">
           {table.note}

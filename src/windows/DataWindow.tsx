@@ -20,7 +20,7 @@ import { PowerAnalysisDialog } from './components/PowerAnalysisDialog';
 import { createAnalyzeService } from './services/analyzeService';
 import { buildMethodItems } from './services/displayFormatter';
 import { runAnalysisFlow } from './services/runAnalysisFlow';
-import { openResultWindow } from './services/toResultWindow';
+import { openHistoryWindow } from './services/toHistoryWindow';
 
 const METHODS: readonly MethodModule[] = ANALYSIS_METHODS;
 
@@ -88,7 +88,7 @@ export const DataWindow = () => {
         <HStack gap="2" flexWrap="wrap">
           <DataImportDialog onLoaded={handleLoaded} />
           <PowerAnalysisDialog />
-          <Button variant="outline" onClick={() => void openResultWindow()}>
+          <Button variant="outline" onClick={() => void openHistoryWindow()}>
             分析ログ
           </Button>
           <MethodSelector

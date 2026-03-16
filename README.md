@@ -51,7 +51,7 @@
     <tr>
       <td>因子分析</td>
       <td>因子分析を行います</td>
-      <td>🚧 In progress</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>信頼性</td>
@@ -93,7 +93,7 @@
       <td>
         <a href="https://cran.r-project.org/web/packages/EFAtools/index.html">EFAtools</a>
       </td>
-      <td>ー</td>
+      <td>因子の回転</td>
     </tr>
     <tr>
       <td>検出力分析</td>

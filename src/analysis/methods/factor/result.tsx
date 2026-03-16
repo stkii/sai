@@ -44,6 +44,7 @@ export const renderFactorResult = (result: AnalysisResult): ReactNode => {
               height={calcTableHeight(table.rows.length)}
               showRowIndex={false}
               boldValueThreshold={boldValueThreshold}
+              virtualize={false}
             />
             {table.note ? (
               <Text fontSize="sm" color="gray.600">

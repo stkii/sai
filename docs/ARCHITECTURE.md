@@ -13,6 +13,7 @@ flowchart TB
 
     DW["DataWindow.tsx"]
     RW["ResultWindow.tsx"]
+    HW["HistoryWindow.tsx"]
     WE["windows/events.ts"]
 
     subgraph modules[" "]
@@ -38,6 +39,22 @@ flowchart TB
     end
   end
 
+  subgraph AL["Analysis Log"]
+    direction TB
+
+    subgraph ALP["public"]
+      ALA["analysis-log/api.ts"]
+    end
+
+    subgraph ALI["internals"]
+      direction LR
+      ALC["analysis-log/components/"]
+      ALS["analysis-log/state/"]
+      ALV["analysis-log/services/"]
+      ALT["analysis-log/types.ts"]
+    end
+  end
+
   subgraph X["Tauri IPC"]
     I["ipc.ts"]
   end
@@ -49,20 +66,25 @@ flowchart TB
   DW --> WS
 
   %% ResultWindow dependencies
-  RW --> I
+  RW --> ALA
+  RW --> WE
   RW --> WS
+  HW --> ALA
 
   %% windows/components
   WC --> I
   WC --> AA
   WC --> AC
+  WC --> WS
 
   %% windows/services
+  WS --> I
   WS --> AA
   WS --> WE
 
   %% ipc → analysis
   I --> AA
+  I --> WC
 
   %% Analysis internals
   AA --> AC
@@ -73,16 +95,34 @@ flowchart TB
   AM --> AC
   AM --> AT
   AR --> AT
+
+  %% Analysis log feature
+  ALA --> ALC
+  ALA --> ALT
+  ALC --> AA
+  ALC --> ALS
+  ALC --> ALV
+  ALC --> ALT
+  ALS --> I
+  ALS --> AA
+  ALS --> WE
+  ALS --> ALV
+  ALS --> ALT
+  ALV --> AA
+  ALV --> ALT
+  ALT --> AA
 ```
 
 > 補足
 >
 > - 通常分析のモーダルは `analysis/api.ts` を公開面として使い、データセット構築と `run_analysis` を伴うフローに接続されます。
 > - `windows/components/PowerAnalysisDialog.tsx` は通常分析フローとは別系統の小さなツールです。`analysis/api.ts` や `windows/services/` を通らず、`ipc.ts` の `run_power_analysis` を直接呼び、結果はダイアログ内だけに一時表示します。ただし `analysis/components/ModalFrame` は共有しています (`WC --> AC`)。
-> - `windows/ResultWindow.tsx` の分析ログは起動中セッション専用です。起動時に `ipc.ts` の `list_session_analysis_logs` で一覧を読み、選択時に `get_session_analysis_log` で詳細を読む構成です。
-> - `windows/services/toResultWindow.ts` は結果ウィンドウの `ANALYSIS_READY_EVENT` を待ってから結果 event を送ります。`ready` は `ResultWindow` が event listener を登録した時点で返し、セッション一覧の読込はそのあと非同期で進みます。
-> - `windows/services/runAnalysisFlow.ts` は分析成功後に結果ウィンドウへ event を送ります。永続化とセッション履歴への保存は frontend ではなく backend 側で行います。
-> - `windows/DataWindow.tsx` には分析実行前でも結果ウィンドウを開ける `分析ログ` ボタンがあります。
+> - `windows/ResultWindow.tsx` と `windows/HistoryWindow.tsx` はどちらも薄い shell で、分析ログの一覧表示・詳細表示・検索は `analysis-log/api.ts` 配下の feature に寄せています。
+> - `analysis-log/state/useAnalysisLogBrowser.ts` は source を設定で切り替えられる共通 state です。`ResultWindow` では `session` だけを有効にして `analysis:result` event と `list_session_analysis_logs` / `get_session_analysis_log` を併用し、`HistoryWindow` では `persistent` だけを有効にして `list_analysis_logs` / `get_analysis_log` から過去ログを表示します。
+> - `windows/services/toResultWindow.ts` は結果ウィンドウの `ANALYSIS_READY_EVENT` を待ってから結果 event を送ります。`ready` は `ResultWindow` 側の `analysis-log` feature が event listener を登録した時点で返り、そのあと session 一覧の読込が非同期で進みます。
+> - `windows/services/toHistoryWindow.ts` は履歴専用ウィンドウを開くだけで、live event の待機は行いません。
+> - 新しい分析結果の配送は `analysis-log` feature ではなく `windows/services/runAnalysisFlow.ts` と `windows/services/toResultWindow.ts` が担当します。`analysis-log` は受け取った結果の表示と履歴参照を担当します。
+> - `windows/DataWindow.tsx` の `分析ログ` ボタンは `HistoryWindow` を開きます。新しい分析結果は `runAnalysisFlow.ts` 経由で `ResultWindow` に送られるので、履歴と今回の結果を同時に見比べられます。
 
 ---
 
@@ -418,5 +458,5 @@ flowchart TD
 > - `run_analysis` はデータセットキャッシュを前提に `ImportService` / `DatasetCacheStore` を経由して R 実行へ進み、成功後は `MultiAnalysisLogWriter` 経由で永続 JSONL ログとセッションメモリログの両方へ同じ `AnalysisLogRecord` を追記します。
 > - `run_power_analysis` は `AnalysisService::run_standalone_analysis()` を呼ぶ独立経路です。`import/` や dataset cache を使わず、`options` だけを `runner.rs` に渡して R CLI の `power` 分岐を実行します。
 > - 永続ログは `app_data_dir()/analysis-logs/` 配下の JSONL ファイル群として保存され、1 レコード 1 行で append されます。ファイルは約 5MB を目安にローテーションします。
-> - セッションログは `AppState` に束ねられた in-memory repository で、アプリ起動から終了までの分析履歴だけを保持します。ResultWindow はこの session read API と `analysis:result` event を併用して、起動中の全分析を表示します。
-> - `list_analysis_logs` / `get_analysis_log` は永続ログ参照用です。`list_session_analysis_logs` / `get_session_analysis_log` は結果ウィンドウ用で、アプリ終了時に内容は失われます。
+> - セッションログは `AppState` に束ねられた in-memory repository で、アプリ起動から終了までの分析履歴だけを保持します。`ResultWindow` はこの session read API と `analysis:result` event を使って起動中の結果を追従します。
+> - `list_analysis_logs` / `get_analysis_log` は `HistoryWindow` の永続ログ参照用です。`list_session_analysis_logs` / `get_session_analysis_log` は `ResultWindow` の同一セッション内即時反映用で、アプリ終了時に内容は失われます。
