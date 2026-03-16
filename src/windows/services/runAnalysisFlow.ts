@@ -4,8 +4,8 @@ import type {
   DatasetKind,
   SupportedAnalysisType,
 } from '../../analysis/api';
+import { tauriIpc } from '../../ipc';
 import type { Dataset } from '../../types';
-import { buildAnalysisResultPayload } from './displayFormatter';
 import { emitResultToResultWindow, openResultWindow } from './toResultWindow';
 
 interface AnalyzeServiceLike {
@@ -47,13 +47,12 @@ export const runAnalysisFlow = async ({
   if (!selection) {
     throw new Error('データが読み込まれていません');
   }
-  const payload = buildAnalysisResultPayload({
-    execution,
-    selection,
-    type,
-    variables,
-    options,
-  });
+  const payload =
+    (await tauriIpc.getSessionAnalysisLog(execution.executionId)) ??
+    (await tauriIpc.getAnalysisLog(execution.executionId));
+  if (!payload) {
+    throw new Error('分析ログの取得に失敗しました');
+  }
   await openResultWindow();
   await emitResultToResultWindow(payload);
   onCompleted();

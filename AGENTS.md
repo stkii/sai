@@ -31,6 +31,10 @@ Do not implement fallbacks or logic that change a user's analysis results in a w
 
 Example: If `corr_use` is invalid, silently defaulting to `"all.obs"` alters the analysis without user awareness and is prohibited.
 
+## Project-Specific Review Notes
+
+- Power analysis results are intentionally not persisted in the analysis log. Treat this as the current product specification, not a defect, unless the user explicitly asks to change that behavior.
+
 ## Agent Communication Policy
 
 - Thinking (internal reasoning, planning, notes) may be in Japanese or English.
