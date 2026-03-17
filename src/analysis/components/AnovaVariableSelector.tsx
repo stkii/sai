@@ -89,7 +89,7 @@ export const AnovaVariableSelector = ({ variables, onChange }: Props) => {
             backwardDisabled={state.selectedFactors.length === 0}
           />
           <TargetPanel
-            label="因子"
+            label="主効果"
             contentRef={state.factorsContentRef}
             collection={state.factors}
             value={state.selectedFactors.map((i) => i.value)}

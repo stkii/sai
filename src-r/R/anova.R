@@ -36,11 +36,11 @@
 #   [["A","B"]]               (single)      → character vector  c("A","B")
 #
 # This function normalizes all cases to a list of character vectors,
-# or returns "factor_only" unchanged.
+# or returns "all" unchanged.
 #
 .NormalizeInteractions <- function(interactions) {
-  if (base::identical(interactions, "factor_only")) {
-    return("factor_only")
+  if (base::identical(interactions, "all") || base::identical(interactions, "factor_only")) {
+    return("all")
   }
 
   # Same-length inner arrays → character matrix
@@ -69,7 +69,7 @@
 # Build an ANOVA formula string from factors, covariates, and interaction spec.
 #
 # interactions (after normalization):
-#   "factor_only" — factors joined with *, covariates added with +
+#   "all" — factors joined with *, covariates added with +
 #   list of character vectors — main effects for all variables, then each
 #     vector becomes a : interaction term
 #
@@ -78,7 +78,7 @@
   factor_terms <- base::vapply(factors, .QuoteTerm, base::character(1))
   cov_terms <- base::vapply(covariates, .QuoteTerm, base::character(1))
 
-  if (base::identical(interactions, "factor_only")) {
+  if (base::identical(interactions, "all")) {
     # Y ~ A * B + C  (factors get full interaction, covariates main-effect only)
     parts <- base::character(0)
     if (base::length(factor_terms) > 0L) {
@@ -113,7 +113,7 @@
 #   - covariates → as.numeric (continuous control variables)
 #
 .Anova <- function(df, dependent, factors = character(0), covariates = character(0),
-                   interactions = "factor_only") {
+                   interactions = "all") {
   IsDataFrame(df)
 
   # Ensure dependent is numeric and reject invalid coercions explicitly.
@@ -196,13 +196,13 @@
 # - independent (character vector): all independent variable names
 # - factors (character vector): variables to convert to factor (subset of independent)
 # - covariates (character vector): covariate variable names (subset of independent)
-# - interactions: "factor_only" (default) or list/matrix/vector of interaction terms
+# - interactions: "all" (default) or list/matrix/vector of interaction terms
 #
 # Returns:
 # - ParsedDataTable-like list(headers, rows)
 #
 RunAnova <- function(df, dependent = NULL, independent = NULL, factors = NULL,
-                     covariates = NULL, interactions = "factor_only") {
+                     covariates = NULL, interactions = "all") {
   if (is.null(dependent) || !base::nzchar(dependent)) {
     base::stop("従属変数が指定されていません")
   }

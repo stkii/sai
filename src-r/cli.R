@@ -272,7 +272,7 @@
         list(name = "independent", payload_keys = c("independent"), cli_key = NULL, default = NULL),
         list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL),
         list(name = "covariates", payload_keys = c("covariates"), cli_key = NULL, default = NULL),
-        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "factor_only")
+        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "all")
       ),
       run = function(df, ctx) {
         RunAnova(df,

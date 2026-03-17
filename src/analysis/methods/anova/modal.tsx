@@ -10,9 +10,9 @@ import { ModalFrame } from '../../components/ModalFrame';
 import type { AnalysisOptions } from '../../types';
 import type { ModalProps } from '../contracts';
 
-type AnovaInteractionMode = 'factor_only' | 'manual';
+type AnovaInteractionMode = 'all' | 'manual';
 
-export type AnovaInteractions = 'factor_only' | InteractionTerm[];
+export type AnovaInteractions = 'all' | InteractionTerm[];
 
 export interface AnovaOptions extends AnalysisOptions {
   dependent: string;
@@ -23,7 +23,7 @@ export interface AnovaOptions extends AnalysisOptions {
 }
 
 const INTERACTION_MODE_OPTIONS = [
-  { label: '因子間のみ（標準）', value: 'factor_only' },
+  { label: '全て投入', value: 'all' },
   { label: '作成して投入', value: 'manual' },
 ] as const satisfies ReadonlyArray<{ label: string; value: AnovaInteractionMode }>;
 
@@ -33,7 +33,7 @@ const DEFAULT_SELECTION: AnovaVariableSelection = {
   covariates: [],
 };
 
-const DEFAULT_INTERACTION_MODE: AnovaInteractionMode = 'factor_only';
+const DEFAULT_INTERACTION_MODE: AnovaInteractionMode = 'all';
 
 export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<AnovaOptions>) => {
   const [selection, setSelection] = useState<AnovaVariableSelection>(DEFAULT_SELECTION);
