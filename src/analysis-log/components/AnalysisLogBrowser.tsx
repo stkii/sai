@@ -2,6 +2,7 @@ import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { useMemo } from 'react';
 import type { MethodModule, SupportedAnalysisType } from '../../analysis/api';
 import { buildSelectedLabel, findMethodLabel } from '../services/display';
+import { formatAnalysisOptions } from '../services/formatOptions';
 import { useAnalysisLogBrowser } from '../state/useAnalysisLogBrowser';
 import { type AnalysisLogBrowserOptions, LOG_SOURCE_LABEL, PERSISTENT_LOG_LIMIT } from '../types';
 import { AnalysisLogDetail } from './AnalysisLogDetail';
@@ -23,10 +24,9 @@ export const AnalysisLogBrowser = (options: AnalysisLogBrowserOptions = {}) => {
     browser.selectedSummary?.dataset ?? browser.selectedRecord?.dataset ?? null
   );
   const variablesLabel = browser.selectedRecord?.variables.join(', ') || 'なし';
-  const formattedOptions =
-    browser.selectedRecord && Object.keys(browser.selectedRecord.options).length > 0
-      ? JSON.stringify(browser.selectedRecord.options, null, 2)
-      : 'オプション指定なし';
+  const formattedOptions = browser.selectedRecord
+    ? formatAnalysisOptions(browser.selectedRecord.type, browser.selectedRecord.options)
+    : [];
   const sourceDescription =
     browser.source === 'session'
       ? '起動中のセッションで実行した分析を表示しています'
