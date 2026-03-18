@@ -104,10 +104,13 @@
 
   output <- list(
     eigen = .EigenTableParsed(res$eig, res$prop, res$cum_prop),
-    pattern = .MatrixToParsedTable(loadings, row_label = "変数"),
-    rotmat = .MatrixToParsedTable(rotmat, row_label = "因子")
+    pattern = .MatrixToParsedTable(loadings, row_label = "変数")
   )
 
+  # rotmat is NULL when rotation = "none" (no rotation was applied).
+  if (!is.null(rotmat)) {
+    output$rotmat <- .MatrixToParsedTable(rotmat, row_label = "因子")
+  }
   if (!is.null(structure)) {
     output$structure <- .MatrixToParsedTable(structure, row_label = "変数")
   }
@@ -191,6 +194,12 @@ RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr
     n_factors_norm <- .RequirePositiveIntegerOption(n_factors)
   }
 
+  n_eff <- if (base::identical(corr_use_norm, "complete.obs")) {
+    base::as.integer(base::sum(stats::complete.cases(df)))
+  } else {
+    base::as.integer(base::nrow(df))
+  }
+
   res <- .FactorAnalysis(
     df,
     n_factors = n_factors_norm,
@@ -201,5 +210,21 @@ RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr
     eig_res = eig_res
   )
 
-  .FactorAnalysisParsed(res, n_factors_norm, show_scree_plot = scree_norm)
+  parsed <- .FactorAnalysisParsed(res, n_factors_norm, show_scree_plot = scree_norm)
+
+  # Effective sample size depends on the correlation matrix construction:
+  #   - complete.obs: listwise deletion — N = number of fully complete rows.
+  #   - pairwise.complete.obs: each variable pair may use a different subset
+  #     of rows. We report nrow(df) and attach n_note to alert the user.
+  #   - all.obs: no NAs allowed (validated above), so N = nrow(df) is exact.
+  parsed$n <- n_eff
+  n_total <- base::as.integer(base::nrow(df))
+  parsed$n_note <- if (base::identical(corr_use_norm, "pairwise.complete.obs")) {
+    "ペアワイズ削除のため、変数ペアごとにサンプルサイズが異なる場合があります"
+  } else if (base::identical(corr_use_norm, "complete.obs") && parsed$n < n_total) {
+    base::paste0("リストワイズ削除により、", n_total - parsed$n, "件の観測が除外されました")
+  } else {
+    NULL
+  }
+  parsed
 }

@@ -16,14 +16,14 @@ impl AnalysisRunner for RAnalyzer {
                       method: Method,
                       dataset: &NumericDataset,
                       options: &Value)
-                      -> Result<AnalysisResult, String> {
+                      -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
         runner::run_r_analysis(method, dataset, options)
     }
 
     fn run_r_analysis_without_dataset(&self,
                                       method: Method,
                                       options: &Value)
-                                      -> Result<AnalysisResult, String> {
+                                      -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
         runner::run_r_analysis_without_dataset(method, options)
     }
 
@@ -31,7 +31,7 @@ impl AnalysisRunner for RAnalyzer {
                                    method: Method,
                                    dataset: &StringMixedDataset,
                                    options: &Value)
-                                   -> Result<AnalysisResult, String> {
+                                   -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
         runner::run_r_analysis_string_mixed(method, dataset, options)
     }
 }

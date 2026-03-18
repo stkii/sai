@@ -93,19 +93,25 @@ fn section(key: &str,
 pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
     match result {
         AnalysisResult::Table { table } => vec![section("table", "結果", table)],
+        AnalysisResult::Correlation { correlation } => {
+            vec![section("correlation", "相関行列", correlation.correlation),
+                 section("t_values", "統計量（t値）", correlation.t_values),]
+        },
         AnalysisResult::Regression { regression } => {
             vec![section("model_summary", "モデル要約", regression.model_summary),
                  section("coefficients", "係数", regression.coefficients),
-                 section("anova", "ANOVA", regression.anova),]
+                 section("anova", "分散分析", regression.anova),]
         },
         AnalysisResult::Factor { factor } => {
             let mut eigen_section = section("eigen", "固有値", factor.eigen);
             eigen_section.image = factor.scree_plot;
 
             let mut sections = vec![eigen_section,
-                                    section("pattern", "因子負荷量", factor.pattern),
-                                    section("rotmat", "回転行列", factor.rotmat),];
+                                    section("pattern", "因子負荷量", factor.pattern),];
 
+            if let Some(rotmat) = factor.rotmat {
+                sections.push(section("rotmat", "回転行列", rotmat));
+            }
             if let Some(structure) = factor.structure {
                 sections.push(section("structure", "構造行列", structure));
             }
@@ -173,16 +179,16 @@ mod tests {
     #[test]
     fn map_sections_for_factor_includes_optional_sections() {
         let result =
-            AnalysisResult::Factor { factor: FactorResult { eigen: table(&["f"], vec![vec![1.into()]]),
+            AnalysisResult::Factor { factor: Box::new(FactorResult { eigen: table(&["f"], vec![vec![1.into()]]),
                                                             pattern: table(&["f1"],
                                                                            vec![vec![0.7.into()]]),
-                                                            rotmat: table(&["f1"],
-                                                                          vec![vec![1.into()]]),
+                                                            rotmat: Some(table(&["f1"],
+                                                                          vec![vec![1.into()]])),
                                                             structure:
                                                                 Some(table(&["f1"], vec![vec![0.8.into()]])),
                                                             phi: Some(table(&["f1"],
                                                                             vec![vec![0.2.into()]])),
-                                                            scree_plot: None } };
+                                                            scree_plot: None }) };
 
         let sections = map_sections(result);
         assert_eq!(sections.len(), 5);

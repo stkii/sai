@@ -159,7 +159,7 @@
       }
     ),
     correlation = list(
-      output_kind = "table",
+      output_kind = "correlation",
       requires_numeric = TRUE,
       options = list(
         list(name = "method", payload_keys = c("method"), cli_key = "method", default = ""),
@@ -295,8 +295,17 @@
 }
 
 .BuildOutputPayload <- function(kind, result) {
+  # Extract effective sample size (every Run* function must set result$n).
+  # Optionally extract n_note (user-facing caveat about the reported N).
+  n <- result$n
+  n_note <- result$n_note
+  result$n <- NULL
+  result$n_note <- NULL
+
   # Normalize output shape for the caller.
-  if (identical(kind, "regression")) {
+  payload <- if (identical(kind, "correlation")) {
+    list(kind = "correlation", correlation = result)
+  } else if (identical(kind, "regression")) {
     list(kind = "regression", regression = result)
   } else if (identical(kind, "factor")) {
     list(kind = "factor", factor = result)
@@ -305,6 +314,10 @@
   } else {
     list(kind = "table", table = result)
   }
+
+  payload$n <- n
+  if (!is.null(n_note)) payload$n_note <- n_note
+  payload
 }
 
 Main <- function() {

@@ -128,6 +128,8 @@ export const AnalysisLogBrowser = (options: AnalysisLogBrowserOptions = {}) => {
           <AnalysisLogDetail
             datasetLabel={datasetLabel}
             formattedOptions={formattedOptions}
+            n={browser.selectedRecord?.n}
+            nNote={browser.selectedRecord?.nNote}
             sourceLabel={LOG_SOURCE_LABEL[browser.source]}
             timestamp={browser.selectedSummary?.timestamp ?? null}
             variablesLabel={variablesLabel}

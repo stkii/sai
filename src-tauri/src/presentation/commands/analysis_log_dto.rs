@@ -58,6 +58,10 @@ pub(crate) struct AnalysisLogRecordDto {
     variables: Vec<String>,
     options: Value,
     result: AnalysisResultDto,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    n: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    n_note: Option<String>,
 }
 
 impl From<AnalysisLogRecord> for AnalysisLogRecordDto {
@@ -69,6 +73,8 @@ impl From<AnalysisLogRecord> for AnalysisLogRecordDto {
                dataset: value.dataset.into(),
                variables: value.variables,
                options: value.options,
-               result: AnalysisResultDto { sections: map_sections(value.result) } }
+               result: AnalysisResultDto { sections: map_sections(value.result) },
+               n: value.n,
+               n_note: value.n_note }
     }
 }

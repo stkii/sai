@@ -52,41 +52,40 @@ impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogWriter> AnalysisServ
 
         // Try string_mixed first, then numeric.
         // The dataset type is determined by which build command the frontend called.
-        let (dataset_ref, variables, mut result) =
-            if let Some(entry) = self.try_get_string_mixed(dataset_cache_id)? {
-                log::info!("analysis.run_analysis (string_mixed) source path={} sheet={} vars={}",
-                           entry.path.as_str(),
-                           entry.sheet.as_str(),
-                           entry.variables.len());
-                (to_dataset_ref(entry.path.as_str(), entry.sheet.as_str()),
-                 entry.variables.clone(),
-                 self.runner
-                     .run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?)
-            } else {
-                let entry = self.cache
-                                .get_numeric_dataset(dataset_cache_id)
-                                .map_err(|e| {
-                                    classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
-                                                                 "failed to read dataset cache",
-                                                                 e)
-                                })?
-                                .ok_or_else(|| {
-                                    classified_error(AnalysisErrorKind::DatasetNotFound,
-                                                     format!("dataset cache id '{}' was not found",
-                                                             dataset_cache_id))
-                                })?;
-                log::info!("analysis.run_analysis source path={} sheet={} vars={}",
-                           entry.path.as_str(),
-                           entry.sheet.as_str(),
-                           entry.variables.len());
-                (to_dataset_ref(entry.path.as_str(), entry.sheet.as_str()),
-                 entry.variables.clone(),
-                 self.runner.run_r_analysis(method, &entry.dataset, &normalized)?)
-            };
+        let (dataset_ref, variables, mut result, n, n_note) = if let Some(entry) =
+            self.try_get_string_mixed(dataset_cache_id)?
+        {
+            log::info!("analysis.run_analysis (string_mixed) source path={} sheet={} vars={}",
+                       entry.path.as_str(),
+                       entry.sheet.as_str(),
+                       entry.variables.len());
+            let (r, n, n_note) = self.runner
+                                     .run_r_analysis_string_mixed(method, &entry.dataset, &normalized)?;
+            (to_dataset_ref(entry.path.as_str(), entry.sheet.as_str()), entry.variables.clone(), r, n, n_note)
+        } else {
+            let entry = self.cache
+                            .get_numeric_dataset(dataset_cache_id)
+                            .map_err(|e| {
+                                classified_error_with_source(AnalysisErrorKind::DatasetNotFound,
+                                                             "failed to read dataset cache",
+                                                             e)
+                            })?
+                            .ok_or_else(|| {
+                                classified_error(AnalysisErrorKind::DatasetNotFound,
+                                                 format!("dataset cache id '{}' was not found",
+                                                         dataset_cache_id))
+                            })?;
+            log::info!("analysis.run_analysis source path={} sheet={} vars={}",
+                       entry.path.as_str(),
+                       entry.sheet.as_str(),
+                       entry.variables.len());
+            let (r, n, n_note) = self.runner.run_r_analysis(method, &entry.dataset, &normalized)?;
+            (to_dataset_ref(entry.path.as_str(), entry.sheet.as_str()), entry.variables.clone(), r, n, n_note)
+        };
 
         handler.post_process(&mut result, &normalized)?;
 
-        let run_result = build_run_result(result);
+        let run_result = build_run_result(result, n, n_note);
         let log_record = AnalysisLogRecord { schema_version: ANALYSIS_LOG_SCHEMA_VERSION,
                                              id: run_result.analysis_id.clone(),
                                              timestamp: run_result.logged_at.clone(),
@@ -94,7 +93,9 @@ impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogWriter> AnalysisServ
                                              dataset: dataset_ref,
                                              variables,
                                              options: normalized,
-                                             result: run_result.result.clone() };
+                                             result: run_result.result.clone(),
+                                             n: run_result.n,
+                                             n_note: run_result.n_note.clone() };
         self.log_store.append(&log_record).map_err(|e| {
                                          classified_error_with_source(AnalysisErrorKind::AnalysisLogFailure,
                                                                       "failed to append analysis log",
@@ -111,10 +112,10 @@ impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogWriter> AnalysisServ
         let handler = resolve_handler(method);
         let normalized = handler.normalize_options(options);
 
-        let mut result = self.runner.run_r_analysis_without_dataset(method, &normalized)?;
+        let (mut result, n, n_note) = self.runner.run_r_analysis_without_dataset(method, &normalized)?;
         handler.post_process(&mut result, &normalized)?;
 
-        Ok(build_run_result(result))
+        Ok(build_run_result(result, n, n_note))
     }
 
     fn try_get_string_mixed(
@@ -132,12 +133,17 @@ impl<C: DatasetCacheStore, R: AnalysisRunner, L: AnalysisLogWriter> AnalysisServ
     }
 }
 
-fn build_run_result(result: crate::domain::analysis::model::AnalysisResult) -> AnalysisRunResult {
+fn build_run_result(result: crate::domain::analysis::model::AnalysisResult,
+                    n: Option<u32>,
+                    n_note: Option<String>)
+                    -> AnalysisRunResult {
     let logged_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let analysis_id = Uuid::new_v4().to_string();
     AnalysisRunResult { analysis_id,
                         logged_at,
-                        result }
+                        result,
+                        n,
+                        n_note }
 }
 
 fn to_dataset_ref(path: &str,

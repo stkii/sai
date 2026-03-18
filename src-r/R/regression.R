@@ -259,13 +259,15 @@
   vifs <- .ComputeVIFs(fit)
 
   ci <- stats::confint(fit, level = 0.95)
+  n_obs <- base::as.integer(stats::nobs(fit))
 
   return(
     list(
       summary = result,
       anova = anova_result,
       vifs = vifs,
-      confint = ci
+      confint = ci,
+      n_obs = n_obs
     )
   )
 }
@@ -424,7 +426,12 @@
   )
   model_summary <- base::list(headers = model_summary_headers, rows = model_summary_rows)
 
-  base::list(model_summary = model_summary, coefficients = coefficients, anova = anova)
+  # Effective sample size: nobs(fit) from the fitted model.
+  # lm() applies listwise deletion (na.omit) by default, so this count
+  # reflects the actual number of observations used in the regression.
+  # This value equals smry$df[1] + smry$df[2] (rank + residual df).
+  base::list(model_summary = model_summary, coefficients = coefficients, anova = anova,
+             n = res$n_obs)
 }
 
 # Runner used by CLI dispatcher
@@ -493,5 +500,12 @@ RunRegression <- function(df,
   )
 
   res$centered <- isTRUE(center_norm)
-  .LinearRegressionParsed(res)
+  parsed <- .LinearRegressionParsed(res)
+
+  # Notify the user when listwise deletion removed observations.
+  n_total <- base::as.integer(base::nrow(df))
+  if (!is.null(parsed$n) && parsed$n < n_total) {
+    parsed$n_note <- base::paste0("リストワイズ削除により、", n_total - parsed$n, "件の観測が除外されました")
+  }
+  parsed
 }

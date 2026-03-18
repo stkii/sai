@@ -267,7 +267,9 @@ mod tests {
                                                                                   rows:
                                                                                       vec![vec!["x".into()]],
                                                                                   note: None,
-                                                                                  title: None } } }
+                                                                                  title: None } },
+                            n: None,
+                            n_note: None }
     }
 
     #[test]

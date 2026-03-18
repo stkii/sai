@@ -28,6 +28,10 @@ pub(crate) struct AnalysisLogRecord {
     pub variables: Vec<String>,
     pub options: Value,
     pub result: AnalysisResult,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub n: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub n_note: Option<String>,
 }
 
 impl AnalysisLogRecord {

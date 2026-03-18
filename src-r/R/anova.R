@@ -714,9 +714,34 @@ RunAnova <- function(df, dependent = NULL, subject = NULL,
   comps <- .RunPairwiseComparisons(df, dependent, subject,
                                     between_factors, within_factors, fit)
 
+  # Effective sample size: nobs(fit) from the fitted aov model.
+  # For between-subjects designs, this equals the number of subjects.
+  # For within-subjects (repeated measures) designs, this equals the
+  # total number of observations in long format (subjects × conditions),
+  # which can be much larger than the number of subjects. We attach
+  # n_note to clarify this for the user.
+  n_val <- base::as.integer(stats::nobs(fit))
+  n_total <- base::as.integer(base::nrow(df))
+  n_note_parts <- base::character(0)
+  if (base::length(within_factors) > 0L) {
+    n_note_parts <- base::c(n_note_parts,
+      "反復測定デザインのため、サンプルサイズは総観測数（被験者数 × 条件数）です")
+  }
+  if (n_val < n_total) {
+    n_note_parts <- base::c(n_note_parts,
+      base::paste0("リストワイズ削除により、", n_total - n_val, "件の観測が除外されました"))
+  }
+  n_note <- if (base::length(n_note_parts) > 0L) {
+    base::paste(n_note_parts, collapse = " / ")
+  } else {
+    NULL
+  }
+
   list(
     descriptive = desc,
     anova_table = anova_tbl,
-    comparisons = comps
+    comparisons = comps,
+    n = n_val,
+    n_note = n_note
   )
 }

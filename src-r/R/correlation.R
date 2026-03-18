@@ -116,6 +116,7 @@
 .CorrTestParsed <- function(res) {
   corr_mtx <- res$corr_mtx
   p_mtx <- res$p_mtx
+  t_mtx <- res$t_mtx
   note_sig <- "***p < .001, **p < .01, *p < .05"
 
   vars <- base::colnames(corr_mtx)
@@ -138,7 +139,8 @@
     }
   }
 
-  rows <- base::lapply(base::seq_len(base::nrow(corr_mtx)), function(i) {
+  # --- Correlation matrix table ---
+  corr_rows <- base::lapply(base::seq_len(base::nrow(corr_mtx)), function(i) {
     base::c(vars[[i]],
             base::vapply(base::seq_len(base::ncol(corr_mtx)), function(j) {
               if (j <= i) return("")
@@ -147,18 +149,27 @@
             }, base::character(1)))
   })
 
-  result <- list(headers = headers, rows = rows)
+  correlation <- list(headers = headers, rows = corr_rows)
   if (!is.null(res$note)) {
-    result$note <- base::paste(res$note, note_sig, sep = " / ")
+    correlation$note <- base::paste(res$note, note_sig, sep = " / ")
   } else {
-    result$note <- note_sig
+    correlation$note <- note_sig
   }
-  result$title <- switch(res$method,
-    pearson = "Pearsonの相関",
-    kendall = "Kendallの相関",
-    spearman = "Spearmanの相関"
-  )
-  result
+  correlation$title <- "相関行列"
+
+  # --- t-value matrix table ---
+  t_rows <- base::lapply(base::seq_len(base::nrow(t_mtx)), function(i) {
+    base::c(vars[[i]],
+            base::vapply(base::seq_len(base::ncol(t_mtx)), function(j) {
+              if (j <= i) return("")
+              FormatNum(t_mtx[i, j])
+            }, base::character(1)))
+  })
+
+  t_values <- list(headers = headers, rows = t_rows)
+  t_values$title <- "統計量（t値）"
+
+  list(correlation = correlation, t_values = t_values)
 }
 
 # Runner used by CLI dispatcher
@@ -180,5 +191,28 @@ RunCorrelation <- function(df, method = NULL, use = NULL, alternative = NULL, vi
   ValidateMinRows(df, 3L)
 
   res <- .CorrTest(df, method = method_norm, use = use_norm, alternative = alternative_norm)
-  .CorrTestParsed(res)
+  parsed <- .CorrTestParsed(res)
+
+  # Effective sample size depends on the missing-data strategy:
+  #   - complete.obs: listwise deletion — N = number of fully complete rows.
+  #     This is the true effective N used for every pair.
+  #   - pairwise.complete.obs: each variable pair may use a different subset
+  #     of rows, so there is no single effective N. We report nrow(df) as
+  #     the total dataset size and attach n_note to alert the user.
+  #   - mean_imp: missing values are replaced by column means before
+  #     analysis, so all nrow(df) rows participate in every pair.
+  parsed$n <- if (base::identical(use_norm, "complete.obs")) {
+    base::as.integer(base::sum(stats::complete.cases(df)))
+  } else {
+    base::as.integer(base::nrow(df))
+  }
+  n_total <- base::as.integer(base::nrow(df))
+  parsed$n_note <- if (base::identical(use_norm, "pairwise.complete.obs")) {
+    "ペアワイズ削除のため、変数ペアごとにサンプルサイズが異なる場合があります"
+  } else if (base::identical(use_norm, "complete.obs") && parsed$n < n_total) {
+    base::paste0("リストワイズ削除により、", n_total - parsed$n, "件の観測が除外されました")
+  } else {
+    NULL
+  }
+  parsed
 }

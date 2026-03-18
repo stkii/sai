@@ -24,6 +24,8 @@ export interface AnalysisResultPayload {
   variables: string[];
   options: AnalysisOptions; // 実行時オプションを必ず同梱
   result: AnalysisResult;
+  n?: number;
+  nNote?: string;
 }
 
 export type DatasetKind = 'numeric' | 'string_mixed';

@@ -84,5 +84,12 @@ RunDescriptive <- function(df, order = 'default', na_ig = TRUE) {
   sorter <- Sort(ord)
   parsed <- sorter(parsed)
 
+  # Effective sample size: total rows in the input data frame.
+  # Descriptive statistics use na.rm=TRUE per column, so each variable
+  # may have a different valid-observation count when NAs are present.
+  # We report nrow(df) because this is the standard convention for
+  # descriptive statistics (e.g., SPSS, SAS) — per-variable N differences
+  # are visible in the table output itself.
+  parsed$n <- base::as.integer(base::nrow(df))
   parsed
 }

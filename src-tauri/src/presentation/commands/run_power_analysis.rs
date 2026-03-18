@@ -73,13 +73,13 @@ mod tests {
     #[test]
     fn extract_table_rejects_non_table_result() {
         let result =
-            AnalysisResult::Factor { factor: FactorResult { eigen: table(&["x"], vec![vec![1.into()]]),
+            AnalysisResult::Factor { factor: Box::new(FactorResult { eigen: table(&["x"], vec![vec![1.into()]]),
                                                             pattern: table(&["x"],
                                                                            vec![vec![1.into()]]),
-                                                            rotmat: table(&["x"], vec![vec![1.into()]]),
+                                                            rotmat: Some(table(&["x"], vec![vec![1.into()]])),
                                                             structure: None,
                                                             phi: None,
-                                                            scree_plot: None } };
+                                                            scree_plot: None }) };
 
         let error = extract_table(result).expect_err("non-table result should be rejected");
         assert!(error.contains("power analysis must return a table result"));

@@ -9,6 +9,8 @@ interface FormattedOption {
 interface AnalysisLogDetailProps {
   datasetLabel: string | null;
   formattedOptions: FormattedOption[];
+  n?: number | null;
+  nNote?: string | null;
   sourceLabel: string;
   timestamp: string | null;
   variablesLabel: string;
@@ -18,6 +20,8 @@ interface AnalysisLogDetailProps {
 export const AnalysisLogDetail = ({
   datasetLabel,
   formattedOptions,
+  n,
+  nNote,
   sourceLabel,
   timestamp,
   variablesLabel,
@@ -51,6 +55,21 @@ export const AnalysisLogDetail = ({
                 </Text>
                 <Text>{variablesLabel}</Text>
               </HStack>
+              {n != null && (
+                <Stack gap="0">
+                  <HStack gap="2" fontSize="sm">
+                    <Text color="gray.500" flexShrink={0}>
+                      サンプルサイズ:
+                    </Text>
+                    <Text>{n}</Text>
+                  </HStack>
+                  {nNote && (
+                    <Text color="orange.600" fontSize="xs" pl="1">
+                      {nNote}
+                    </Text>
+                  )}
+                </Stack>
+              )}
               {formattedOptions.map((opt) => (
                 <HStack key={opt.label} gap="2" fontSize="sm">
                   <Text color="gray.500" flexShrink={0}>
