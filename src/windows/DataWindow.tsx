@@ -98,7 +98,12 @@ export const DataWindow = () => {
             onSelect={setOpenAnalysis}
           />
         </HStack>
-        <LoadedDatasetBar selection={selection} onSheetLoaded={handleLoaded} />
+        <LoadedDatasetBar
+          selection={selection}
+          rowCount={table?.rows.length ?? 0}
+          columnCount={table?.headers.length ?? 0}
+          onSheetLoaded={handleLoaded}
+        />
       </Stack>
 
       <Box h="80vh" minH="400px" mt="auto">
