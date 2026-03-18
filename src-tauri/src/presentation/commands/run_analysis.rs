@@ -95,7 +95,7 @@ pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
         AnalysisResult::Table { table } => vec![section("table", "結果", table)],
         AnalysisResult::Correlation { correlation } => {
             vec![section("correlation", "相関行列", correlation.correlation),
-                 section("t_values", "統計量（t値）", correlation.t_values),]
+                 section("t_values", "統計量", correlation.t_values),]
         },
         AnalysisResult::Regression { regression } => {
             vec![section("model_summary", "モデル要約", regression.model_summary),

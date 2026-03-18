@@ -21,14 +21,22 @@
   n_col <- corr_res$n_col
   col_names <- base::colnames(work_mat)
 
-  # Initialize matrix (all square matrix)
+  # Initialize matrices (all square, upper-triangle filled in the loop)
   p_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))    # p-value matrix
   t_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))    # t-value matrix
   df_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))   # degree of freedom matrix
   n_mtx <- matrix(NA_integer_, n_col, n_col, dimnames=list(col_names, col_names)) # sample size matrix
 
+  # 95% CI matrices — only populated for Pearson (Fisher z-transformation).
+  # cor.test()$conf.int is NULL for Spearman/Kendall.
+  ci_lower_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))
+  ci_upper_mtx <- matrix(NA_real_, n_col, n_col, dimnames=list(col_names, col_names))
+
   ties_approx <- FALSE
   for (i in base::seq_len(n_col)) {
+    # Diagonal n: per-variable valid observation count (non-NA rows).
+    n_mtx[i, i] <- base::sum(!base::is.na(work_mat[, i]))
+
     for (j in base::seq_len(n_col)) {
       if (j <= i) next
 
@@ -63,13 +71,8 @@
       )
 
       corr_mtx[i, j] <- unname(test$estimate)
-      # corr_mtx[j, i] <- corr_mtx[i, j]
-
       p_mtx[i, j] <- test$p.value
-      # p_mtx[j, i] <- p_mtx[i, j]
-
       t_mtx[i, j] <- unname(test$statistic)
-      # t_mtx[j, i] <- t_mtx[i, j]
 
       df_mtx[i, j] <- if (method == "kendall") {
         NA_real_
@@ -78,10 +81,18 @@
       } else {
         unname(test$parameter)
       }
-      # df_mtx[j, i] <- df_mtx[i, j]
 
       n_mtx[i, j] <- base::length(x)
-      # n_mtx[j, i] <- n_mtx[i, j]
+      # Mirror to lower triangle for symmetric access
+      n_mtx[j, i] <- n_mtx[i, j]
+
+      # 95% CI is only available for Pearson (Fisher z-transformation).
+      if (identical(method, "pearson") && !is.null(test$conf.int)) {
+        ci_lower_mtx[i, j] <- test$conf.int[1]
+        ci_upper_mtx[i, j] <- test$conf.int[2]
+        ci_lower_mtx[j, i] <- ci_lower_mtx[i, j]
+        ci_upper_mtx[j, i] <- ci_upper_mtx[i, j]
+      }
     }
   }
 
@@ -92,6 +103,8 @@
     t_mtx = t_mtx,
     df_mtx = df_mtx,
     n_mtx = n_mtx,
+    ci_lower_mtx = ci_lower_mtx,
+    ci_upper_mtx = ci_upper_mtx,
     method = method,
     alternative = alternative,
     use = use_input,
@@ -157,17 +170,85 @@
   }
   correlation$title <- "相関行列"
 
-  # --- t-value matrix table ---
-  t_rows <- base::lapply(base::seq_len(base::nrow(t_mtx)), function(i) {
-    base::c(vars[[i]],
-            base::vapply(base::seq_len(base::ncol(t_mtx)), function(j) {
-              if (j <= i) return("")
-              FormatNum(t_mtx[i, j])
-            }, base::character(1)))
-  })
+  # --- SPSS-style stacked statistics table ---
+  # Each variable gets multiple rows: t値, 有意確率, [95%下限, 95%上限 (Pearson only)], 度数(n).
+  # Diagonal cells show "—" except for 度数(n) which shows per-variable valid count.
+  # Off-diagonal cells use symmetric values (upper triangle mirrored to lower).
+  n_mtx <- res$n_mtx
+  ci_lower_mtx <- res$ci_lower_mtx
+  ci_upper_mtx <- res$ci_upper_mtx
+  is_pearson <- base::identical(res$method, "pearson")
 
-  t_values <- list(headers = headers, rows = t_rows)
-  t_values$title <- "統計量（t値）"
+  # Mirror upper-triangle to lower-triangle for symmetric access
+  for (i in base::seq_len(base::nrow(t_mtx))) {
+    for (j in base::seq_len(base::ncol(t_mtx))) {
+      if (j <= i) next
+      t_mtx[j, i] <- t_mtx[i, j]
+      p_mtx[j, i] <- p_mtx[i, j]
+    }
+  }
+
+  stat_headers <- base::c("変数", "統計量", vars)
+
+  stat_rows <- base::list()
+  for (i in base::seq_len(base::length(vars))) {
+    # Row 1: t値 with significance stars
+    t_row <- base::c(vars[[i]], "t値",
+      base::vapply(base::seq_len(base::length(vars)), function(j) {
+        if (i == j) return("\u2014")
+        val <- t_mtx[i, j]
+        if (base::is.na(val)) return("")
+        formatted <- FormatNum(val)
+        p_val <- p_mtx[i, j]
+        stars <- StarsForPval(p_val)
+        if (base::nzchar(stars)) base::paste0(formatted, stars) else formatted
+      }, base::character(1)))
+    stat_rows <- base::c(stat_rows, list(t_row))
+
+    # Row 2: 有意確率 (p-value)
+    p_row <- base::c("", "有意確率",
+      base::vapply(base::seq_len(base::length(vars)), function(j) {
+        if (i == j) return("\u2014")
+        p_val <- p_mtx[i, j]
+        if (base::is.na(p_val)) return("")
+        FormatNum(p_val)
+      }, base::character(1)))
+    stat_rows <- base::c(stat_rows, list(p_row))
+
+    # Rows 3-4: 95% CI (Pearson only)
+    if (is_pearson) {
+      ci_lo_row <- base::c("", "95%下限",
+        base::vapply(base::seq_len(base::length(vars)), function(j) {
+          if (i == j) return("\u2014")
+          val <- ci_lower_mtx[i, j]
+          if (base::is.na(val)) return("")
+          FormatNum(val)
+        }, base::character(1)))
+      stat_rows <- base::c(stat_rows, list(ci_lo_row))
+
+      ci_up_row <- base::c("", "95%上限",
+        base::vapply(base::seq_len(base::length(vars)), function(j) {
+          if (i == j) return("\u2014")
+          val <- ci_upper_mtx[i, j]
+          if (base::is.na(val)) return("")
+          FormatNum(val)
+        }, base::character(1)))
+      stat_rows <- base::c(stat_rows, list(ci_up_row))
+    }
+
+    # Row 5 (or 3): 度数(n) — diagonal shows per-variable valid count
+    n_row <- base::c("", "度数(n)",
+      base::vapply(base::seq_len(base::length(vars)), function(j) {
+        val <- n_mtx[i, j]
+        if (base::is.na(val)) return("")
+        base::as.character(val)
+      }, base::character(1)))
+    stat_rows <- base::c(stat_rows, list(n_row))
+  }
+
+  t_values <- list(headers = stat_headers, rows = stat_rows)
+  t_values$title <- "統計量"
+  t_values$note <- note_sig
 
   list(correlation = correlation, t_values = t_values)
 }
