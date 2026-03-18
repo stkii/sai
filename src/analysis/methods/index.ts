@@ -6,12 +6,13 @@ import { factorMethod } from './factor';
 import { regressionMethod } from './regression';
 import { reliabilityMethod } from './reliability';
 
+// UI向けに意図的に辞書式に並べない
 export const ANALYSIS_METHODS = [
-  anovaMethod,
-  correlationMethod,
   descriptiveMethod,
-  factorMethod,
+  correlationMethod,
   regressionMethod,
+  anovaMethod,
+  factorMethod,
   reliabilityMethod,
 ] as const satisfies readonly MethodModule[];
 
