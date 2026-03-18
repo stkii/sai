@@ -115,6 +115,14 @@ pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
 
             sections
         },
+        AnalysisResult::Anova { anova } => {
+            let mut sections = vec![section("descriptive", "記述統計量", anova.descriptive),
+                                    section("anova_table", "分散分析表", anova.anova_table),];
+            if let Some(comparisons) = anova.comparisons {
+                sections.push(section("comparisons", "多重比較", comparisons));
+            }
+            sections
+        },
     }
 }
 

@@ -263,24 +263,32 @@
       }
     ),
     anova = list(
-      output_kind = "table",
-      # ANOVA datasets contain factor (categorical) columns alongside numeric ones,
-      # so the numeric-only validation must be skipped.
+      output_kind = "anova",
       requires_numeric = FALSE,
       options = list(
         list(name = "dependent", payload_keys = c("dependent"), cli_key = NULL, default = NULL),
-        list(name = "independent", payload_keys = c("independent"), cli_key = NULL, default = NULL),
-        list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL),
+        list(name = "subject", payload_keys = c("subject"), cli_key = NULL, default = NULL),
+        list(name = "between_factors", payload_keys = c("between_factors", "betweenFactors"),
+             cli_key = NULL, default = NULL),
+        list(name = "within_factor_name", payload_keys = c("within_factor_name", "withinFactorName"),
+             cli_key = NULL, default = NULL),
+        list(name = "within_factor_levels", payload_keys = c("within_factor_levels", "withinFactorLevels"),
+             cli_key = NULL, default = NULL),
         list(name = "covariates", payload_keys = c("covariates"), cli_key = NULL, default = NULL),
-        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "all")
+        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "all"),
+        list(name = "effect_size", payload_keys = c("effect_size", "effectSize"),
+             cli_key = NULL, default = "peta")
       ),
       run = function(df, ctx) {
         RunAnova(df,
-                 dependent = ctx$dependent,
-                 independent = ctx$independent,
-                 factors = ctx$factors,
-                 covariates = ctx$covariates,
-                 interactions = ctx$interactions)
+                 dependent            = ctx$dependent,
+                 subject              = ctx$subject,
+                 between_factors      = ctx$between_factors,
+                 within_factor_name   = ctx$within_factor_name,
+                 within_factor_levels = ctx$within_factor_levels,
+                 covariates           = ctx$covariates,
+                 interactions         = ctx$interactions,
+                 effect_size          = ctx$effect_size)
       }
     )
   )
@@ -292,6 +300,8 @@
     list(kind = "regression", regression = result)
   } else if (identical(kind, "factor")) {
     list(kind = "factor", factor = result)
+  } else if (identical(kind, "anova")) {
+    list(kind = "anova", anova = result)
   } else {
     list(kind = "table", table = result)
   }

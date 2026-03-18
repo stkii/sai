@@ -54,11 +54,36 @@ impl FactorResult {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub(crate) struct AnovaResult {
+    pub descriptive: ParsedDataTable,
+    pub anova_table: ParsedDataTable,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub comparisons: Option<ParsedDataTable>,
+}
+
+impl AnovaResult {
+    pub(crate) fn validate(&self) -> Result<(), String> {
+        self.descriptive
+            .validate()
+            .map_err(|e| format!("descriptive: {}", e))?;
+        self.anova_table
+            .validate()
+            .map_err(|e| format!("anova_table: {}", e))?;
+        if let Some(comparisons) = self.comparisons.as_ref() {
+            comparisons.validate()
+                       .map_err(|e| format!("comparisons: {}", e))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub(crate) enum AnalysisResult {
     Table { table: ParsedDataTable },
     Regression { regression: RegressionResult },
     Factor { factor: FactorResult },
+    Anova { anova: AnovaResult },
 }
 
 impl AnalysisResult {
@@ -67,6 +92,7 @@ impl AnalysisResult {
             AnalysisResult::Regression { regression } => regression.validate(),
             AnalysisResult::Table { table } => table.validate(),
             AnalysisResult::Factor { factor } => factor.validate(),
+            AnalysisResult::Anova { anova } => anova.validate(),
         }
     }
 }
