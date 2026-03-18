@@ -177,6 +177,8 @@ RunFactor <- function(df, n_factors = NULL, rotation = NULL, method = NULL, corr
   corr_use_norm <- .ValidateOptionInSet(corr_use, c("all.obs", "complete.obs", "pairwise.complete.obs"))
   power_norm <- .NormalizePositiveNumericOption(power, default = 4)
 
+  ValidateMinRows(df, 3L)
+
   if (identical(corr_use_norm, "all.obs") && base::any(is.na(df))) {
     StopWithErrCode("ERR-832")
   }

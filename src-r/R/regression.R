@@ -415,6 +415,10 @@ RunRegression <- function(df,
     StopWithErrCode("ERR-920")
   }
 
+  # Minimum rows: number of parameters + 1 (intercept counted if present)
+  n_params <- base::length(indep_norm) + if (isTRUE(intercept)) 1L else 0L
+  ValidateMinRows(df, n_params + 1L)
+
   inter_norm <- .NormalizeRegressionInteractions(interactions)
 
   if (is.list(inter_norm) && base::length(inter_norm) > 0) {

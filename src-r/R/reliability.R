@@ -62,5 +62,6 @@
 # Returns ParsedTable-like list(headers, rows)
 RunReliability <- function(x, model = NULL) {
   model_norm <- .ValidateOptionInSet(model, c("alpha", "omega"))
+  ValidateMinRows(x, 2L)
   .ReliabilityParsed(x, model = model_norm)
 }

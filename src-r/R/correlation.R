@@ -177,6 +177,7 @@ RunCorrelation <- function(df, method = NULL, use = NULL, alternative = NULL, vi
   method_norm <- .ValidateOptionInSet(method, c("pearson", "spearman", "kendall"))
   use_norm <- .ValidateOptionInSet(use, c("complete.obs", "pairwise.complete.obs", "mean_imp"))
   alternative_norm <- .ValidateOptionInSet(alternative, c("two.sided", "less", "greater"))
+  ValidateMinRows(df, 3L)
 
   res <- .CorrTest(df, method = method_norm, use = use_norm, alternative = alternative_norm)
   .CorrTestParsed(res)

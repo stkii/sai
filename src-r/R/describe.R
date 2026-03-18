@@ -75,6 +75,7 @@
 RunDescriptive <- function(df, order = 'default', na_ig = TRUE) {
   ord <- .ValidateOptionInSet(order, c("default", "mean_asc", "mean_desc"))
   na_ig_norm <- .RequireLogicalOption(na_ig)
+  ValidateMinRows(df, 2L)
 
   stats <- .Describe(df, na_ig = na_ig_norm)
   parsed <- .DescribeParsed(stats)

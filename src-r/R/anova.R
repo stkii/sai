@@ -593,6 +593,7 @@ RunAnova <- function(df, dependent = NULL, subject = NULL,
                      covariates = NULL, interactions = "all",
                      effect_size = "peta") {
   IsDataFrame(df)
+  ValidateMinRows(df, 2L)
 
   # --- Normalize vectors ---
   between_factors <- if (is.null(between_factors) || base::length(between_factors) == 0L) {
