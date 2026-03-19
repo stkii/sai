@@ -136,7 +136,7 @@
   # Dispatch table: analysis key -> runner + output kind.
   list(
     descriptive = list(
-      output_kind = "table",
+      output_kind = "descriptive",
       requires_numeric = TRUE,
       options = list(
         list(
@@ -152,10 +152,48 @@
           cli_key = "na_ignore",
           default = "true",
           post = .NormalizeNaIgnore
+        ),
+        list(
+          name = "skewness",
+          payload_keys = c("skewness"),
+          cli_key = "skewness",
+          default = FALSE,
+          post = base::as.logical
+        ),
+        list(
+          name = "kurtosis",
+          payload_keys = c("kurtosis"),
+          cli_key = "kurtosis",
+          default = FALSE,
+          post = base::as.logical
+        ),
+        list(
+          name = "histogram",
+          payload_keys = c("histogram"),
+          cli_key = "histogram",
+          default = "none",
+          post = base::as.character
+        ),
+        list(
+          name = "histogram_variables",
+          payload_keys = c("histogram_variables"),
+          cli_key = NULL,
+          default = NULL
+        ),
+        list(
+          name = "breaks",
+          payload_keys = c("breaks"),
+          cli_key = "breaks",
+          default = "Sturges",
+          post = base::as.character
         )
       ),
       run = function(df, ctx) {
-        RunDescriptive(df, order = ctx$order, na_ig = ctx$na_ignore)
+        RunDescriptive(df, order = ctx$order, na_ig = ctx$na_ignore,
+                       skewness = ctx$skewness, kurtosis = ctx$kurtosis,
+                       histogram = ctx$histogram,
+                       histogram_variables = ctx$histogram_variables,
+                       breaks = ctx$breaks)
       }
     ),
     correlation = list(
@@ -311,6 +349,8 @@
     list(kind = "factor", factor = result)
   } else if (identical(kind, "anova")) {
     list(kind = "anova", anova = result)
+  } else if (identical(kind, "descriptive")) {
+    list(kind = "descriptive", descriptive = result)
   } else {
     list(kind = "table", table = result)
   }

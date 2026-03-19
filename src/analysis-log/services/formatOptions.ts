@@ -196,17 +196,46 @@ const formatAnova = (options: AnalysisOptions): FormattedOption[] => {
 };
 
 const formatDescriptive = (options: AnalysisOptions): FormattedOption[] => {
+  const result: FormattedOption[] = [];
   const orderLabels: Record<string, string> = {
     default: 'デフォルト',
     mean_asc: '平均値（昇順）',
     mean_desc: '平均値（降順）',
   };
   if (options.order) {
-    return [
-      { label: '並び順', value: orderLabels[String(options.order)] ?? String(options.order) },
-    ];
+    result.push({
+      label: '並び順',
+      value: orderLabels[String(options.order)] ?? String(options.order),
+    });
   }
-  return [];
+  const stats: string[] = [];
+  if (options.skewness) stats.push('歪度');
+  if (options.kurtosis) stats.push('尖度');
+  if (stats.length > 0) {
+    result.push({ label: '統計量', value: stats.join('、') });
+  }
+  const histogramLabels: Record<string, string> = {
+    all: '全ての変数',
+    selected: '個別に選択',
+  };
+  if (options.histogram && options.histogram !== 'none') {
+    result.push({
+      label: 'ヒストグラム',
+      value: histogramLabels[String(options.histogram)] ?? String(options.histogram),
+    });
+    const breaksLabels: Record<string, string> = {
+      Sturges: 'Sturges',
+      Scott: 'Scott',
+      FD: 'Freedman-Diaconis',
+    };
+    if (options.breaks) {
+      result.push({
+        label: '階級幅',
+        value: breaksLabels[String(options.breaks)] ?? String(options.breaks),
+      });
+    }
+  }
+  return result;
 };
 
 const formatReliability = (options: AnalysisOptions): FormattedOption[] => {

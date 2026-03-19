@@ -93,6 +93,11 @@ fn section(key: &str,
 pub(super) fn map_sections(result: AnalysisResult) -> Vec<AnalysisSectionDto> {
     match result {
         AnalysisResult::Table { table } => vec![section("table", "結果", table)],
+        AnalysisResult::Descriptive { descriptive } => {
+            let mut table_section = section("table", "記述統計量", descriptive.table);
+            table_section.image = descriptive.histogram;
+            vec![table_section]
+        },
         AnalysisResult::Correlation { correlation } => {
             vec![section("correlation", "相関行列", correlation.correlation),
                  section("t_values", "統計量", correlation.t_values),]

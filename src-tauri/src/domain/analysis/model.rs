@@ -6,6 +6,19 @@ use serde::{
 use crate::domain::input::table::ParsedDataTable;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub(crate) struct DescriptiveResult {
+    pub table: ParsedDataTable,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub histogram: Option<String>,
+}
+
+impl DescriptiveResult {
+    pub(crate) fn validate(&self) -> Result<(), String> {
+        self.table.validate().map_err(|e| format!("table: {}", e))
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct CorrelationResult {
     pub correlation: ParsedDataTable,
     pub t_values: ParsedDataTable,
@@ -100,6 +113,7 @@ impl AnovaResult {
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub(crate) enum AnalysisResult {
     Table { table: ParsedDataTable },
+    Descriptive { descriptive: DescriptiveResult },
     Correlation { correlation: CorrelationResult },
     Regression { regression: RegressionResult },
     Factor { factor: Box<FactorResult> },
@@ -109,9 +123,10 @@ pub(crate) enum AnalysisResult {
 impl AnalysisResult {
     pub(crate) fn validate(&self) -> Result<(), String> {
         match self {
+            AnalysisResult::Table { table } => table.validate(),
+            AnalysisResult::Descriptive { descriptive } => descriptive.validate(),
             AnalysisResult::Correlation { correlation } => correlation.validate(),
             AnalysisResult::Regression { regression } => regression.validate(),
-            AnalysisResult::Table { table } => table.validate(),
             AnalysisResult::Factor { factor } => factor.validate(),
             AnalysisResult::Anova { anova } => anova.validate(),
         }

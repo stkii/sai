@@ -18,6 +18,6 @@ export const descriptiveMethod: MethodModule<'descriptive'> = {
   buildExportSections: buildDescriptiveExportSections,
 };
 
-export type { DescriptiveOptions, DescriptiveOrder } from './modal';
+export type { BreaksMethod, DescriptiveOptions, DescriptiveOrder, HistogramMode } from './modal';
 export { DescriptiveModal } from './modal';
 export { buildDescriptiveExportSections, renderDescriptiveResult } from './result';

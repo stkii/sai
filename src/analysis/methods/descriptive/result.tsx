@@ -1,4 +1,4 @@
-import { Stack, Text } from '@chakra-ui/react';
+import { Image, Stack, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { DataTable } from '../../../components/DataTable';
 import type { AnalysisResult, AnalysisSection } from '../../types';
@@ -27,20 +27,30 @@ export const renderDescriptiveResult = (result: AnalysisResult): ReactNode => {
 
   const table = section.table;
   return (
-    <Stack gap="2">
-      <Text fontWeight="medium" fontSize="sm">
-        {section.label}
-      </Text>
-      <DataTable
-        table={table}
-        height={calcTableHeight(table.rows.length)}
-        showRowIndex={false}
-        virtualize={false}
-      />
-      {table.note ? (
-        <Text fontSize="sm" color="gray.600">
-          {table.note}
+    <Stack gap="5">
+      <Stack gap="2">
+        <Text fontWeight="medium" fontSize="sm">
+          {section.label}
         </Text>
+        <DataTable
+          table={table}
+          height={calcTableHeight(table.rows.length)}
+          showRowIndex={false}
+          virtualize={false}
+        />
+      </Stack>
+      {section.image ? (
+        <Stack gap="2">
+          <Text fontWeight="medium" fontSize="sm">
+            ヒストグラム
+          </Text>
+          <Image src={section.image} alt="ヒストグラム" maxW="600px" borderRadius="md" />
+          {table.note ? (
+            <Text fontSize="sm" color="gray.600">
+              {table.note}
+            </Text>
+          ) : null}
+        </Stack>
       ) : null}
     </Stack>
   );
