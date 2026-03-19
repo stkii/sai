@@ -179,8 +179,6 @@
                               independents,
                               interactions = NULL,
                               intercept = TRUE,
-                              weights = NULL,
-                              na_action = "na.omit",
                               center = FALSE) {
   # Receive raw data.
   # Input dataset must be a data frame
@@ -236,16 +234,10 @@
     formula <- base::paste(formula, "+", base::paste(interaction_formula_terms, collapse = " + "))
   }
 
-  na_fun <- switch(base::as.character(na_action),
-                   "na.exclude" = stats::na.exclude,
-                   "na.fail"    = stats::na.fail,
-                   stats::na.omit)
-
   # Fit the linear model
   fit <- lm(stats::as.formula(formula),
             data = df,
-            weights = weights,
-            na.action = na_fun,
+            na.action = stats::na.omit,
             x = FALSE,
             y = FALSE,
             # NEED to calculate the coeffcients. DO NOT set to FALSE.

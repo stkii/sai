@@ -16,17 +16,5 @@ export const ANALYSIS_METHODS = [
   reliabilityMethod,
 ] as const satisfies readonly MethodModule[];
 
-export { anovaMethod } from './anova';
-export type {
-  MethodDefinition,
-  MethodModule,
-  MethodModule as AnalysisMethod,
-  ModalProps,
-  ModalRenderArgs,
-} from './contracts';
-export { correlationMethod } from './correlation';
-export { descriptiveMethod } from './descriptive';
-export { factorMethod } from './factor';
-export { regressionMethod } from './regression';
-export { reliabilityMethod } from './reliability';
+export type { MethodDefinition, MethodModule } from './contracts';
 export { buildExportSectionsFromResult, getSingleSection } from './utils';

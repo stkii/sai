@@ -37,7 +37,6 @@ COHEN_ES_LARGE <- c(
                        t_type = NULL,
                        alternative = NULL,
                        k = NULL,
-                       categories = NULL,
                        df = NULL,
                        u = NULL) {
   if (!requireNamespace("pwr", quietly = TRUE)) {
@@ -216,7 +215,6 @@ RunPowerTest <- function(effect = NULL,
                          t_type = NULL,
                          alternative = NULL,
                          k = NULL,
-                         categories = NULL,
                          df = NULL,
                          u = NULL) {
   .PowerTest(
@@ -228,7 +226,6 @@ RunPowerTest <- function(effect = NULL,
     t_type = t_type,
     alternative = alternative,
     k = k,
-    categories = categories,
     df = df,
     u = u
   )

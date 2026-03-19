@@ -15,7 +15,3 @@ export const anovaMethod: MethodModule<'anova'> = {
   renderResult: renderAnovaResult,
   buildExportSections: buildAnovaExportSections,
 };
-
-export type { AnovaOptions } from './modal';
-export { AnovaModal } from './modal';
-export { buildAnovaExportSections, renderAnovaResult } from './result';

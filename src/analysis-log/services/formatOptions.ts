@@ -144,7 +144,7 @@ const formatFactor = (options: AnalysisOptions): FormattedOption[] => {
 
   result.push({
     label: 'スクリープロット',
-    value: options.showScreePlot === true ? '表示' : '非表示',
+    value: options.show_scree_plot === true ? '表示' : '非表示',
   });
 
   return result;

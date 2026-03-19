@@ -22,12 +22,12 @@ ERR_MESSAGES <- base::list(
   "ERR-855" = "ANOVA dependent variable and covariates must contain only finite numeric values",
   # 900 - 999 represents NO user-caused errors
   # R module loading
-  "ERR-901" = "R module 'constants.R' not found under src-r/R",
+  "ERR-901" = "R module 'utils.R' not found under src-r/R",
   "ERR-902" = "R module 'describe.R' not found under src-r/R",
   "ERR-903" = "R module 'correlation.R' not found under src-r/R",
   "ERR-904" = "R module 'reliability.R' not found under src-r/R",
-  "ERR-905" = "R module 'regression.R' not found under src-r/R",
-  "ERR-906" = "R module 'design.R' not found under src-r/R",
+  "ERR-905" = "R module 'centering.R' not found under src-r/R",
+  "ERR-906" = "R module 'regression.R' not found under src-r/R",
   "ERR-907" = "R module 'centering.R' not found under src-r/R",
   "ERR-908" = "R module 'common.R' not found under src-r/R",
   "ERR-909" = "R module 'rotation.R' not found under src-r/R",

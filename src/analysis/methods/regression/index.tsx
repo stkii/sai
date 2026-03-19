@@ -17,7 +17,3 @@ export const regressionMethod: MethodModule<'regression'> = {
   renderResult: renderRegressionResult,
   buildExportSections: buildRegressionExportSections,
 };
-
-export type { RegressionInteractions, RegressionOptions } from './modal';
-export { RegressionModal } from './modal';
-export { buildRegressionExportSections, renderRegressionResult } from './result';

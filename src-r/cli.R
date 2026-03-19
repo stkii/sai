@@ -148,7 +148,7 @@
         ),
         list(
           name = "na_ignore",
-          payload_keys = c("na_ignore", "naIgnore"),
+          payload_keys = c("na_ignore"),
           cli_key = "na_ignore",
           default = "true",
           post = .NormalizeNaIgnore
@@ -227,13 +227,13 @@
       output_kind = "factor",
       requires_numeric = TRUE,
       options = list(
-        list(name = "n_factors", payload_keys = c("n_factors", "nFactors"), cli_key = "n_factors", default = ""),
-        list(name = "n_factors_auto", payload_keys = c("n_factors_auto", "nFactorsAuto"), cli_key = "n_factors_auto", default = NULL),
+        list(name = "n_factors", payload_keys = c("n_factors"), cli_key = "n_factors", default = ""),
+        list(name = "n_factors_auto", payload_keys = c("n_factors_auto"), cli_key = "n_factors_auto", default = NULL),
         list(name = "rotation", payload_keys = c("rotation"), cli_key = "rotation", default = ""),
         list(name = "method", payload_keys = c("method"), cli_key = "method", default = ""),
-        list(name = "corr_use", payload_keys = c("corr_use", "corrUse", "use"), cli_key = "corr_use", default = ""),
+        list(name = "corr_use", payload_keys = c("corr_use"), cli_key = "corr_use", default = ""),
         list(name = "power", payload_keys = c("power"), cli_key = "power", default = "", post = .NormalizePower),
-        list(name = "show_scree_plot", payload_keys = c("show_scree_plot", "showScreePlot"), cli_key = NULL, default = NULL)
+        list(name = "show_scree_plot", payload_keys = c("show_scree_plot"), cli_key = NULL, default = NULL)
       ),
       run = function(df, ctx) {
         RunFactor(df,
@@ -271,17 +271,17 @@
       options = list(
         list(name = "effect", payload_keys = c("effect"), cli_key = "effect", default = ""),
         list(name = "test", payload_keys = c("test"), cli_key = "test", default = ""),
-        list(name = "sig_level", payload_keys = c("sig_level", "sigLevel"), cli_key = "sig_level", default = 0.05),
+        list(name = "sig_level", payload_keys = c("sig_level"), cli_key = "sig_level", default = 0.05),
         list(name = "power",
              payload_keys = c("power"),
              cli_key = "power",
              default = NULL,
              post = .NormalizePower),
         list(name = "n",
-             payload_keys = c("n", "sample_size", "sampleSize"),
+             payload_keys = c("n"),
              cli_key = "n",
              default = NULL),
-        list(name = "t_type", payload_keys = c("t_type", "tType"), cli_key = "t_type", default = ""),
+        list(name = "t_type", payload_keys = c("t_type"), cli_key = "t_type", default = ""),
         list(name = "alternative", payload_keys = c("alternative"), cli_key = "alternative", default = ""),
         list(name = "k", payload_keys = c("k"), cli_key = "k", default = NULL),
         list(name = "df", payload_keys = c("df"), cli_key = "df", default = NULL),
@@ -306,15 +306,15 @@
       options = list(
         list(name = "dependent", payload_keys = c("dependent"), cli_key = NULL, default = NULL),
         list(name = "subject", payload_keys = c("subject"), cli_key = NULL, default = NULL),
-        list(name = "between_factors", payload_keys = c("between_factors", "betweenFactors"),
+        list(name = "between_factors", payload_keys = c("between_factors"),
              cli_key = NULL, default = NULL),
-        list(name = "within_factor_name", payload_keys = c("within_factor_name", "withinFactorName"),
+        list(name = "within_factor_name", payload_keys = c("within_factor_name"),
              cli_key = NULL, default = NULL),
-        list(name = "within_factor_levels", payload_keys = c("within_factor_levels", "withinFactorLevels"),
+        list(name = "within_factor_levels", payload_keys = c("within_factor_levels"),
              cli_key = NULL, default = NULL),
         list(name = "covariates", payload_keys = c("covariates"), cli_key = NULL, default = NULL),
         list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "all"),
-        list(name = "effect_size", payload_keys = c("effect_size", "effectSize"),
+        list(name = "effect_size", payload_keys = c("effect_size"),
              cli_key = NULL, default = "peta")
       ),
       run = function(df, ctx) {

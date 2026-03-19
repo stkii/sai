@@ -10,12 +10,7 @@ use crate::domain::input::table::ParsedDataTable;
 pub(crate) fn normalize_options_object(options: Option<Value>) -> Map<String, Value> {
     match options {
         Some(Value::Object(map)) => map,
-        Some(value) => {
-            let mut map = Map::new();
-            map.insert("value".to_string(), value);
-            map
-        },
-        None => Map::new(),
+        _ => Map::new(),
     }
 }
 

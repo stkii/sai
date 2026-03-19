@@ -23,7 +23,6 @@ impl AnalysisMethodHandler for DescriptiveHandler {
             option_string_from_value(normalized.get("order")).unwrap_or_else(|| "default".to_string());
         let na_ignore = normalized.get("na_ignore")
                                   .and_then(option_bool_from_value)
-                                  .or_else(|| normalized.get("naIgnore").and_then(option_bool_from_value))
                                   .unwrap_or(true);
         let skewness = normalized.get("skewness")
                                  .and_then(option_bool_from_value)
@@ -43,7 +42,6 @@ impl AnalysisMethodHandler for DescriptiveHandler {
         normalized.insert("kurtosis".to_string(), Value::Bool(kurtosis));
         normalized.insert("histogram".to_string(), Value::String(histogram));
         normalized.insert("breaks".to_string(), Value::String(breaks));
-        normalized.remove("naIgnore");
 
         Value::Object(normalized)
     }

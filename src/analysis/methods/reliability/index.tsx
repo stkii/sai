@@ -17,7 +17,3 @@ export const reliabilityMethod: MethodModule<'reliability'> = {
   renderResult: renderReliabilityResult,
   buildExportSections: buildReliabilityExportSections,
 };
-
-export type { ReliabilityModel, ReliabilityOptions } from './modal';
-export { ReliabilityModal } from './modal';
-export { buildReliabilityExportSections, renderReliabilityResult } from './result';
