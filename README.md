@@ -98,6 +98,13 @@
       <td>アプリ内におけるデータの受け渡し</td>
     </tr>
     <tr>
+      <td>記述統計</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/e1071/index.html">e1071</a>
+      </td>
+      <td>歪度と尖度の算出</td>
+    </tr>
+    <tr>
       <td>因子分析</td>
       <td>
         <a href="https://cran.r-project.org/web/packages/EFAtools/index.html">EFAtools</a>
