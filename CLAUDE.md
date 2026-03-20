@@ -114,6 +114,31 @@ cd src-tauri && cargo check
 cd .. && pnpm fixall && pnpm check && pnpm ts
 ```
 
+## Sample Size Notes (`n_note`)
+
+When displaying the effective sample size (`n`) in analysis results, certain conditions require a user-facing note (`n_note`) to prevent silent misrepresentation of the data. These notes are generated in the R layer and flow through Rust to the frontend via the `n_note` field.
+
+### Required notes
+
+The following cases **must** display a note to the user. Omitting these notes is a dark pattern (see `AGENTS.md`).
+
+| Condition | Note text | Applies to |
+|-----------|-----------|------------|
+| Listwise deletion removed rows (`n < nrow(df)`) | `リストワイズ削除により、X件の観測が除外されました` | correlation (`complete.obs`), factor (`complete.obs`), regression, reliability, anova |
+| Pairwise deletion | `ペアワイズ削除のため、変数ペアごとにサンプルサイズが異なる場合があります` | correlation (`pairwise.complete.obs`), factor (`pairwise.complete.obs`) |
+| Repeated measures design | `反復測定デザインのため、サンプルサイズは総観測数（被験者数 × 条件数）です` | anova (within-subjects) |
+
+### Implementation
+
+- Each R `Run*` function sets `parsed$n` (effective sample size) and optionally `parsed$n_note` (user-facing caveat)
+- `cli.R` `.BuildOutputPayload()` extracts both fields and places them at the top level of the JSON payload
+- Rust `parse_analysis_output()` extracts `n` and `n_note` before deserializing `AnalysisResult`
+- The note is stored in `AnalysisLogRecord.n_note` and displayed in `AnalysisLogDetail` as orange text below the sample size
+
+### Adding new notes
+
+When adding a new analysis method or modifying NA handling, check whether the reported `n` could differ from what the user expects. If so, set `parsed$n_note` in the R `Run*` function. See the existing implementations in `correlation.R`, `factor.R`, `regression.R`, `reliability.R`, and `anova.R` for examples.
+
 ## Key Conventions
 
 - All user-facing text is in Japanese

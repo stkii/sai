@@ -254,6 +254,9 @@ flowchart TD
   B --> I8
   B --> I9
 
+  %% Cross-usecase
+  U3 --> U7
+
   %% Domain references (non-domain/ deps only)
   U3 --> D8
   U6 --> D8
@@ -409,6 +412,9 @@ flowchart TD
   U1 --> D7
   U1 --> D10
 
+  %% Cross-usecase
+  U3 --> U7
+
   %% Usecase analysis → Domain
   U3 --> D1
   U3 --> D2
@@ -434,9 +440,17 @@ flowchart TD
   I1 --> D10
   I2 --> D7
   I2 --> D10
+  I3 --> D7
+  I3 --> D10
+  I4 --> D1
+  I4 --> D3
+  I4 --> D7
+  I4 --> D10
   I5 --> D1
   I5 --> D2
   I5 --> D3
+  I5 --> D7
+  I5 --> D10
   I6 --> D2
   I8 --> D8
   I9 --> D8

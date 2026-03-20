@@ -6,10 +6,12 @@ import { getSheetNamesByPath, switchSheet } from '../services/sheetSwitchService
 
 interface Props {
   selection: Dataset | null;
+  rowCount: number;
+  columnCount: number;
   onSheetLoaded: (table: ParsedDataTable, selection: Dataset) => void;
 }
 
-export const LoadedDatasetBar = ({ selection, onSheetLoaded }: Props) => {
+export const LoadedDatasetBar = ({ selection, rowCount, columnCount, onSheetLoaded }: Props) => {
   const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [loadingSheets, setLoadingSheets] = useState(false);
   const [changingSheet, setChangingSheet] = useState(false);
@@ -99,7 +101,7 @@ export const LoadedDatasetBar = ({ selection, onSheetLoaded }: Props) => {
     <Stack gap="1">
       <HStack gap="2" flexWrap="wrap">
         <Text color="gray.600" fontSize="sm">
-          読み込み中データ: {selectedPath}
+          読み込み中データ: {selectedPath}（{rowCount}行 × {columnCount}列）
         </Text>
         {sheetNames.length > 0 ? (
           <>

@@ -7,6 +7,7 @@ ERR_MESSAGES <- base::list(
   # Data structure / size
   "ERR-831" = "Not enough numeric columns (need at least two)",
   "ERR-832" = "Missing values detected. Change missing-value handling option.",
+  "ERR-833" = "Not enough data rows for this analysis",
   # Design (power analysis) parameter errors (user-caused)
   "ERR-845" = "sig_level must be between 0 and 1",
   "ERR-846" = "power must be between 0 and 1",
@@ -21,12 +22,12 @@ ERR_MESSAGES <- base::list(
   "ERR-855" = "ANOVA dependent variable and covariates must contain only finite numeric values",
   # 900 - 999 represents NO user-caused errors
   # R module loading
-  "ERR-901" = "R module 'constants.R' not found under src-r/R",
+  "ERR-901" = "R module 'utils.R' not found under src-r/R",
   "ERR-902" = "R module 'describe.R' not found under src-r/R",
   "ERR-903" = "R module 'correlation.R' not found under src-r/R",
   "ERR-904" = "R module 'reliability.R' not found under src-r/R",
-  "ERR-905" = "R module 'regression.R' not found under src-r/R",
-  "ERR-906" = "R module 'design.R' not found under src-r/R",
+  "ERR-905" = "R module 'centering.R' not found under src-r/R",
+  "ERR-906" = "R module 'regression.R' not found under src-r/R",
   "ERR-907" = "R module 'centering.R' not found under src-r/R",
   "ERR-908" = "R module 'common.R' not found under src-r/R",
   "ERR-909" = "R module 'rotation.R' not found under src-r/R",

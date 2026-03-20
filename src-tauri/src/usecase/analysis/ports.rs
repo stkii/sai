@@ -18,18 +18,18 @@ pub(crate) trait AnalysisRunner: Send + Sync {
                       method: Method,
                       dataset: &NumericDataset,
                       options: &Value)
-                      -> Result<AnalysisResult, String>;
+                      -> Result<(AnalysisResult, Option<u32>, Option<String>), String>;
 
     fn run_r_analysis_without_dataset(&self,
                                       method: Method,
                                       options: &Value)
-                                      -> Result<AnalysisResult, String>;
+                                      -> Result<(AnalysisResult, Option<u32>, Option<String>), String>;
 
     fn run_r_analysis_string_mixed(&self,
                                    method: Method,
                                    dataset: &StringMixedDataset,
                                    options: &Value)
-                                   -> Result<AnalysisResult, String>;
+                                   -> Result<(AnalysisResult, Option<u32>, Option<String>), String>;
 }
 
 pub(crate) trait DatasetCacheStore: Send + Sync {

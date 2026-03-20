@@ -20,7 +20,7 @@ export interface FactorOptions extends AnalysisOptions {
   corr_use: FactorCorrUse;
   power?: number;
   sort_loadings: boolean;
-  showScreePlot: boolean;
+  show_scree_plot: boolean;
 }
 
 const METHOD_OPTIONS = [{ label: '最尤法', value: 'ml' }] as const satisfies ReadonlyArray<{
@@ -125,7 +125,7 @@ export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<
       rotation,
       corr_use: corrUse,
       sort_loadings: sortLoadings,
-      showScreePlot,
+      show_scree_plot: showScreePlot,
     };
 
     if (factorNumberCriterion === 'fixed') {

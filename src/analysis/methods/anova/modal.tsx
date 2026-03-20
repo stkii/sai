@@ -10,35 +10,52 @@ import { ModalFrame } from '../../components/ModalFrame';
 import type { AnalysisOptions } from '../../types';
 import type { ModalProps } from '../contracts';
 
-type AnovaInteractionMode = 'factor_only' | 'manual';
+type AnovaInteractionMode = 'all' | 'manual';
 
-export type AnovaInteractions = 'factor_only' | InteractionTerm[];
+export type AnovaInteractions = 'all' | InteractionTerm[];
+
+type EffectSizeType = 'peta' | 'eta' | 'omega' | 'none';
 
 export interface AnovaOptions extends AnalysisOptions {
-  dependent: string;
-  independent: string[];
-  factors: string[];
+  dependent?: string;
+  subject?: string;
+  between_factors: string[];
+  within_factor_name?: string;
+  within_factor_levels: string[];
   covariates: string[];
   interactions: AnovaInteractions;
+  effect_size: EffectSizeType;
 }
 
 const INTERACTION_MODE_OPTIONS = [
-  { label: '因子間のみ（標準）', value: 'factor_only' },
+  { label: '全て投入', value: 'all' },
   { label: '作成して投入', value: 'manual' },
 ] as const satisfies ReadonlyArray<{ label: string; value: AnovaInteractionMode }>;
 
+const EFFECT_SIZE_OPTIONS = [
+  { label: '偏η²', value: 'peta' },
+  { label: 'η²', value: 'eta' },
+  { label: 'ω²', value: 'omega' },
+  { label: 'なし', value: 'none' },
+] as const satisfies ReadonlyArray<{ label: string; value: EffectSizeType }>;
+
 const DEFAULT_SELECTION: AnovaVariableSelection = {
   dependent: null,
-  factors: [],
+  subject: null,
+  betweenFactors: [],
+  withinFactorName: '',
+  withinFactorLevels: [],
   covariates: [],
 };
 
-const DEFAULT_INTERACTION_MODE: AnovaInteractionMode = 'factor_only';
+const DEFAULT_INTERACTION_MODE: AnovaInteractionMode = 'all';
+const DEFAULT_EFFECT_SIZE: EffectSizeType = 'peta';
 
 export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<AnovaOptions>) => {
   const [selection, setSelection] = useState<AnovaVariableSelection>(DEFAULT_SELECTION);
   const [interactionMode, setInteractionMode] =
     useState<AnovaInteractionMode>(DEFAULT_INTERACTION_MODE);
+  const [effectSize, setEffectSize] = useState<EffectSizeType>(DEFAULT_EFFECT_SIZE);
   const [manualTerms, setManualTerms] = useState<InteractionTerm[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +65,7 @@ export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<A
     if (!open) {
       setSelection(DEFAULT_SELECTION);
       setInteractionMode(DEFAULT_INTERACTION_MODE);
+      setEffectSize(DEFAULT_EFFECT_SIZE);
       setManualTerms([]);
       setError(null);
       setLoading(false);
@@ -66,24 +84,48 @@ export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<A
   }, [variables]);
 
   useEffect(() => {
-    const allIndependent = new Set([...selection.factors, ...selection.covariates]);
+    const allFactors = new Set([
+      ...selection.betweenFactors,
+      ...(selection.withinFactorLevels.length > 0 && selection.withinFactorName
+        ? [selection.withinFactorName]
+        : []),
+      ...selection.covariates,
+    ]);
     setManualTerms((prev) => {
-      const next = prev.filter((term) => term.every((v) => allIndependent.has(v)));
+      const next = prev.filter((term) => term.every((v) => allFactors.has(v)));
       return next.length === prev.length ? prev : next;
     });
-  }, [selection.factors, selection.covariates]);
+  }, [
+    selection.betweenFactors,
+    selection.withinFactorName,
+    selection.withinFactorLevels,
+    selection.covariates,
+  ]);
 
   const handleExecute = async () => {
-    const dependent = selection.dependent;
-    if (!dependent) {
+    const betweenFactors = selection.betweenFactors;
+    const withinFactorLevels = selection.withinFactorLevels;
+    const withinFactorName = selection.withinFactorName.trim();
+    const covariates = selection.covariates;
+    const hasWithin = withinFactorLevels.length > 0;
+
+    if (!hasWithin && !selection.dependent) {
       setError('従属変数を選択してください');
       return;
     }
 
-    const factors = selection.factors;
-    const covariates = selection.covariates;
-    if (factors.length === 0 && covariates.length === 0) {
-      setError('因子または共変量を1つ以上選択してください');
+    if (betweenFactors.length === 0 && !hasWithin) {
+      setError('被験者間要因または被験者内水準を1つ以上選択してください');
+      return;
+    }
+
+    if (hasWithin && !withinFactorName) {
+      setError('被験者内要因の要因名を入力してください');
+      return;
+    }
+
+    if (hasWithin && !selection.subject) {
+      setError('被験者内水準を使用する場合は被験者IDを選択してください');
       return;
     }
 
@@ -91,17 +133,36 @@ export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<A
       return;
     }
 
-    const independent = [...factors, ...covariates];
     const interactions: AnovaInteractions =
       interactionMode === 'manual' ? manualTerms : interactionMode;
+
+    // Build list of columns to send to R
+    const allVariables = [
+      ...new Set([
+        ...(selection.dependent ? [selection.dependent] : []),
+        ...(selection.subject ? [selection.subject] : []),
+        ...betweenFactors,
+        ...withinFactorLevels,
+        ...covariates,
+      ]),
+    ];
 
     setLoading(true);
     setError(null);
     try {
       await onExecute(
-        [...new Set([dependent, ...independent])],
-        { dependent, independent, factors, covariates, interactions },
-        factors.length > 0 ? 'string_mixed' : undefined
+        allVariables,
+        {
+          dependent: selection.dependent ?? undefined,
+          subject: selection.subject ?? undefined,
+          between_factors: betweenFactors,
+          within_factor_name: hasWithin ? withinFactorName : undefined,
+          within_factor_levels: withinFactorLevels,
+          covariates,
+          interactions,
+          effect_size: effectSize,
+        },
+        'string_mixed'
       );
     } catch (executeError: unknown) {
       setError(executeError instanceof Error ? executeError.message : String(executeError));
@@ -109,6 +170,14 @@ export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<A
       setLoading(false);
     }
   };
+
+  const allIndependent = [
+    ...selection.betweenFactors,
+    ...(selection.withinFactorLevels.length > 0 && selection.withinFactorName
+      ? [selection.withinFactorName]
+      : []),
+    ...selection.covariates,
+  ];
 
   return (
     <ModalFrame
@@ -158,11 +227,21 @@ export const AnovaModal = ({ open, onClose, variables, onExecute }: ModalProps<A
               />
               {interactionMode === 'manual' && (
                 <InteractionBuilder
-                  independentVariables={[...selection.factors, ...selection.covariates]}
+                  independentVariables={allIndependent}
                   terms={manualTerms}
                   onChange={setManualTerms}
                 />
               )}
+            </Stack>
+
+            <Stack gap="2">
+              <Text fontWeight="semibold">効果量</Text>
+              <BaseRadioButton
+                contents={EFFECT_SIZE_OPTIONS}
+                orientation="horizontal"
+                value={effectSize}
+                onChange={(value) => setEffectSize(value as EffectSizeType)}
+              />
             </Stack>
           </Stack>
         </Box>

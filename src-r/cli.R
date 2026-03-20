@@ -136,7 +136,7 @@
   # Dispatch table: analysis key -> runner + output kind.
   list(
     descriptive = list(
-      output_kind = "table",
+      output_kind = "descriptive",
       requires_numeric = TRUE,
       options = list(
         list(
@@ -148,18 +148,56 @@
         ),
         list(
           name = "na_ignore",
-          payload_keys = c("na_ignore", "naIgnore"),
+          payload_keys = c("na_ignore"),
           cli_key = "na_ignore",
           default = "true",
           post = .NormalizeNaIgnore
+        ),
+        list(
+          name = "skewness",
+          payload_keys = c("skewness"),
+          cli_key = "skewness",
+          default = FALSE,
+          post = base::as.logical
+        ),
+        list(
+          name = "kurtosis",
+          payload_keys = c("kurtosis"),
+          cli_key = "kurtosis",
+          default = FALSE,
+          post = base::as.logical
+        ),
+        list(
+          name = "histogram",
+          payload_keys = c("histogram"),
+          cli_key = "histogram",
+          default = "none",
+          post = base::as.character
+        ),
+        list(
+          name = "histogram_variables",
+          payload_keys = c("histogram_variables"),
+          cli_key = NULL,
+          default = NULL
+        ),
+        list(
+          name = "breaks",
+          payload_keys = c("breaks"),
+          cli_key = "breaks",
+          default = "Sturges",
+          post = base::as.character
         )
       ),
       run = function(df, ctx) {
-        RunDescriptive(df, order = ctx$order, na_ig = ctx$na_ignore)
+        RunDescriptive(df, order = ctx$order, na_ig = ctx$na_ignore,
+                       skewness = ctx$skewness, kurtosis = ctx$kurtosis,
+                       histogram = ctx$histogram,
+                       histogram_variables = ctx$histogram_variables,
+                       breaks = ctx$breaks)
       }
     ),
     correlation = list(
-      output_kind = "table",
+      output_kind = "correlation",
       requires_numeric = TRUE,
       options = list(
         list(name = "method", payload_keys = c("method"), cli_key = "method", default = ""),
@@ -189,13 +227,13 @@
       output_kind = "factor",
       requires_numeric = TRUE,
       options = list(
-        list(name = "n_factors", payload_keys = c("n_factors", "nFactors"), cli_key = "n_factors", default = ""),
-        list(name = "n_factors_auto", payload_keys = c("n_factors_auto", "nFactorsAuto"), cli_key = "n_factors_auto", default = NULL),
+        list(name = "n_factors", payload_keys = c("n_factors"), cli_key = "n_factors", default = ""),
+        list(name = "n_factors_auto", payload_keys = c("n_factors_auto"), cli_key = "n_factors_auto", default = NULL),
         list(name = "rotation", payload_keys = c("rotation"), cli_key = "rotation", default = ""),
         list(name = "method", payload_keys = c("method"), cli_key = "method", default = ""),
-        list(name = "corr_use", payload_keys = c("corr_use", "corrUse", "use"), cli_key = "corr_use", default = ""),
+        list(name = "corr_use", payload_keys = c("corr_use"), cli_key = "corr_use", default = ""),
         list(name = "power", payload_keys = c("power"), cli_key = "power", default = "", post = .NormalizePower),
-        list(name = "show_scree_plot", payload_keys = c("show_scree_plot", "showScreePlot"), cli_key = NULL, default = NULL)
+        list(name = "show_scree_plot", payload_keys = c("show_scree_plot"), cli_key = NULL, default = NULL)
       ),
       run = function(df, ctx) {
         RunFactor(df,
@@ -233,17 +271,17 @@
       options = list(
         list(name = "effect", payload_keys = c("effect"), cli_key = "effect", default = ""),
         list(name = "test", payload_keys = c("test"), cli_key = "test", default = ""),
-        list(name = "sig_level", payload_keys = c("sig_level", "sigLevel"), cli_key = "sig_level", default = 0.05),
+        list(name = "sig_level", payload_keys = c("sig_level"), cli_key = "sig_level", default = 0.05),
         list(name = "power",
              payload_keys = c("power"),
              cli_key = "power",
              default = NULL,
              post = .NormalizePower),
         list(name = "n",
-             payload_keys = c("n", "sample_size", "sampleSize"),
+             payload_keys = c("n"),
              cli_key = "n",
              default = NULL),
-        list(name = "t_type", payload_keys = c("t_type", "tType"), cli_key = "t_type", default = ""),
+        list(name = "t_type", payload_keys = c("t_type"), cli_key = "t_type", default = ""),
         list(name = "alternative", payload_keys = c("alternative"), cli_key = "alternative", default = ""),
         list(name = "k", payload_keys = c("k"), cli_key = "k", default = NULL),
         list(name = "df", payload_keys = c("df"), cli_key = "df", default = NULL),
@@ -263,38 +301,63 @@
       }
     ),
     anova = list(
-      output_kind = "table",
-      # ANOVA datasets contain factor (categorical) columns alongside numeric ones,
-      # so the numeric-only validation must be skipped.
+      output_kind = "anova",
       requires_numeric = FALSE,
       options = list(
         list(name = "dependent", payload_keys = c("dependent"), cli_key = NULL, default = NULL),
-        list(name = "independent", payload_keys = c("independent"), cli_key = NULL, default = NULL),
-        list(name = "factors", payload_keys = c("factors"), cli_key = NULL, default = NULL),
+        list(name = "subject", payload_keys = c("subject"), cli_key = NULL, default = NULL),
+        list(name = "between_factors", payload_keys = c("between_factors"),
+             cli_key = NULL, default = NULL),
+        list(name = "within_factor_name", payload_keys = c("within_factor_name"),
+             cli_key = NULL, default = NULL),
+        list(name = "within_factor_levels", payload_keys = c("within_factor_levels"),
+             cli_key = NULL, default = NULL),
         list(name = "covariates", payload_keys = c("covariates"), cli_key = NULL, default = NULL),
-        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "factor_only")
+        list(name = "interactions", payload_keys = c("interactions"), cli_key = NULL, default = "all"),
+        list(name = "effect_size", payload_keys = c("effect_size"),
+             cli_key = NULL, default = "peta")
       ),
       run = function(df, ctx) {
         RunAnova(df,
-                 dependent = ctx$dependent,
-                 independent = ctx$independent,
-                 factors = ctx$factors,
-                 covariates = ctx$covariates,
-                 interactions = ctx$interactions)
+                 dependent            = ctx$dependent,
+                 subject              = ctx$subject,
+                 between_factors      = ctx$between_factors,
+                 within_factor_name   = ctx$within_factor_name,
+                 within_factor_levels = ctx$within_factor_levels,
+                 covariates           = ctx$covariates,
+                 interactions         = ctx$interactions,
+                 effect_size          = ctx$effect_size)
       }
     )
   )
 }
 
 .BuildOutputPayload <- function(kind, result) {
+  # Extract effective sample size (every Run* function must set result$n).
+  # Optionally extract n_note (user-facing caveat about the reported N).
+  n <- result$n
+  n_note <- result$n_note
+  result$n <- NULL
+  result$n_note <- NULL
+
   # Normalize output shape for the caller.
-  if (identical(kind, "regression")) {
+  payload <- if (identical(kind, "correlation")) {
+    list(kind = "correlation", correlation = result)
+  } else if (identical(kind, "regression")) {
     list(kind = "regression", regression = result)
   } else if (identical(kind, "factor")) {
     list(kind = "factor", factor = result)
+  } else if (identical(kind, "anova")) {
+    list(kind = "anova", anova = result)
+  } else if (identical(kind, "descriptive")) {
+    list(kind = "descriptive", descriptive = result)
   } else {
     list(kind = "table", table = result)
   }
+
+  payload$n <- n
+  if (!is.null(n_note)) payload$n_note <- n_note
+  payload
 }
 
 Main <- function() {

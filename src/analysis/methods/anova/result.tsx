@@ -2,13 +2,16 @@ import { Stack, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { DataTable } from '../../../components/DataTable';
 import type { AnalysisResult, AnalysisSection } from '../../types';
-import { buildExportSectionsFromResult, getSingleSection } from '../utils';
+import { buildExportSectionsFromResult } from '../utils';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;
+const MIN_TABLE_HEIGHT = 160;
+const MAX_TABLE_HEIGHT = 420;
 
-const calcTableHeight = (rowCount: number) => {
-  return (rowCount + 1) * RESULT_ROW_HEIGHT + RESULT_TABLE_BORDER;
+const calcTableHeight = (rowCount: number): number => {
+  const rawHeight = (rowCount + 1) * RESULT_ROW_HEIGHT + RESULT_TABLE_BORDER;
+  return Math.max(MIN_TABLE_HEIGHT, Math.min(rawHeight, MAX_TABLE_HEIGHT));
 };
 
 export const buildAnovaExportSections = (result: AnalysisResult): AnalysisSection[] => {
@@ -16,8 +19,7 @@ export const buildAnovaExportSections = (result: AnalysisResult): AnalysisSectio
 };
 
 export const renderAnovaResult = (result: AnalysisResult): ReactNode => {
-  const section = getSingleSection(result);
-  if (!section) {
+  if (result.sections.length === 0) {
     return (
       <Text fontSize="sm" color="red.500">
         分散分析の結果がありません
@@ -25,23 +27,29 @@ export const renderAnovaResult = (result: AnalysisResult): ReactNode => {
     );
   }
 
-  const table = section.table;
   return (
-    <Stack gap="2">
-      <Text fontWeight="medium" fontSize="sm">
-        {section.label}
-      </Text>
-      <DataTable
-        table={table}
-        height={calcTableHeight(table.rows.length)}
-        showRowIndex={false}
-        virtualize={false}
-      />
-      {table.note ? (
-        <Text fontSize="sm" color="gray.600">
-          {table.note}
-        </Text>
-      ) : null}
+    <Stack gap="5">
+      {result.sections.map((section) => {
+        const table = section.table;
+        return (
+          <Stack key={section.key} gap="2">
+            <Text fontWeight="medium" fontSize="sm">
+              {section.label}
+            </Text>
+            <DataTable
+              table={table}
+              height={calcTableHeight(table.rows.length)}
+              showRowIndex={false}
+              virtualize={false}
+            />
+            {table.note ? (
+              <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">
+                {table.note}
+              </Text>
+            ) : null}
+          </Stack>
+        );
+      })}
     </Stack>
   );
 };

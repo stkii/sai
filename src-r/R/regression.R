@@ -179,8 +179,6 @@
                               independents,
                               interactions = NULL,
                               intercept = TRUE,
-                              weights = NULL,
-                              na_action = "na.omit",
                               center = FALSE) {
   # Receive raw data.
   # Input dataset must be a data frame
@@ -236,16 +234,10 @@
     formula <- base::paste(formula, "+", base::paste(interaction_formula_terms, collapse = " + "))
   }
 
-  na_fun <- switch(base::as.character(na_action),
-                   "na.exclude" = stats::na.exclude,
-                   "na.fail"    = stats::na.fail,
-                   stats::na.omit)
-
   # Fit the linear model
   fit <- lm(stats::as.formula(formula),
             data = df,
-            weights = weights,
-            na.action = na_fun,
+            na.action = stats::na.omit,
             x = FALSE,
             y = FALSE,
             # NEED to calculate the coeffcients. DO NOT set to FALSE.
@@ -258,11 +250,16 @@
   # Compute VIFs for predictors (using the same df, post-centering if applicable)
   vifs <- .ComputeVIFs(fit)
 
+  ci <- stats::confint(fit, level = 0.95)
+  n_obs <- base::as.integer(stats::nobs(fit))
+
   return(
     list(
       summary = result,
       anova = anova_result,
-      vifs = vifs
+      vifs = vifs,
+      confint = ci,
+      n_obs = n_obs
     )
   )
 }
@@ -279,6 +276,7 @@
   smry <- res$summary
   anova_tbl <- res$anova
   vifs <- res$vifs
+  ci <- res$confint
   centered_note <- if (isTRUE(res$centered)) "説明変数が中心化されています" else NULL
 
   # --- Coefficients table ---
@@ -286,7 +284,7 @@
   coef_vars <- base::rownames(coef_tbl)
   if (is.null(coef_vars)) coef_vars <- base::paste0("V", base::seq_len(base::nrow(coef_tbl)))
 
-  coef_headers <- base::c("変数", "係数", "標準誤差", "t値", "p値", "VIF")
+  coef_headers <- base::c("変数", "係数", "標準誤差", "95%下限", "95%上限", "t値", "p値", "VIF")
 
   format_coef_cell <- function(value, p_value) {
     formatted <- FormatNum(value)
@@ -310,10 +308,22 @@
     } else {
       FormatNum(vifs[[var_name]])
     }
+    ci_lower <- if (!is.null(ci) && var_name %in% base::rownames(ci)) {
+      FormatNum(ci[var_name, 1])
+    } else {
+      ""
+    }
+    ci_upper <- if (!is.null(ci) && var_name %in% base::rownames(ci)) {
+      FormatNum(ci[var_name, 2])
+    } else {
+      ""
+    }
     base::c(
       var_name,
       format_coef_cell(coef_tbl[i, 1], p_val),
       FormatNum(coef_tbl[i, 2]),
+      ci_lower,
+      ci_upper,
       FormatNum(coef_tbl[i, 3]),
       FormatPval(p_val),
       vif_val
@@ -326,11 +336,32 @@
   }
 
   # --- ANOVA table ---
-  # anova(fit) returns: Df, Sum Sq, Mean Sq, F value, Pr(>F)
-  anova_vars <- base::rownames(anova_tbl)
-  if (is.null(anova_vars)) anova_vars <- base::paste0("V", base::seq_len(base::nrow(anova_tbl)))
+  # Aggregate anova(fit) into Model / Residual / Total rows.
+  # anova(fit) returns per-predictor rows + Residuals as last row.
+  n_anova_rows <- base::nrow(anova_tbl)
+  resid_idx <- n_anova_rows  # last row is always Residuals
+  model_idxs <- base::seq_len(n_anova_rows - 1L)
 
-  anova_headers <- base::c("要因", "自由度", "平方和", "平均平方", "F値", "p値")
+  model_ss <- base::sum(anova_tbl[model_idxs, "Sum Sq"])
+  model_df <- base::sum(anova_tbl[model_idxs, "Df"])
+  model_ms <- model_ss / model_df
+  resid_ss <- anova_tbl[resid_idx, "Sum Sq"]
+  resid_df <- anova_tbl[resid_idx, "Df"]
+  resid_ms <- anova_tbl[resid_idx, "Mean Sq"]
+  total_ss <- model_ss + resid_ss
+  total_df <- model_df + resid_df
+
+  # F and p from summary (overall model test)
+  f_stat <- smry$fstatistic
+  if (!is.null(f_stat)) {
+    model_f <- f_stat[["value"]]
+    model_p <- stats::pf(model_f, f_stat[["numdf"]], f_stat[["dendf"]], lower.tail = FALSE)
+  } else {
+    model_f <- NA_real_
+    model_p <- NA_real_
+  }
+
+  anova_headers <- base::c("", "平方和", "自由度", "平均平方", "F値", "有意確率")
 
   format_f_cell <- function(value, p_value) {
     formatted <- FormatNum(value)
@@ -345,26 +376,41 @@
     }
   }
 
-  anova_rows <- base::lapply(base::seq_len(base::nrow(anova_tbl)), function(i) {
-    f_val <- anova_tbl[i, "F value"]
-    p_val <- anova_tbl[i, "Pr(>F)"]
+  anova_rows <- base::list(
     base::c(
-      anova_vars[[i]],
-      base::as.character(base::as.integer(anova_tbl[i, "Df"])),
-      FormatNum(anova_tbl[i, "Sum Sq"]),
-      FormatNum(anova_tbl[i, "Mean Sq"]),
-      format_f_cell(f_val, p_val),
-      FormatPval(p_val)
+      "モデル",
+      FormatNum(model_ss),
+      base::as.character(base::as.integer(model_df)),
+      FormatNum(model_ms),
+      format_f_cell(model_f, model_p),
+      FormatPval(model_p)
+    ),
+    base::c(
+      "残差",
+      FormatNum(resid_ss),
+      base::as.character(base::as.integer(resid_df)),
+      FormatNum(resid_ms),
+      "",
+      ""
+    ),
+    base::c(
+      "合計",
+      FormatNum(total_ss),
+      base::as.character(base::as.integer(total_df)),
+      "",
+      "",
+      ""
     )
-  })
+  )
 
   anova <- base::list(headers = anova_headers, rows = anova_rows)
 
   # --- Model summary table ---
-  model_summary_headers <- base::c("モデル", "R²", "調整済みR²", "標準誤差")
+  n_obs <- base::as.integer(smry$df[1] + smry$df[2])
+  model_summary_headers <- base::c("サンプルサイズ", "R²", "調整済みR²", "標準誤差")
   model_summary_rows <- base::list(
     base::c(
-      "モデル1",
+      base::as.character(n_obs),
       FormatNum(smry$r.squared),
       FormatNum(smry$adj.r.squared),
       FormatNum(smry$sigma)
@@ -372,7 +418,12 @@
   )
   model_summary <- base::list(headers = model_summary_headers, rows = model_summary_rows)
 
-  base::list(model_summary = model_summary, coefficients = coefficients, anova = anova)
+  # Effective sample size: nobs(fit) from the fitted model.
+  # lm() applies listwise deletion (na.omit) by default, so this count
+  # reflects the actual number of observations used in the regression.
+  # This value equals smry$df[1] + smry$df[2] (rank + residual df).
+  base::list(model_summary = model_summary, coefficients = coefficients, anova = anova,
+             n = res$n_obs)
 }
 
 # Runner used by CLI dispatcher
@@ -415,6 +466,10 @@ RunRegression <- function(df,
     StopWithErrCode("ERR-920")
   }
 
+  # Minimum rows: number of parameters + 1 (intercept counted if present)
+  n_params <- base::length(indep_norm) + if (isTRUE(intercept)) 1L else 0L
+  ValidateMinRows(df, n_params + 1L)
+
   inter_norm <- .NormalizeRegressionInteractions(interactions)
 
   if (is.list(inter_norm) && base::length(inter_norm) > 0) {
@@ -437,5 +492,12 @@ RunRegression <- function(df,
   )
 
   res$centered <- isTRUE(center_norm)
-  .LinearRegressionParsed(res)
+  parsed <- .LinearRegressionParsed(res)
+
+  # Notify the user when listwise deletion removed observations.
+  n_total <- base::as.integer(base::nrow(df))
+  if (!is.null(parsed$n) && parsed$n < n_total) {
+    parsed$n_note <- base::paste0("リストワイズ削除により、", n_total - parsed$n, "件の観測が除外されました")
+  }
+  parsed
 }

@@ -23,20 +23,16 @@ impl AnalysisMethodHandler for FactorHandler {
         let sort_loadings =
             normalized.get("sort_loadings")
                       .and_then(option_bool_from_value)
-                      .or_else(|| normalized.get("sortLoadings").and_then(option_bool_from_value))
                       .unwrap_or(false);
 
         normalized.insert("sort_loadings".to_string(), Value::Bool(sort_loadings));
-        normalized.remove("sortLoadings");
 
         let show_scree_plot =
             normalized.get("show_scree_plot")
                       .and_then(option_bool_from_value)
-                      .or_else(|| normalized.get("showScreePlot").and_then(option_bool_from_value))
                       .unwrap_or(false);
 
         normalized.insert("show_scree_plot".to_string(), Value::Bool(show_scree_plot));
-        normalized.remove("showScreePlot");
 
         Value::Object(normalized)
     }

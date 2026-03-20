@@ -27,8 +27,12 @@
     cor_method = "pearson"
   )
 
+  # When rotation = "none", EFAtools stores loadings in unrot_loadings
+  # and leaves rot_loadings / rotmat as NULL.
+  loadings <- if (!is.null(res$rot_loadings)) res$rot_loadings else res$unrot_loadings
+
   list(
-    loadings = res$rot_loadings,
+    loadings = loadings,
     Phi = res$Phi,
     structure = res$Structure,
     rotmat = res$rotmat

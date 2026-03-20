@@ -2,7 +2,7 @@ import { Stack, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { DataTable } from '../../../components/DataTable';
 import type { AnalysisResult, AnalysisSection } from '../../types';
-import { buildExportSectionsFromResult, getSingleSection } from '../utils';
+import { buildExportSectionsFromResult } from '../utils';
 
 const RESULT_ROW_HEIGHT = 40;
 const RESULT_TABLE_BORDER = 2;
@@ -16,8 +16,7 @@ export const buildCorrelationExportSections = (result: AnalysisResult): Analysis
 };
 
 export const renderCorrelationResult = (result: AnalysisResult): ReactNode => {
-  const section = getSingleSection(result);
-  if (!section) {
+  if (result.sections.length === 0) {
     return (
       <Text fontSize="sm" color="red.500">
         相関分析の結果がありません
@@ -25,23 +24,26 @@ export const renderCorrelationResult = (result: AnalysisResult): ReactNode => {
     );
   }
 
-  const table = section.table;
   return (
-    <Stack gap="2">
-      <Text fontWeight="medium" fontSize="sm">
-        {section.label}
-      </Text>
-      <DataTable
-        table={table}
-        height={calcTableHeight(table.rows.length)}
-        showRowIndex={false}
-        virtualize={false}
-      />
-      {table.note ? (
-        <Text fontSize="sm" color="gray.600">
-          {table.note}
-        </Text>
-      ) : null}
+    <Stack gap="5">
+      {result.sections.map((section) => (
+        <Stack key={section.key} gap="2">
+          <Text fontWeight="medium" fontSize="sm">
+            {section.label}
+          </Text>
+          <DataTable
+            table={section.table}
+            height={calcTableHeight(section.table.rows.length)}
+            showRowIndex={false}
+            virtualize={false}
+          />
+          {section.table.note ? (
+            <Text fontSize="sm" color="gray.600">
+              {section.table.note}
+            </Text>
+          ) : null}
+        </Stack>
+      ))}
     </Stack>
   );
 };

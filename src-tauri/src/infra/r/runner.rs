@@ -19,20 +19,20 @@ use crate::infra::r::temp_json::JsonTempFile;
 pub fn run_r_analysis(method: Method,
                       dataset: &NumericDataset,
                       options: &Value)
-                      -> Result<AnalysisResult, String> {
+                      -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
     run_r_job(method, Some(dataset), options)
 }
 
 pub fn run_r_analysis_without_dataset(method: Method,
                                       options: &Value)
-                                      -> Result<AnalysisResult, String> {
+                                      -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
     run_r_job::<Value>(method, None, options)
 }
 
 pub fn run_r_analysis_string_mixed(method: Method,
                                    dataset: &StringMixedDataset,
                                    options: &Value)
-                                   -> Result<AnalysisResult, String> {
+                                   -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
     run_r_job(method, Some(dataset), options)
 }
 
@@ -49,7 +49,7 @@ fn resolve_cli_path() -> Result<PathBuf, String> {
 fn run_r_job<T: Serialize>(method: Method,
                            dataset: Option<&T>,
                            options: &Value)
-                           -> Result<AnalysisResult, String> {
+                           -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
     let dataset_file = match dataset {
         Some(ds) => Some(JsonTempFile::create("sai_dataset", ds).map_err(|e| {
                              classified_error_with_source(AnalysisErrorKind::RExecutionFailure,
@@ -81,8 +81,24 @@ fn run_r_job<T: Serialize>(method: Method,
     parse_analysis_output(&output)
 }
 
-fn parse_analysis_output(output: &[u8]) -> Result<AnalysisResult, String> {
-    let result: AnalysisResult = serde_json::from_slice(output).map_err(|e| {
+fn parse_analysis_output(output: &[u8]) -> Result<(AnalysisResult, Option<u32>, Option<String>), String> {
+    let mut value: Value = serde_json::from_slice(output).map_err(|e| {
+                               classified_error_with_source(AnalysisErrorKind::InvalidAnalysisResult,
+                                                            "failed to parse analysis output",
+                                                            e)
+                           })?;
+
+    // Extract `n` and `n_note` from top-level before deserializing into AnalysisResult.
+    let n = value.get("n").and_then(|v| v.as_u64()).map(|v| v as u32);
+    let n_note = value.get("n_note")
+                      .and_then(|v| v.as_str())
+                      .map(|v| v.to_string());
+    if let Value::Object(ref mut map) = value {
+        map.remove("n");
+        map.remove("n_note");
+    }
+
+    let result: AnalysisResult = serde_json::from_value(value).map_err(|e| {
                                      classified_error_with_source(AnalysisErrorKind::InvalidAnalysisResult,
                                                                   "failed to parse analysis output",
                                                                   e)
@@ -92,5 +108,5 @@ fn parse_analysis_output(output: &[u8]) -> Result<AnalysisResult, String> {
                                                        "analysis output validation failed",
                                                        e)
                       })?;
-    Ok(result)
+    Ok((result, n, n_note))
 }

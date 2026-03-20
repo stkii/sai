@@ -17,12 +17,3 @@ export const correlationMethod: MethodModule<'correlation'> = {
   renderResult: renderCorrelationResult,
   buildExportSections: buildCorrelationExportSections,
 };
-
-export type {
-  CorrelationAlternative,
-  CorrelationMethod,
-  CorrelationOptions,
-  CorrelationUse,
-} from './modal';
-export { CorrelationModal } from './modal';
-export { buildCorrelationExportSections, renderCorrelationResult } from './result';

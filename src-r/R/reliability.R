@@ -62,5 +62,16 @@
 # Returns ParsedTable-like list(headers, rows)
 RunReliability <- function(x, model = NULL) {
   model_norm <- .ValidateOptionInSet(model, c("alpha", "omega"))
-  .ReliabilityParsed(x, model = model_norm)
+  ValidateMinRows(x, 2L)
+  parsed <- .ReliabilityParsed(x, model = model_norm)
+  # Effective sample size: rows remaining after listwise NA removal.
+  # Cronbach's alpha requires complete cases across all items, so
+  # na.omit() drops any row with at least one missing value.
+  parsed$n <- base::as.integer(base::nrow(stats::na.omit(x)))
+  # Notify the user when listwise deletion removed observations.
+  n_total <- base::as.integer(base::nrow(x))
+  if (parsed$n < n_total) {
+    parsed$n_note <- base::paste0("リストワイズ削除により、", n_total - parsed$n, "件の観測が除外されました")
+  }
+  parsed
 }

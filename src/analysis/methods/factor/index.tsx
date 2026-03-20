@@ -17,13 +17,3 @@ export const factorMethod: MethodModule<'factor'> = {
   renderResult: renderFactorResult,
   buildExportSections: buildFactorExportSections,
 };
-
-export type {
-  FactorCorrUse,
-  FactorMethod,
-  FactorNumberCriterion,
-  FactorOptions,
-  FactorRotation,
-} from './modal';
-export { FactorModal } from './modal';
-export { buildFactorExportSections, renderFactorResult } from './result';

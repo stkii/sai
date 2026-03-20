@@ -8,19 +8,20 @@
 > - 分析手法などの機能は段階的に追加予定です
 > - 動作確認は macOS のみで実施しています
 
-## SAI の特長
+### SAI の特長
 
 - **分析条件の記録**：どのデータに、どんな設定で、どの分析を実行したかを自動で記録し、結果を後から確認することができます。
 - **コマンド不要**：データの読み込みから分析実行・結果の確認までクリック操作のみで完結します。
 
 
-## 利用可能な分析
+## 機能一覧
+
+### 統計分析
 
 > [!NOTE]
 >
-> **因子分析**について、一部の機能は開発中です。
-> - 因子抽出法は最尤法のみ対応しています
-> - 欠損値について「平均値で置換」は仕様上選択できません
+> ステータスについて `🚧 In progress` の分析は、実行可能ですが開発中のものです。
+> `✅ Available` であっても、拡張の可能性があります。
 
 実行することのできる分析手法の一覧です。
 
@@ -29,14 +30,14 @@
     <tr>
       <th>分析</th>
       <th>説明</th>
-      <th>状態</th>
+      <th>ステータス</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>記述統計</td>
       <td>平均値や標準偏差などの記述統計量を算出します</td>
-      <td>✅ Available</td>
+      <td>🚧 In progress</td>
     </tr>
     <tr>
       <td>相関</td>
@@ -49,18 +50,18 @@
       <td>✅ Available</td>
     </tr>
     <tr>
+      <td>分散分析</td>
+      <td>分散分析を行います</td>
+      <td>🚧 In progress</td>
+    </tr>
+    <tr>
       <td>因子分析</td>
       <td>因子分析を行います</td>
-      <td>✅ Available</td>
+      <td>🚧 In progress</td>
     </tr>
     <tr>
       <td>信頼性</td>
       <td>Cronbach の alpha 係数を算出します</td>
-      <td>🚧 In progress</td>
-    </tr>
-    <tr>
-      <td>分散分析</td>
-      <td>分散分析を行います</td>
       <td>🚧 In progress</td>
     </tr>
     <tr>
@@ -71,11 +72,12 @@
   </tbody>
 </table>
 
-上記分析に加えて、**サンプルサイズの設計**と**検出力の算出**が可能です。また、以下の機能を提供しています：
+### その他の機能
 
+- **検出力分析**：一定の効果量と検出力を得るために必要なサンプルサイズを算出します
 - **分析ログ**：実行した分析を自動で記録し、後から結果を参照することができます（分析データの各値は保持しません）
 
-### 分析アルゴリズム
+## 分析アルゴリズム
 
 原則として、Rの標準パッケージ（ `base`、`stats` ）と、SAIで定義した前処理および分析フローを使用します。ただし、以下の分析については外部のパッケージを使用しています。
 
@@ -89,6 +91,20 @@
   </thead>
   <tbody>
     <tr>
+      <td>全ての分析</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/jsonlite/index.html">jsonlite</a>
+      </td>
+      <td>アプリ内におけるデータの受け渡し</td>
+    </tr>
+    <tr>
+      <td>記述統計</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/e1071/index.html">e1071</a>
+      </td>
+      <td>歪度と尖度の算出</td>
+    </tr>
+    <tr>
       <td>因子分析</td>
       <td>
         <a href="https://cran.r-project.org/web/packages/EFAtools/index.html">EFAtools</a>
@@ -100,12 +116,10 @@
       <td>
         <a href="https://cran.r-project.org/web/packages/pwr/index.html">pwr</a>
       </td>
-      <td>ー</td>
+      <td>当該分析のアルゴリズム</td>
     </tr>
   </tbody>
 </table>
-
-また、R とのデータの受け渡しを JSON で行なうため、 [jsonlite](https://cran.r-project.org/web/packages/jsonlite/index.html) パッケージを使用しています。
 
 ## クイックスタート
 

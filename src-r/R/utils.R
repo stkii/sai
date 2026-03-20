@@ -65,6 +65,20 @@ IsDataFrame <- function(x) {
   return(TRUE)
 }
 
+# Validate that the data frame has at least `min_n` non-NA rows.
+# For analyses that rely on variance or correlation, a minimum number of
+# complete observations is required to produce meaningful results.
+#
+# Args:
+# - df (data.frame): input dataset
+# - min_n (integer): minimum number of rows required
+ValidateMinRows <- function(df, min_n) {
+  if (base::nrow(df) < min_n) {
+    StopWithErrCode("ERR-833")
+  }
+  invisible(TRUE)
+}
+
 # Replace missing values with column means.
 #
 # Args:
