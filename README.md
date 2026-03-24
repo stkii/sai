@@ -37,7 +37,7 @@
     <tr>
       <td>記述統計</td>
       <td>平均値や標準偏差などの記述統計量を算出します</td>
-      <td>🚧 In progress</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>相関</td>
