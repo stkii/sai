@@ -1,0 +1,62 @@
+.Stars <- function(p) {
+  if (is.null(p) || length(p) == 0 || is.na(p)) return("")
+  if (p < 0.01) "**" else if (p < 0.05) "*" else ""
+}
+
+.Correlation <- function(df, method, use) {
+  cor_mat <- cor(df, method = method, use = use)
+  k <- ncol(df)
+  p_mat <- matrix(NA_real_, nrow = k, ncol = k)
+  for (i in seq_len(k)) {
+    for (j in seq_len(k)) {
+      if (i == j) next
+      r <- tryCatch(
+        cor.test(df[[i]], df[[j]], method = method, use = "complete.obs"),
+        error = function(e) NULL
+      )
+      if (!is.null(r)) p_mat[i, j] <- r$p.value
+    }
+  }
+  list(r = cor_mat, p = p_mat)
+}
+
+.CorrelationParsed <- function(res, vars) {
+  headers <- c("変数", vars)
+  rows <- list()
+  for (i in seq_along(vars)) {
+    cells <- list(vars[i])
+    for (j in seq_along(vars)) {
+      if (i == j) {
+        cells[[length(cells) + 1]] <- "—"
+      } else {
+        cells[[length(cells) + 1]] <- sprintf("%s%s", .FmtNum(res$r[i, j]), .Stars(res$p[i, j]))
+      }
+    }
+    rows[[length(rows) + 1]] <- cells
+  }
+  list(headers = headers, rows = rows, note = "** p<.01, * p<.05")
+}
+
+RunCorrelation <- function(df, options) {
+  if (ncol(df) < 2) stop("相関分析には2つ以上の変数が必要です")
+  method <- if (is.null(options$method)) "pearson" else options$method
+  use <- if (is.null(options$na)) "complete.obs" else options$na
+
+  res <- .Correlation(df, method, use)
+  parsed <- .CorrelationParsed(res, colnames(df))
+
+  if (use == "complete.obs") {
+    valid_n <- sum(complete.cases(df))
+    list(
+      sections = list(list(title = "相関行列", table = parsed)),
+      n = valid_n,
+      n_note = .ListwiseNote(nrow(df) - valid_n)
+    )
+  } else {
+    list(
+      sections = list(list(title = "相関行列", table = parsed)),
+      n = nrow(df),
+      n_note = .PairwiseNote()
+    )
+  }
+}
