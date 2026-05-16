@@ -2,14 +2,8 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "developing capability",
-  "windows": [
-    "dataView",
-    "resultView"
-  ],
+  "windows": ["main"],
   "permissions": [
-    "core:webview:allow-create-webview-window",
-    "core:window:allow-set-focus",
-    "core:window:allow-show",
     "core:default",
     "dialog:default",
     "log:default",
