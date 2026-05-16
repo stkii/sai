@@ -33,82 +33,89 @@ cargo check                 # Type-check Rust backend
 
 ## Architecture
 
+詳細は `docs/ARCHITECTURE.md` が **正典**。本ファイルは Claude Code 向けの作業ガイドとして要点を抜粋する。
+
 ### Three-Layer Structure
 
 ```
 src/          → React/TypeScript frontend (Vite)
-src-tauri/    → Rust backend (Tauri v2, clean architecture)
+src-tauri/    → Rust backend (Tauri v2)
 src-r/        → R scripts for statistical computation
 ```
 
 ### Frontend (`src/`)
 
-- **UI framework**: Chakra UI v3 + MUI (partial)
+- **UI framework**: Chakra UI v3
 - **Linter/Formatter**: Biome (indent: 2 spaces, single quotes, line width 100)
-- **Two windows**: `DataWindow` (main data view) and `ResultWindow` (analysis results), each with its own entry point HTML
-- **IPC**: `src/ipc.ts` — `TauriIpc` class wraps all `invoke()` calls to Rust backend
+- **Single window / 2-pane + AI slide-in**: 左ペインに `DataPane`、中央ペインに結果/履歴タブ、右ペインに `ChatPane`（オンデマンド・⚠️ Phase 4 未着手のプレースホルダ）。エントリは `index.html` → `src/main.tsx` → `App.tsx`
+- **State**: `DatasetContext`（読み込んだデータセットの summary）と `ResultContext`（分析結果リスト + currentId + 履歴永続化）を React Context で共有
+- **IPC**: `src/shared/ipc/` 配下の関数（`runAnalysis`, `loadDataset`, `loadHistory` 等）が Tauri `invoke()` をラップ
+- **機能フォルダ構造**: 各機能は `ui/` (view・操作フロー) + `state/` (Context・hook) の 2 階層。`flow/` 専用フォルダは持たない
 
 **Analysis module** (`src/analysis/`):
-- `types.ts` — **Single source of truth** for `SUPPORTED_ANALYSIS_TYPES` and core analysis types
-- `methods/<method>/` — Each analysis method has 3 files: `modal.tsx` (input UI), `result.tsx` (result display), `index.tsx` (assembles `MethodModule`)
-- `methods/contracts.ts` — `MethodModule` interface that all methods implement (`renderModal`, `renderResult`, `buildExportSections`)
-- `methods/index.ts` — `ANALYSIS_METHODS` registry; adding a method here auto-registers it in both windows
-- `runtime/runner.ts` — Dataset caching + analysis execution orchestration
+- `methods/<method>/` — 各メソッド 3 ファイル: `modal.tsx`（入力 UI）/ `result.tsx`（結果表示）/ `index.tsx`（`MethodModule` 組立）
+- `methods/contracts.ts` — `MethodModule` interface（`renderModal`, `renderResult` の 2 メソッド）
+- `methods/index.ts` — `ANALYSIS_METHODS` レジストリ。配列に push するだけでヘッダーメニューと結果表示に自動登録
+- `ui/AnalysisModalHost.tsx` — モーダル開閉・データセット参照・`runAnalysis` 呼出・結果を `ResultContext` に追加するフローオーナー
+- 横断的な分析系の型 (`Method`, `AnalysisResult` 等) は `src/shared/types/index.ts` に集約
 
 ### Rust Backend (`src-tauri/src/`)
 
-Clean architecture with 4 layers:
-- **`domain/`** — Core models (`analysis/model.rs`, `method.rs`, `rule.rs`), input types (`input/numeric.rs`, `table.rs`)
-- **`usecase/`** — Business logic. `analysis/service.rs` orchestrates analysis runs. `analysis/handlers/` contains per-method normalization and post-processing
-- **`infra/`** — External integrations. `r/runner.rs` spawns `Rscript` with temp JSON files for data exchange. `cache/` stores parsed datasets. `reader/` handles CSV/XLSX parsing
-- **`presentation/`** — Tauri commands exposed to frontend via `invoke()`. Commands: `build_numeric_dataset`, `run_analysis`, `parse_table`, `get_sheets`
+3 層構造（`commands/` → `services/` → `infra/` + `models.rs` 共通型）:
+- **`commands/`** — Tauri コマンド（薄い変換層）。`dataset.rs` / `analysis.rs` / `history.rs`
+- **`services/`** — ビジネスロジック。`analysis.rs` は完全な配管に徹し、メソッド名のホワイトリストは持たない (`dataset_key.is_some()` で列射影 / 空テーブルを分岐するだけ)
+- **`infra/`** — `r/runner.rs` は `Rscript` を temp JSON でやり取り、`cache/dataset_cache.rs` でパース済みデータセットを保持、`reader/` で CSV/XLSX パース、`store/history_store.rs` で履歴 JSONL を永続化
+- **`bootstrap.rs`** — `AppState`（cache, dataset/analysis/history service の DI 配線）。services は infra の具象を直保有 (trait 抽象なし)
+- **`models.rs`** — `ParsedTable`, `AnalysisResult`, `HistoryRecord` 等の共通型
 
-**Analysis execution flow**: Frontend `invoke('run_analysis')` → Rust `AnalysisService.run_analysis()` → handler normalizes options → `run_r_analysis()` spawns `Rscript src-r/cli.R` with JSON temp files → parses JSON output back
+登録済みコマンド: `get_sheets`, `load_dataset`, `run_analysis`, `load_history`, `append_history`, `clear_history`
+
+**Analysis execution flow**: Frontend `invoke('run_analysis')` → `AnalysisService::run()` がデータセットキャッシュから列を射影 (またはスキップ) → `RRunner::run()` が `Rscript src-r/cli.R <input.json> <output.json>` を起動 → R の dispatch table がメソッドを解決して実行 → 結果を `AnalysisResult` にパースして返却。未対応メソッドのエラーは **R 層が返す**
 
 ### R Layer (`src-r/`)
 
-- `cli.R` — Entry point called by Rust via `Rscript`
-- `R/` — Analysis functions (`describe.R`, `correlation.R`, `regression.R`, `factor.R`, etc.)
-- Uses `renv` for dependency management with `RENV_PROFILE=default`
-- External packages: `EFAtools` (factor analysis), `pwr` (power analysis), `jsonlite` (JSON I/O)
+- `cli.R` — Rust から呼ばれるエントリ。入力 JSON を読み、`dispatch` table でメソッドを解決して `Run<Method>(df, options)` を呼出
+- `R/` — `common.R` の共通ヘルパに加え、`describe.R` / `correlation.R` / `regression.R` / `reliability.R` / `factor.R` / `anova.R` / `power.R`
+- `renv` で依存管理（`src-r/.Rprofile` で activate）
+- 主な外部パッケージ: `EFAtools`（因子分析）, `jsonlite`（JSON I/O）。パワー分析は base R の `stats::power.t.test` / `power.anova.test` / `power.prop.test` を使用（外部パッケージなし）
 
 ## Adding a New Analysis Method
 
-Adding a method requires changes across all three layers: R, Rust, and Frontend.
+2 層 (R / Frontend) のみで完結。Rust は原則変更不要。
 
-### R Layer (`src-r/`)
+### 1. R 層 (`src-r/`)
 
-1. **`src-r/R/<method>.R`** — Statistical computation. Each R module follows a 3-function pattern:
-   - `.<Method>(df, ...)` — Raw statistical computation (calls `aov()`, `cor()`, etc.)
-   - `.<Method>Parsed(res)` — Converts result into `list(headers, rows, note?)` (`ParsedDataTable`-compatible structure)
-   - `Run<Method>(df, ...)` — Entry point called by the CLI dispatcher. Validates arguments, calls `.<Method>()`, then `.<Method>Parsed()`
-2. **`src-r/R/error.R`** — Add a module-load error code (`ERR-9xx`) to `ERR_MESSAGES`
-3. **`src-r/cli.R`** — Two changes:
-   - Add `.LoadModule(r_dir, "<method>.R", "ERR-9xx")` in the module-loading section
-   - Add an entry to `.BuildAnalysisSpecs()` dispatch table. Each entry has: `output_kind`, `requires_numeric`, `options`, `run`
+1. **`src-r/R/<method>.R`** を新規作成。慣例的に 3 関数構成:
+   - `.<Method>(df, ...)` — 生の統計計算（`cor()`, `aov()` 等を呼ぶ）
+   - `.<Method>Parsed(res)` — 結果を `list(headers, rows, note?)`（フロントの `AnalysisTable` 互換）に変換
+   - `Run<Method>(df, options)` — エントリ。引数検証 → 上記 2 関数呼出 → `list(sections, n, n_note)` を返却
+2. **`src-r/cli.R`** に 2 行追加:
+   - `source(file.path(r_dir, "<method>.R"))` を module-loading 部に追記
+   - `dispatch` list に `<method> = list(requires_data = TRUE/FALSE, kind = "numeric"/"mixed"/"none", run = Run<Method>)` を追加
 
-### Rust Backend (`src-tauri/src/`)
+### 2. Frontend (`src/`)
 
-4. **`domain/analysis/method.rs`** — Add a `Method` constant AND a `FromStr::from_str` match arm (both required)
-5. **`usecase/analysis/handlers/<method>.rs`** — Implement `AnalysisMethodHandler` trait. At minimum, `normalize_options` is required. Override `post_process` if the method needs result transformation
-6. **`usecase/analysis/handlers.rs`** — Add `mod <method>` and a branch in `resolve_handler`
+3. **`src/shared/types/index.ts`** — `Method` union 型に `'<method>'` を追加
+4. **`src/analysis/methods/<method>/modal.tsx`** — 入力 UI。`ModalProps` を受け取り、submit 時に `onExecute(variables, options)` を呼ぶ
+5. **`src/analysis/methods/<method>/result.tsx`** — 結果表示。`{ result: AnalysisResult }` を受け取り、共通の `<SectionsView result={result} />` で表示可能（カスタム表示が必要なら自前で `result.sections` を render）
+6. **`src/analysis/methods/<method>/index.tsx`** — `MethodModule<'<method>'>` を組み立てて export。`definition` に `key` + `label`、`renderModal`/`renderResult` をバインド
+7. **`src/analysis/methods/index.ts`** の `ANALYSIS_METHODS` 配列に `<method>Module` を追加
 
-### Frontend (`src/`)
+### 3. Rust Backend (原則不要)
 
-7. **`src/analysis/types.ts`** — Add key to `SUPPORTED_ANALYSIS_TYPES` array (single source of truth)
-8. **`src/analysis/methods/<method>/modal.tsx`** — Input UI. Use `ModalProps<TOptions>` where `TOptions extends AnalysisOptions`. Call `onExecute(variables, options, datasetKind?)` on submit. Pass `'string_mixed'` as the third argument only when categorical variables are present
-9. **`src/analysis/methods/<method>/result.tsx`** — Result display. Implement `render<Method>Result` (renders `AnalysisResult.sections`) and `build<Method>ExportSections` (for export). Use `getSingleSection(result)` utility for single-table results
-10. **`src/analysis/methods/<method>/index.tsx`** — Assemble `MethodModule<'key'>` binding `definition` (key + label), `renderModal`, `renderResult`, `buildExportSections`
-11. **`src/analysis/methods/index.ts`** — Add to `ANALYSIS_METHODS` array and re-exports. Registration here auto-registers in both DataWindow and ResultWindow
+Rust 側のメソッドホワイトリストは廃止済み。未対応メソッドのエラーは R 層が返す。Rust 側で options の正規化や結果の後処理が必要な場合のみ、`services/analysis.rs` に分岐を追加する。
 
 ### Dataset Types
 
-- **NumericDataset** — All columns are `f64`. Used by: descriptive, correlation, regression, factor, reliability
-- **StringMixedDataset** — All columns stored as strings. Used when categorical variables (e.g. `"male"`, `"control"`) are present. Triggered by passing `'string_mixed'` as the third argument to `onExecute` in the modal
+データセットの kind は **`cli.R` の dispatch table** で `kind = "numeric" | "mixed" | "none"` として宣言する（フロントから渡すのではない）:
+
+- **`numeric`** — 全列を数値化（`.AsNumericDf`）。Describe / Correlation / Regression / Reliability / Factor で使用
+- **`mixed`** — 文字列列を保持（`.AsMixedDf`）。Anova の要因（カテゴリ変数）で必要
+- **`none`** — データセット不要（standalone）。Power Analysis のみ
 
 ### Verification
 
-After adding, run:
+追加後に以下を全部通す:
 ```bash
 cd src-tauri && cargo check
 cd .. && pnpm fixall && pnpm check && pnpm ts
@@ -130,19 +137,22 @@ The following cases **must** display a note to the user. Omitting these notes is
 
 ### Implementation
 
-- Each R `Run*` function sets `parsed$n` (effective sample size) and optionally `parsed$n_note` (user-facing caveat)
-- `cli.R` `.BuildOutputPayload()` extracts both fields and places them at the top level of the JSON payload
-- Rust `parse_analysis_output()` extracts `n` and `n_note` before deserializing `AnalysisResult`
-- The note is stored in `AnalysisLogRecord.n_note` and displayed in `AnalysisLogDetail` as orange text below the sample size
+- 各 R `Run*` 関数が `parsed$n`（有効標本サイズ）と任意で `parsed$n_note`（注記文字列）を返す
+- `cli.R` 末尾の `payload` 組立で両フィールドを JSON top-level に配置
+- Rust の `AnalysisResult { sections, n, n_note }` として serde で受け、フロントへは camelCase（`nNote`）で配信
+- 履歴レコード `HistoryRecord.result.nNote` として保存される
+
+> **表示位置**: `n` と `nNote` は `src/shared/ui/SectionsView.tsx` (結果ペインの本体) で表示される。`n` は灰色、`nNote` はオレンジ。`ResultMetadata.tsx` (結果見出しカード) には重複表示しない方針。新メソッドが `n_note` を生成すれば追加配線なしで表示される。
 
 ### Adding new notes
 
-When adding a new analysis method or modifying NA handling, check whether the reported `n` could differ from what the user expects. If so, set `parsed$n_note` in the R `Run*` function. See the existing implementations in `correlation.R`, `factor.R`, `regression.R`, `reliability.R`, and `anova.R` for examples.
+新メソッドを追加する、または NA 処理を変更する際は、表示する `n` がユーザーの期待値と乖離しうるかを必ず判定し、乖離する場合は R 側で `parsed$n_note` を設定する。実装例は `correlation.R` / `factor.R` / `regression.R` / `reliability.R` / `anova.R` を参照。
 
 ## Key Conventions
 
-- All user-facing text is in Japanese
-- Commit messages use conventional format: `feat:`, `fix:`, `chore:` (in Japanese)
-- The `AnalysisResult.sections` model is the universal shape for all analysis outputs (both display and export)
-- Option types are scoped to each method's `modal.tsx`, extending `AnalysisOptions`
-- Frontend-Rust data exchange uses JSON via Tauri `invoke()`; Rust-R data exchange uses temporary JSON files
+- ユーザー向け文言はすべて日本語
+- コミットメッセージは conventional format（`feat:`, `fix:`, `chore:` 等）+ 日本語本文
+- `AnalysisResult.sections` がすべての分析出力の共通形（表示・将来のエクスポートに兼用）
+- option 型は各メソッドの `modal.tsx` 内でローカル定義し、`AnalysisOptions = Record<string, unknown>` を満たす形で `onExecute` に渡す
+- Frontend ↔ Rust は Tauri `invoke()` で JSON 経由、Rust ↔ R は temp JSON ファイル経由
+- 依存方向: `App → 機能フォルダ → shared`。機能間 import は **types のみ** が原則（詳細は `docs/ARCHITECTURE.md`）
