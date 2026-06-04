@@ -59,10 +59,7 @@
 }
 
 RunFactor <- function(df, options) {
-  if (!requireNamespace("EFAtools", quietly = TRUE)) {
-    stop("EFAtools パッケージが必要です")
-  }
-
+  # 必須パッケージのチェックは cli.R 冒頭の REQUIRED_PACKAGES で一括実施。
   nfactors_mode <- if (is.null(options$nfactorsMode)) "fixed" else options$nfactorsMode
   rotation <- if (is.null(options$rotation)) "none" else options$rotation
   method <- if (is.null(options$method)) "PAF" else options$method

@@ -1,7 +1,4 @@
 .ReadInputJson <- function(path) {
-  if (!requireNamespace("jsonlite", quietly = TRUE)) {
-    stop("jsonlite パッケージが必要です")
-  }
   jsonlite::fromJSON(path, simplifyVector = FALSE)
 }
 

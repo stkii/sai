@@ -4,11 +4,19 @@
 # input.json: { method, headers, rows, options }
 # output.json: { sections: [...], n?: number, n_note?: string }
 
+# 必須サードパーティパッケージ。renv で管理されている前提で、起動時に一括
+# requireNamespace で存在確認し、不足があれば fail-fast で停止する。
+# 自動インストールは行わない (renv の lockfile と実環境を silent に乖離させ
+# ないため)。各メソッド側では個別の requireNamespace チェックを持たず、
+# 利用は `pkg::fn()` の namespaced 呼び出しで統一する。
+REQUIRED_PACKAGES <- c("jsonlite", "EFAtools")
+
 suppressPackageStartupMessages({
-  if (!requireNamespace("jsonlite", quietly = TRUE)) {
-    install.packages("jsonlite", repos = "https://cloud.r-project.org", quiet = TRUE)
+  missing <- REQUIRED_PACKAGES[!vapply(REQUIRED_PACKAGES, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(missing) > 0) {
+    stop(sprintf("必須パッケージが見つかりません: %s (renv::restore() を実行してください)",
+                 paste(missing, collapse = ", ")))
   }
-  library(jsonlite)
 })
 
 args <- commandArgs(trailingOnly = TRUE)
