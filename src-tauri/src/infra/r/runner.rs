@@ -44,7 +44,16 @@ impl RRunner {
 
         let output_file = NamedTempFile::new().map_err(|e| format!("出力ファイル作成失敗: {e}"))?;
 
-        let output = Command::new("Rscript").arg("--vanilla")
+        // cwd を src-r/ に固定して .Rprofile を発見させ、renv を activate する。
+        // --vanilla は使わない (--no-init-file が含まれ .Rprofile を読まない)。
+        // --no-save / --no-restore で workspace の持ち込み/書き出しのみ抑止する。
+        let r_dir = self.cli_path
+                        .parent()
+                        .ok_or_else(|| "cli.R の親ディレクトリ解決失敗".to_string())?;
+
+        let output = Command::new("Rscript").current_dir(r_dir)
+                                            .arg("--no-save")
+                                            .arg("--no-restore")
                                             .arg(&self.cli_path)
                                             .arg(input_file.path())
                                             .arg(output_file.path())

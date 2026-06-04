@@ -13,7 +13,7 @@ It allows users to perform data analysis through point-and-click operations with
 4. File/folder deletion - Must explain impact and get user consent before deleting.
 5. After writing TypeScript, run `pnpm fixall`, `pnpm check`, and `pnpm ts` at the repo root to catch TypeScript errors. After writing Rust, run `cargo +nightly fmt`, `cargo clippy --fix`, and `cargo check` in `src-tauri/` to verify formatting, linting, and errors, then fix any issues found.
 6. `<!ref-docs>` directive - When user instructions include this tag, consult the documentation in `docs/llms-txt/` and base your opinions, code, or other work on that material.
-7. When editing `src-r/cli.R` or the R execution boundary, reserve `stdout` for the final JSON payload only. Do not allow `renv`, package startup messages, debug prints, or analysis-side logging to leak to `stdout`; capture them or send them to `stderr`. If this area is changed, verify that the CLI emits clean JSON with no leading output.
+7. `cli.R` の JSON ペイロードは引数で渡された `output_path` ファイルにのみ書き出す。stdout/stderr は Rust 側で捕捉のうえ破棄するため (失敗時のみ stderr がエラーメッセージとして利用される)、`renv` の activate メッセージや `library()` の startup message を抑制する必要はない。Rscript 起動時は `--vanilla` を使わず (`--no-init-file` が `.Rprofile` を読まないため renv が activate されない)、`--no-save --no-restore` で workspace の持ち込み/書き出しのみ抑止し、cwd を `src-r/` に固定して `.Rprofile` を発見させること。
 
 ## Coding Standard & Naming Conventions
 
