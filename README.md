@@ -1,5 +1,19 @@
 <h1 align="center">SAI</h1>
 
+<p align="center">
+  <img alt="status" src="https://img.shields.io/badge/status-WIP-orange">
+  <img alt="version" src="https://img.shields.io/badge/version-0.1.0--beta-blue">
+  <img alt="platform" src="https://img.shields.io/badge/platform-macOS-lightgrey">
+  <img alt="license" src="https://img.shields.io/badge/license-GPL--3.0-green">
+</p>
+
+> [!WARNING]
+> **本プロジェクトは現在開発中です。**
+>
+> UI・データ形式・分析結果の出力仕様は予告なく変更される可能性があり、リリース間で互換性が保たれない場合があります。
+
+---
+
 心理学研究のために設計された、GUI ベースの分析ソフトウェアです。コマンド入力を必要とせず、クリック操作だけでデータ分析を行うことができます。
 
 > [!IMPORTANT]
