@@ -479,7 +479,7 @@ dependencies = [
  "log",
  "quick-xml",
  "serde",
- "zip 4.6.1",
+ "zip",
 ]
 
 [[package]]
@@ -580,10 +580,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "145052bdd345b87320e369255277e3fb5152762ad123a901ef5c262dd38fe8d2"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-traits",
  "serde",
- "wasm-bindgen",
  "windows-link 0.2.1",
 ]
 
@@ -3238,15 +3236,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_xlsxwriter"
-version = "0.92.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0733a44f344e900c4221f33a16aa92a59e3e7c7ad37d39a1c753afecb1f2bd02"
-dependencies = [
- "zip 6.0.0",
-]
-
-[[package]]
 name = "rustc_version"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3285,11 +3274,8 @@ name = "sai"
 version = "0.1.0-beta"
 dependencies = [
  "calamine",
- "chrono",
  "csv",
- "indexmap 2.13.0",
  "log",
- "rust_xlsxwriter",
  "serde",
  "serde_json",
  "tauri",
@@ -3299,7 +3285,6 @@ dependencies = [
  "tauri-plugin-opener",
  "tempfile",
  "uuid",
- "wait-timeout",
 ]
 
 [[package]]
@@ -4694,15 +4679,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wait-timeout"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09ac3b126d3914f9849036f826e054cbabdc8519970b8998ddaf3b5bd3c65f11"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "walkdir"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5606,20 +5582,6 @@ name = "zip"
 version = "4.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caa8cd6af31c3b31c6631b8f483848b91589021b28fffe50adada48d4f4d2ed1"
-dependencies = [
- "arbitrary",
- "crc32fast",
- "flate2",
- "indexmap 2.13.0",
- "memchr",
- "zopfli",
-]
-
-[[package]]
-name = "zip"
-version = "6.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2a05c7c36fde6c09b08576c9f7fb4cda705990f73b58fe011abf7dfb24168b"
 dependencies = [
  "arbitrary",
  "crc32fast",

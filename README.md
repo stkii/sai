@@ -1,5 +1,19 @@
 <h1 align="center">SAI</h1>
 
+<p align="center">
+  <img alt="status" src="https://img.shields.io/badge/status-WIP-orange">
+  <img alt="version" src="https://img.shields.io/badge/version-0.1.0--beta-blue">
+  <img alt="platform" src="https://img.shields.io/badge/platform-macOS-lightgrey">
+  <img alt="license" src="https://img.shields.io/badge/license-GPL--3.0-green">
+</p>
+
+> [!WARNING]
+> **本プロジェクトは現在開発中です。**
+>
+> UI・データ形式・分析結果の出力仕様は予告なく変更される可能性があり、リリース間で互換性が保たれない場合があります。
+
+---
+
 心理学研究のために設計された、GUI ベースの分析ソフトウェアです。コマンド入力を必要とせず、クリック操作だけでデータ分析を行うことができます。
 
 > [!IMPORTANT]
@@ -47,17 +61,17 @@
     <tr>
       <td>分散分析</td>
       <td>分散分析を行います</td>
-      <td>🚧 In progress</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>因子分析</td>
       <td>因子分析を行います</td>
-      <td>🚧 In progress</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>信頼性</td>
       <td>Cronbach の alpha 係数を算出します</td>
-      <td>🚧 In progress</td>
+      <td>✅ Available</td>
     </tr>
     <tr>
       <td>...</td>
@@ -105,13 +119,6 @@
         <a href="https://cran.r-project.org/web/packages/EFAtools/index.html">EFAtools</a>
       </td>
       <td>因子の回転</td>
-    </tr>
-    <tr>
-      <td>検出力分析</td>
-      <td>
-        <a href="https://cran.r-project.org/web/packages/pwr/index.html">pwr</a>
-      </td>
-      <td>当該分析のアルゴリズム</td>
     </tr>
   </tbody>
 </table>

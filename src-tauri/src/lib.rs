@@ -1,35 +1,34 @@
 mod bootstrap;
-mod domain;
+mod commands;
 mod infra;
-mod presentation;
-mod usecase;
+mod models;
+mod services;
 
 use tauri::Manager;
 
+use bootstrap::AppState;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    presentation::attach_handlers(tauri::Builder::default().setup(|app| {
-                                      let state = bootstrap::state::AppState::new(app.handle().clone())
-                                          .map_err(std::io::Error::other)?;
-                                      app.manage(state);
-                                      Ok(())
-                                  }))
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .clear_targets()
-                .target(tauri_plugin_log::Target::new(
-                    tauri_plugin_log::TargetKind::LogDir {
-                        file_name: Some("sai".to_string()),
-                    },
-                ))
-                .level(log::LevelFilter::Info)
-                .max_file_size(50_000 /* bytes */)
-                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
-                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
-                .build(),
-        )
-        .plugin(tauri_plugin_opener::init())
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    tauri::Builder::default().plugin(tauri_plugin_log::Builder::new().build())
+                             .plugin(tauri_plugin_dialog::init())
+                             .plugin(tauri_plugin_opener::init())
+                             .setup(|app| {
+                                 let data_dir =
+                                     app.path()
+                                        .app_local_data_dir()
+                                        .map_err(|e| format!("ローカルデータディレクトリの解決失敗: {e}"))?;
+                                 let history_path = data_dir.join("history.jsonl");
+                                 app.manage(AppState::new(history_path));
+                                 Ok(())
+                             })
+                             .invoke_handler(tauri::generate_handler![commands::dataset::get_sheets,
+                                                                      commands::dataset::load_dataset,
+                                                                      commands::analysis::run_analysis,
+                                                                      commands::history::load_history,
+                                                                      commands::history::append_history,
+                                                                      commands::history::clear_history,
+                                                                      commands::history::remove_history,])
+                             .run(tauri::generate_context!())
+                             .expect("error while running tauri application");
 }

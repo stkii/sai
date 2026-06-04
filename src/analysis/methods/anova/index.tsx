@@ -1,17 +1,7 @@
-import type { MethodDefinition, MethodModule } from '../contracts';
+import type { MethodModule } from '../contracts';
 import { AnovaModal } from './modal';
-import { buildAnovaExportSections, renderAnovaResult } from './result';
 
-export const anovaDefinition: MethodDefinition<'anova'> = {
-  key: 'anova',
-  label: '分散分析',
-};
-
-export const anovaMethod: MethodModule<'anova'> = {
-  definition: anovaDefinition,
-  renderModal: ({ open, onClose, variables, onExecute }) => {
-    return <AnovaModal open={open} onClose={onClose} variables={variables} onExecute={onExecute} />;
-  },
-  renderResult: renderAnovaResult,
-  buildExportSections: buildAnovaExportSections,
+export const anovaModule: MethodModule<'anova'> = {
+  definition: { key: 'anova', label: '分散分析' },
+  renderModal: (props) => <AnovaModal {...props} />,
 };

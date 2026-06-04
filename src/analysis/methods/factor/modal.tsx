@@ -1,329 +1,176 @@
-import { Box, Checkbox, HStack, RadioGroup, SimpleGrid, Stack, Text } from '@chakra-ui/react';
-import { useEffect, useRef, useState } from 'react';
-import { BaseNumberInput } from '../../../components/BaseNumberInput';
-import { BaseRadioButton } from '../../../components/BaseRadioButton';
-import { VariableSelector } from '../../../components/VariableSelector';
-import { ModalFrame } from '../../components/ModalFrame';
-import type { AnalysisOptions } from '../../types';
+import {
+  Box,
+  Button,
+  Checkbox,
+  Flex,
+  HStack,
+  NativeSelect,
+  NumberInput,
+  RadioGroup,
+  VStack,
+} from '@chakra-ui/react';
+import { useState } from 'react';
+import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
-export type FactorMethod = 'ml';
-export type FactorNumberCriterion = 'guttman' | 'fixed';
-export type FactorRotation = 'none' | 'varimax' | 'oblimin' | 'quartimax' | 'equamax' | 'promax';
-export type FactorCorrUse = 'all.obs' | 'complete.obs' | 'pairwise.complete.obs';
+type Rotation = 'none' | 'varimax' | 'promax';
+type NfactorsMode = 'guttman' | 'fixed';
+type Method = 'PAF' | 'ML' | 'ULS';
 
-export interface FactorOptions extends AnalysisOptions {
-  method: FactorMethod;
-  n_factors_auto: boolean;
-  n_factors?: number;
-  rotation: FactorRotation;
-  corr_use: FactorCorrUse;
-  power?: number;
-  sort_loadings: boolean;
-  show_scree_plot: boolean;
+interface FactorOptions {
+  method: Method;
+  nfactorsMode: NfactorsMode;
+  nfactors: number;
+  rotation: Rotation;
+  sortByFactor: boolean;
 }
 
-const METHOD_OPTIONS = [{ label: '最尤法', value: 'ml' }] as const satisfies ReadonlyArray<{
-  label: string;
-  value: FactorMethod;
-}>;
+const MODE_OPTIONS: { value: NfactorsMode; label: string }[] = [
+  { value: 'guttman', label: '固有値に基づく' },
+  { value: 'fixed', label: '任意の固定数' },
+];
 
-const FACTOR_NUMBER_CRITERION_OPTIONS = [
-  { label: 'ガットマン基準', value: 'guttman' },
-  { label: '任意の固定数', value: 'fixed' },
-] as const satisfies ReadonlyArray<{ label: string; value: FactorNumberCriterion }>;
+const ROTATION_OPTIONS: { value: Rotation; label: string }[] = [
+  { value: 'none', label: '回転なし' },
+  { value: 'varimax', label: 'バリマックス (直交)' },
+  { value: 'promax', label: 'プロマックス (斜交)' },
+];
 
-const ROTATION_OPTIONS = [
-  { label: 'なし', value: 'none' },
-  { label: 'バリマックス', value: 'varimax' },
-  { label: 'オブリミン', value: 'oblimin' },
-  { label: 'クオータマックス', value: 'quartimax' },
-  { label: 'エカマックス', value: 'equamax' },
-  { label: 'プロマックス', value: 'promax' },
-] as const satisfies ReadonlyArray<{ label: string; value: FactorRotation }>;
-const ROTATION_LEFT_OPTIONS = ROTATION_OPTIONS.slice(0, 3);
-const ROTATION_RIGHT_OPTIONS = ROTATION_OPTIONS.slice(3);
+const METHOD_OPTIONS: { value: Method; label: string }[] = [
+  { value: 'PAF', label: '主因子法 (PAF)' },
+  { value: 'ML', label: '最尤法 (ML)' },
+  { value: 'ULS', label: '最小二乗法 (ULS)' },
+];
 
-const CORR_USE_OPTIONS = [
-  { label: '行ごとに除外', value: 'complete.obs' },
-  { label: 'ペアごとに除外', value: 'pairwise.complete.obs' },
-] as const satisfies ReadonlyArray<{ label: string; value: FactorCorrUse }>;
+export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [method, setMethod] = useState<Method>('PAF');
+  const [mode, setMode] = useState<NfactorsMode>('guttman');
+  const [nfactors, setNfactors] = useState<number>(1);
+  const [rotation, setRotation] = useState<Rotation>('none');
+  const [sortByFactor, setSortByFactor] = useState(false);
 
-const DEFAULT_METHOD = METHOD_OPTIONS[0]?.value ?? 'ml';
-const DEFAULT_FACTOR_NUMBER_CRITERION = FACTOR_NUMBER_CRITERION_OPTIONS[0]?.value ?? 'guttman';
-const DEFAULT_ROTATION = ROTATION_OPTIONS[0]?.value ?? 'none';
-const DEFAULT_CORR_USE = CORR_USE_OPTIONS[1]?.value ?? 'complete.obs';
-const DEFAULT_FIXED_FACTOR_COUNT = '2';
-const DEFAULT_PROMAX_POWER = '4';
-
-const validateInputNumber = (value: string): number | null => {
-  const normalized = value.trim();
-  if (!/^\d+$/.test(normalized)) {
-    return null;
-  }
-  const parsed = Number(normalized);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) {
-    return null;
-  }
-  return parsed;
-};
-
-export const FactorModal = ({ open, onClose, variables, onExecute }: ModalProps<FactorOptions>) => {
-  const [selectedVariables, setSelectedVariables] = useState<string[]>([]);
-  const [method, setMethod] = useState<FactorMethod>(DEFAULT_METHOD);
-  const [factorNumberCriterion, setFactorNumberCriterion] = useState<FactorNumberCriterion>(
-    DEFAULT_FACTOR_NUMBER_CRITERION
-  );
-  const [fixedFactorCount, setFixedFactorCount] = useState(DEFAULT_FIXED_FACTOR_COUNT);
-  const [rotation, setRotation] = useState<FactorRotation>(DEFAULT_ROTATION);
-  const [corrUse, setCorrUse] = useState<FactorCorrUse>(DEFAULT_CORR_USE);
-  const [promaxPower, setPromaxPower] = useState(DEFAULT_PROMAX_POWER);
-  const [sortLoadings, setSortLoadings] = useState(false);
-  const [showScreePlot, setShowScreePlot] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const previousVariablesKeyRef = useRef('');
-
-  useEffect(() => {
-    if (!open) {
-      setSelectedVariables([]);
-      setMethod(DEFAULT_METHOD);
-      setFactorNumberCriterion(DEFAULT_FACTOR_NUMBER_CRITERION);
-      setFixedFactorCount(DEFAULT_FIXED_FACTOR_COUNT);
-      setRotation(DEFAULT_ROTATION);
-      setCorrUse(DEFAULT_CORR_USE);
-      setPromaxPower(DEFAULT_PROMAX_POWER);
-      setSortLoadings(false);
-      setShowScreePlot(false);
-      setError(null);
-      setLoading(false);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    const nextVariablesKey = variables.join('\u0000');
-    if (previousVariablesKeyRef.current === nextVariablesKey) {
-      return;
-    }
-    previousVariablesKeyRef.current = nextVariablesKey;
-    setSelectedVariables([]);
-    setError(null);
-  }, [variables]);
-
-  const handleExecute = async () => {
-    if (selectedVariables.length < 2) {
-      setError('2つ以上の変数を選択してください');
-      return;
-    }
-    if (!onExecute) {
-      return;
-    }
-
-    const options: FactorOptions = {
+  function handleSubmit() {
+    if (selected.length < 3) return;
+    if (mode === 'fixed' && nfactors < 1) return;
+    onExecute(selected, {
       method,
-      n_factors_auto: factorNumberCriterion === 'guttman',
+      nfactorsMode: mode,
+      nfactors,
       rotation,
-      corr_use: corrUse,
-      sort_loadings: sortLoadings,
-      show_scree_plot: showScreePlot,
-    };
-
-    if (factorNumberCriterion === 'fixed') {
-      const parsedFactorCount = validateInputNumber(fixedFactorCount);
-      if (!parsedFactorCount) {
-        setError('固定因子数には1以上の整数を入力してください');
-        return;
-      }
-      if (parsedFactorCount > selectedVariables.length) {
-        setError('固定因子数は選択した変数数以下にしてください');
-        return;
-      }
-      options.n_factors = parsedFactorCount;
-    }
-
-    if (rotation === 'promax') {
-      options.power = Number(promaxPower);
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      await onExecute(selectedVariables, options);
-    } catch (executeError: unknown) {
-      setError(executeError instanceof Error ? executeError.message : String(executeError));
-    } finally {
-      setLoading(false);
-    }
-  };
+      sortByFactor,
+    } satisfies FactorOptions);
+  }
 
   return (
-    <ModalFrame
-      open={open}
-      onClose={onClose}
-      title="因子分析"
-      onExecute={handleExecute}
-      loading={loading}
-      error={error}
-      maxW="6xl"
-    >
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap="6" alignItems="start">
-        <Box overflowX="auto" maxW="full" minW={0}>
-          <VariableSelector variables={variables} onChange={setSelectedVariables} />
+    <VStack align="stretch" gap={4}>
+      <Flex gap={5} align="stretch">
+        <Box flex={1} minW={0}>
+          <FieldFrame label="変数選択 (3つ以上)">
+            <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
+          </FieldFrame>
         </Box>
-
-        <Box
-          position="relative"
-          borderWidth="1px"
-          borderColor="gray.200"
-          rounded="md"
-          px="4"
-          pt="6"
-          pb="4"
-          minW={0}
-        >
-          <Text
-            position="absolute"
-            top="0"
-            left="3"
-            transform="translateY(-50%)"
-            px="2"
-            bg="bg"
-            fontSize="sm"
-            fontWeight="semibold"
-            color="gray.600"
-          >
-            分析オプション
-          </Text>
-
-          <Stack gap="4">
-            <Stack gap="2">
-              <Text fontWeight="semibold">抽出方法</Text>
-              <BaseRadioButton
-                contents={METHOD_OPTIONS}
-                orientation="horizontal"
-                value={method}
-                onChange={(value) => setMethod(value as FactorMethod)}
-              />
-            </Stack>
-
-            <Stack gap="2">
-              <Text fontWeight="semibold">因子数</Text>
-              <RadioGroup.Root
-                value={factorNumberCriterion}
-                onValueChange={(event) => {
-                  if (event.value) {
-                    setFactorNumberCriterion(event.value as FactorNumberCriterion);
-                  }
-                }}
-              >
-                <Stack gap="2" align="flex-start">
-                  <RadioGroup.Item value="guttman">
-                    <RadioGroup.ItemHiddenInput />
-                    <RadioGroup.ItemIndicator />
-                    <RadioGroup.ItemText>
-                      {FACTOR_NUMBER_CRITERION_OPTIONS[0].label}
-                    </RadioGroup.ItemText>
-                  </RadioGroup.Item>
-
-                  <HStack gap="3" align="center">
-                    <RadioGroup.Item value="fixed">
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText whiteSpace="nowrap">
-                        {FACTOR_NUMBER_CRITERION_OPTIONS[1].label}
-                      </RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                    {factorNumberCriterion === 'fixed' ? (
-                      <BaseNumberInput
-                        step={1}
-                        value={fixedFactorCount}
-                        width="120px"
-                        min={1}
-                        max={Math.max(selectedVariables.length, 1)}
-                        onChange={setFixedFactorCount}
-                      />
-                    ) : null}
-                  </HStack>
-                </Stack>
-              </RadioGroup.Root>
-            </Stack>
-
-            <Stack gap="2">
-              <Text fontWeight="semibold">回転</Text>
-              <RadioGroup.Root
-                value={rotation}
-                onValueChange={(event) => {
-                  if (event.value) {
-                    setRotation(event.value as FactorRotation);
-                  }
-                }}
-              >
-                <SimpleGrid columns={2} gapX="1" gapY="1">
-                  <Stack gap="2" align="flex-start">
-                    {ROTATION_LEFT_OPTIONS.map((option) => (
-                      <RadioGroup.Item key={option.value} value={option.value}>
+        <Box width="260px" flexShrink={0}>
+          <VStack align="stretch" gap={3}>
+            <FieldFrame label="抽出法">
+              <NativeSelect.Root size="sm">
+                <NativeSelect.Field
+                  value={method}
+                  onChange={(e) => setMethod(e.currentTarget.value as Method)}
+                >
+                  {METHOD_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
+            </FieldFrame>
+            <FieldFrame label="因子数">
+              <VStack align="stretch" gap={2}>
+                <RadioGroup.Root
+                  size="sm"
+                  value={mode}
+                  onValueChange={(d) => setMode(d.value as NfactorsMode)}
+                >
+                  <Flex wrap="wrap" rowGap={2} columnGap={4}>
+                    {MODE_OPTIONS.map((opt) => (
+                      <RadioGroup.Item key={opt.value} value={opt.value}>
                         <RadioGroup.ItemHiddenInput />
                         <RadioGroup.ItemIndicator />
-                        <RadioGroup.ItemText>{option.label}</RadioGroup.ItemText>
+                        <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
                       </RadioGroup.Item>
                     ))}
-                  </Stack>
-                  <Stack gap="2" align="flex-start">
-                    {ROTATION_RIGHT_OPTIONS.map((option) => (
-                      <Stack key={option.value} gap="1" align="flex-start">
-                        <RadioGroup.Item value={option.value}>
-                          <RadioGroup.ItemHiddenInput />
-                          <RadioGroup.ItemIndicator />
-                          <RadioGroup.ItemText>{option.label}</RadioGroup.ItemText>
-                        </RadioGroup.Item>
-                        {option.value === 'promax' && rotation === 'promax' ? (
-                          <Box pl="6">
-                            <BaseNumberInput
-                              step={1}
-                              value={promaxPower}
-                              width="120px"
-                              min={1}
-                              onChange={setPromaxPower}
-                            />
-                          </Box>
-                        ) : null}
-                      </Stack>
-                    ))}
-                  </Stack>
-                </SimpleGrid>
+                  </Flex>
+                </RadioGroup.Root>
+                <NumberInput.Root
+                  size="sm"
+                  min={1}
+                  step={1}
+                  value={String(nfactors)}
+                  disabled={mode !== 'fixed'}
+                  onValueChange={(d) => {
+                    const v = d.valueAsNumber;
+                    if (Number.isFinite(v)) {
+                      setNfactors(Math.max(1, Math.floor(v)));
+                    }
+                  }}
+                >
+                  <NumberInput.Control>
+                    <NumberInput.IncrementTrigger />
+                    <NumberInput.DecrementTrigger />
+                  </NumberInput.Control>
+                  <NumberInput.Input />
+                </NumberInput.Root>
+              </VStack>
+            </FieldFrame>
+            <FieldFrame label="回転">
+              <RadioGroup.Root
+                size="sm"
+                value={rotation}
+                onValueChange={(d) => setRotation(d.value as Rotation)}
+              >
+                <Flex wrap="wrap" rowGap={2} columnGap={4}>
+                  {ROTATION_OPTIONS.map((opt) => (
+                    <RadioGroup.Item key={opt.value} value={opt.value}>
+                      <RadioGroup.ItemHiddenInput />
+                      <RadioGroup.ItemIndicator />
+                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
+                    </RadioGroup.Item>
+                  ))}
+                </Flex>
               </RadioGroup.Root>
-            </Stack>
-
-            <Stack gap="2">
-              <Text fontWeight="semibold">欠損値の扱い</Text>
-              <BaseRadioButton
-                contents={CORR_USE_OPTIONS}
-                orientation="horizontal"
-                value={corrUse}
-                onChange={(value) => setCorrUse(value as FactorCorrUse)}
-              />
-            </Stack>
-
-            <Checkbox.Root
-              checked={sortLoadings}
-              onCheckedChange={(e) => setSortLoadings(!!e.checked)}
-            >
-              <Checkbox.HiddenInput />
-              <Checkbox.Control />
-              <Checkbox.Label fontWeight="semibold">負荷量をソート</Checkbox.Label>
-            </Checkbox.Root>
-
-            <Checkbox.Root
-              checked={showScreePlot}
-              onCheckedChange={(e) => setShowScreePlot(!!e.checked)}
-            >
-              <Checkbox.HiddenInput />
-              <Checkbox.Control />
-              <Checkbox.Label fontWeight="semibold">スクリープロット</Checkbox.Label>
-            </Checkbox.Root>
-          </Stack>
+            </FieldFrame>
+            <FieldFrame label="表示">
+              <Checkbox.Root
+                size="sm"
+                checked={sortByFactor}
+                onCheckedChange={(d) => setSortByFactor(d.checked === true)}
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control />
+                <Checkbox.Label fontSize="sm">因子ごとにソート</Checkbox.Label>
+              </Checkbox.Root>
+            </FieldFrame>
+          </VStack>
         </Box>
-      </SimpleGrid>
-    </ModalFrame>
+      </Flex>
+      <HStack justify="flex-end" gap={2}>
+        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
+          キャンセル
+        </Button>
+        <Button
+          size="sm"
+          colorPalette="blue"
+          onClick={handleSubmit}
+          loading={busy}
+          disabled={selected.length < 3 || (mode === 'fixed' && nfactors < 1)}
+        >
+          実行
+        </Button>
+      </HStack>
+    </VStack>
   );
-};
+}

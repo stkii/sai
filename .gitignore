@@ -21,3 +21,4 @@ pnpm-debug.log*
 # macOS system files
 .DS_Store
 .Rproj.user
+.positai

@@ -1,20 +1,23 @@
-import { anovaMethod } from './anova';
+import type { Method } from '../../shared/types';
+import { anovaModule } from './anova';
 import type { MethodModule } from './contracts';
-import { correlationMethod } from './correlation';
-import { descriptiveMethod } from './descriptive';
-import { factorMethod } from './factor';
-import { regressionMethod } from './regression';
-import { reliabilityMethod } from './reliability';
+import { correlationModule } from './correlation';
+import { descriptiveModule } from './descriptive';
+import { factorModule } from './factor';
+import { powerModule } from './power';
+import { regressionModule } from './regression';
+import { reliabilityModule } from './reliability';
 
-// UI向けに意図的に辞書式に並べない
-export const ANALYSIS_METHODS = [
-  descriptiveMethod,
-  correlationMethod,
-  regressionMethod,
-  anovaMethod,
-  factorMethod,
-  reliabilityMethod,
-] as const satisfies readonly MethodModule[];
+export const ANALYSIS_METHODS: MethodModule[] = [
+  descriptiveModule,
+  correlationModule,
+  regressionModule,
+  reliabilityModule,
+  factorModule,
+  anovaModule,
+  powerModule,
+];
 
-export type { MethodDefinition, MethodModule } from './contracts';
-export { buildExportSectionsFromResult, getSingleSection } from './utils';
+export function findMethod(key: Method): MethodModule | undefined {
+  return ANALYSIS_METHODS.find((m) => m.definition.key === key);
+}

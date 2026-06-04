@@ -1,57 +1,68 @@
-# ===================
-# Common helpers
-# ===================
+.ReadInputJson <- function(path) {
+  jsonlite::fromJSON(path, simplifyVector = FALSE)
+}
 
-# Build correlation matrix and prepared data matrix with missing-value handling.
-#
-# Args:
-# - df (data.frame or matrix): numeric variables in columns. Non-numeric columns are not allowed.
-# - method (character): "pearson" (default), "spearman", "kendall".
-# - use (character): "all.obs" (default), "complete.obs", "pairwise.complete.obs".
-#
-# Returns:
-# - list(work_mat, corr_mtx, n_col)
-#
-.PrepareCorrelation <- function(df, method = "pearson", use = "all.obs") {
-  # Receive raw data.
-  # Input dataset must be a data frame
-  IsDataFrame(df)
+.WriteOutputJson <- function(payload, path) {
+  json <- jsonlite::toJSON(payload, auto_unbox = TRUE, na = "null", null = "null")
+  writeLines(json, path)
+}
 
-  # Validation (if stop is called, frontend displays WarningDialog)
-  # Check if all columns are numeric
-  is_num <- if (is.data.frame(df)) base::vapply(df, is.numeric, base::logical(1)) else base::rep(TRUE, base::ncol(df))
-  # 1. Reject non-numeric columns
-  if (base::any(!is_num)) {
-    StopWithErrCode("ERR-811")
+.RowsFromTable <- function(tbl) {
+  tbl_rows <- list()
+  if (length(tbl) == 0) return(tbl_rows)
+  for (row in tbl) {
+    tbl_rows[[length(tbl_rows) + 1]] <- as.list(row)
   }
-  # 2. Ensure at least two columns for correlation
-  if (base::ncol(df) < 2) {
-    StopWithErrCode("ERR-831")
+  tbl_rows
+}
+
+.AsNumericDf <- function(rows, headers) {
+  if (length(rows) == 0) {
+    return(data.frame(matrix(numeric(0), ncol = length(headers), dimnames = list(NULL, headers))))
   }
-
-  # For speed, work in matrix form and preserve column names
-  mat <- base::as.matrix(df)
-  if (is.null(base::colnames(mat))) {
-    base::colnames(mat) <- base::paste0("V", base::seq_len(base::ncol(mat)))
+  mat <- matrix(NA_real_, nrow = length(rows), ncol = length(headers))
+  for (i in seq_along(rows)) {
+    for (j in seq_along(headers)) {
+      v <- rows[[i]][[j]]
+      mat[i, j] <- suppressWarnings(as.numeric(v))
+    }
   }
+  df <- as.data.frame(mat)
+  colnames(df) <- headers
+  df
+}
 
-  # Similar to `cor(..., use = "all.obs")`
-  if (use == "all.obs" && base::any(is.na(mat))) {
-    StopWithErrCode("ERR-832")
+.AsMixedDf <- function(rows, headers) {
+  if (length(rows) == 0) {
+    cols <- replicate(length(headers), character(0), simplify = FALSE)
+    df <- as.data.frame(cols, stringsAsFactors = FALSE)
+    colnames(df) <- headers
+    return(df)
   }
-
-  corr_mtx <- stats::cor(mat, method = method, use = use)
-
-  work_mat <- mat
-  if (use == "complete.obs") {
-    # Listwise deletion: drop any row with missing values.
-    ok_all <- stats::complete.cases(work_mat)
-    work_mat <- work_mat[ok_all, , drop = FALSE]
+  cols <- vector("list", length(headers))
+  for (j in seq_along(headers)) {
+    col <- character(length(rows))
+    for (i in seq_along(rows)) {
+      v <- rows[[i]][[j]]
+      col[i] <- if (is.null(v) || is.na(v)) NA_character_ else as.character(v)
+    }
+    cols[[j]] <- col
   }
+  df <- as.data.frame(cols, stringsAsFactors = FALSE)
+  colnames(df) <- headers
+  df
+}
 
-  list(
-    work_mat = work_mat,
-    corr_mtx = corr_mtx,
-    n_col = base::ncol(work_mat)
-  )
+.FmtNum <- function(x) {
+  if (is.null(x) || length(x) == 0) return("NA")
+  if (is.na(x)) return("NA")
+  formatC(x, digits = 4, format = "g")
+}
+
+.ListwiseNote <- function(removed) {
+  if (removed > 0) sprintf("リストワイズ削除により、%d件の観測が除外されました", removed) else NULL
+}
+
+.PairwiseNote <- function() {
+  "ペアワイズ削除のため、変数ペアごとにサンプルサイズが異なる場合があります"
 }

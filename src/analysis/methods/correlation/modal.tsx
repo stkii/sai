@@ -1,175 +1,99 @@
-import { Box, SimpleGrid, Stack, Text } from '@chakra-ui/react';
-import { useEffect, useRef, useState } from 'react';
-import { BaseRadioButton } from '../../../components/BaseRadioButton';
-import { VariableSelector } from '../../../components/VariableSelector';
-import { ModalFrame } from '../../components/ModalFrame';
-import type { AnalysisOptions } from '../../types';
+import { Box, Button, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
+import { useState } from 'react';
+import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
-export type CorrelationMethod = 'pearson' | 'spearman' | 'kendall';
-export type CorrelationUse = 'complete.obs' | 'pairwise.complete.obs';
-export type CorrelationAlternative = 'two.sided' | 'less' | 'greater';
+type CorrMethod = 'pearson' | 'spearman' | 'kendall';
+type NaMode = 'complete.obs' | 'pairwise.complete.obs';
 
-export interface CorrelationOptions extends AnalysisOptions {
-  method: CorrelationMethod;
-  use: CorrelationUse;
-  alternative: CorrelationAlternative;
-  view: 'matrix';
+interface CorrelationOptions {
+  method: CorrMethod;
+  na: NaMode;
 }
 
-const METHOD_OPTIONS = [
-  { label: 'Pearson', value: 'pearson' },
-  { label: 'Spearman', value: 'spearman' },
-  { label: 'Kendall', value: 'kendall' },
-] as const satisfies ReadonlyArray<{ label: string; value: CorrelationMethod }>;
+const METHOD_OPTIONS: { value: CorrMethod; label: string }[] = [
+  { value: 'pearson', label: 'Pearson 積率相関' },
+  { value: 'spearman', label: 'Spearman 順位相関' },
+  { value: 'kendall', label: 'Kendall の τ' },
+];
 
-const USE_OPTIONS = [
-  { label: '行ごとに除外', value: 'complete.obs' },
-  { label: 'ペアごとに除外', value: 'pairwise.complete.obs' },
-] as const satisfies ReadonlyArray<{ label: string; value: CorrelationUse }>;
+const NA_OPTIONS: { value: NaMode; label: string }[] = [
+  { value: 'complete.obs', label: 'リストワイズ削除' },
+  { value: 'pairwise.complete.obs', label: 'ペアワイズ削除' },
+];
 
-const ALTERNATIVE_OPTIONS = [
-  { label: '両側', value: 'two.sided' },
-  { label: '左片側', value: 'less' },
-  { label: '右片側', value: 'greater' },
-] as const satisfies ReadonlyArray<{ label: string; value: CorrelationAlternative }>;
+export function CorrelationModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [method, setMethod] = useState<CorrMethod>('pearson');
+  const [na, setNa] = useState<NaMode>('complete.obs');
 
-const DEFAULT_METHOD = METHOD_OPTIONS[0]?.value ?? 'pearson';
-const DEFAULT_USE = USE_OPTIONS[0]?.value ?? 'complete.obs';
-const DEFAULT_ALTERNATIVE = ALTERNATIVE_OPTIONS[0]?.value ?? 'two.sided';
-
-export const CorrelationModal = ({
-  open,
-  onClose,
-  variables,
-  onExecute,
-}: ModalProps<CorrelationOptions>) => {
-  const [selectedVariables, setSelectedVariables] = useState<string[]>([]);
-  const [method, setMethod] = useState<CorrelationMethod>(DEFAULT_METHOD);
-  const [use, setUse] = useState<CorrelationUse>(DEFAULT_USE);
-  const [alternative, setAlternative] = useState<CorrelationAlternative>(DEFAULT_ALTERNATIVE);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const previousVariablesKeyRef = useRef('');
-
-  useEffect(() => {
-    if (!open) {
-      setSelectedVariables([]);
-      setMethod(DEFAULT_METHOD);
-      setUse(DEFAULT_USE);
-      setAlternative(DEFAULT_ALTERNATIVE);
-      setError(null);
-      setLoading(false);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    const nextVariablesKey = variables.join('\u0000');
-    if (previousVariablesKeyRef.current === nextVariablesKey) {
-      return;
-    }
-    previousVariablesKeyRef.current = nextVariablesKey;
-    setSelectedVariables([]);
-    setError(null);
-  }, [variables]);
-
-  const handleExecute = async () => {
-    if (selectedVariables.length < 2) {
-      setError('2つ以上の変数を選択してください');
-      return;
-    }
-    if (!onExecute) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      await onExecute(selectedVariables, {
-        method,
-        use,
-        alternative,
-        view: 'matrix',
-      });
-    } catch (executeError: unknown) {
-      setError(executeError instanceof Error ? executeError.message : String(executeError));
-    } finally {
-      setLoading(false);
-    }
-  };
+  function handleSubmit() {
+    if (selected.length < 2) return;
+    onExecute(selected, { method, na } satisfies CorrelationOptions);
+  }
 
   return (
-    <ModalFrame
-      open={open}
-      onClose={onClose}
-      title="相関分析"
-      onExecute={handleExecute}
-      loading={loading}
-      error={error}
-      maxW="6xl"
-    >
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap="6" alignItems="start">
-        <Box overflowX="auto" maxW="full" minW={0}>
-          <VariableSelector variables={variables} onChange={setSelectedVariables} />
+    <VStack align="stretch" gap={4}>
+      <Flex gap={5} align="stretch">
+        <Box flex={1} minW={0}>
+          <FieldFrame label="変数選択 (2つ以上)">
+            <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
+          </FieldFrame>
         </Box>
-
-        <Box
-          position="relative"
-          borderWidth="1px"
-          borderColor="gray.200"
-          rounded="md"
-          px="4"
-          pt="6"
-          pb="4"
-          minW={0}
-        >
-          <Text
-            position="absolute"
-            top="0"
-            left="3"
-            transform="translateY(-50%)"
-            px="2"
-            bg="bg"
-            fontSize="sm"
-            fontWeight="semibold"
-            color="gray.600"
-          >
-            分析オプション
-          </Text>
-
-          <Stack gap="4">
-            <Stack gap="2">
-              <Text fontWeight="semibold">相関係数</Text>
-              <BaseRadioButton
-                contents={METHOD_OPTIONS}
-                orientation="horizontal"
+        <Box width="260px" flexShrink={0}>
+          <VStack align="stretch" gap={3}>
+            <FieldFrame label="相関係数の種類">
+              <RadioGroup.Root
+                size="sm"
                 value={method}
-                onChange={(value) => setMethod(value as CorrelationMethod)}
-              />
-            </Stack>
-
-            <Stack gap="2">
-              <Text fontWeight="semibold">欠損値の扱い</Text>
-              <BaseRadioButton
-                contents={USE_OPTIONS}
-                orientation="horizontal"
-                value={use}
-                onChange={(value) => setUse(value as CorrelationUse)}
-              />
-            </Stack>
-
-            <Stack gap="2">
-              <Text fontWeight="semibold">検定</Text>
-              <BaseRadioButton
-                contents={ALTERNATIVE_OPTIONS}
-                orientation="horizontal"
-                value={alternative}
-                onChange={(value) => setAlternative(value as CorrelationAlternative)}
-              />
-            </Stack>
-          </Stack>
+                onValueChange={(d) => setMethod(d.value as CorrMethod)}
+              >
+                <Flex wrap="wrap" rowGap={2} columnGap={4}>
+                  {METHOD_OPTIONS.map((opt) => (
+                    <RadioGroup.Item key={opt.value} value={opt.value}>
+                      <RadioGroup.ItemHiddenInput />
+                      <RadioGroup.ItemIndicator />
+                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
+                    </RadioGroup.Item>
+                  ))}
+                </Flex>
+              </RadioGroup.Root>
+            </FieldFrame>
+            <FieldFrame label="欠測値の扱い">
+              <RadioGroup.Root
+                size="sm"
+                value={na}
+                onValueChange={(d) => setNa(d.value as NaMode)}
+              >
+                <Flex wrap="wrap" rowGap={2} columnGap={4}>
+                  {NA_OPTIONS.map((opt) => (
+                    <RadioGroup.Item key={opt.value} value={opt.value}>
+                      <RadioGroup.ItemHiddenInput />
+                      <RadioGroup.ItemIndicator />
+                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
+                    </RadioGroup.Item>
+                  ))}
+                </Flex>
+              </RadioGroup.Root>
+            </FieldFrame>
+          </VStack>
         </Box>
-      </SimpleGrid>
-    </ModalFrame>
+      </Flex>
+      <HStack justify="flex-end" gap={2}>
+        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
+          キャンセル
+        </Button>
+        <Button
+          size="sm"
+          colorPalette="blue"
+          onClick={handleSubmit}
+          loading={busy}
+          disabled={selected.length < 2}
+        >
+          実行
+        </Button>
+      </HStack>
+    </VStack>
   );
-};
+}

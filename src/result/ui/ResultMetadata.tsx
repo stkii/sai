@@ -1,0 +1,68 @@
+import { Box, HStack, Text } from '@chakra-ui/react';
+import { findMethod } from '../../analysis/methods';
+import type { AnalysisOptions } from '../../shared/types';
+import type { ResultEntry } from '../state/ResultContext';
+
+function formatTime(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function isEmptyValue(v: unknown): boolean {
+  return v === null || v === undefined || v === '' || v === false;
+}
+
+function formatValue(v: unknown): string | null {
+  if (isEmptyValue(v)) return null;
+  if (v === true) return 'true';
+  if (typeof v === 'number' || typeof v === 'string') return String(v);
+  if (Array.isArray(v)) {
+    const items = v.filter((x) => !isEmptyValue(x)).map((x) => String(x));
+    return items.length > 0 ? items.join(', ') : null;
+  }
+  if (typeof v === 'object') {
+    const entries = Object.entries(v as Record<string, unknown>)
+      .filter(([, vv]) => !isEmptyValue(vv))
+      .map(([k, vv]) => (vv === true ? k : `${k}=${formatValue(vv)}`));
+    return entries.length > 0 ? entries.join(', ') : null;
+  }
+  return null;
+}
+
+function formatOptions(options: AnalysisOptions): string | null {
+  const parts: string[] = [];
+  for (const [k, v] of Object.entries(options)) {
+    const formatted = formatValue(v);
+    if (formatted !== null) parts.push(`${k}: ${formatted}`);
+  }
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
+
+export function ResultMetadata({ entry }: { entry: ResultEntry }) {
+  const mod = findMethod(entry.method);
+  const label = mod?.definition.label ?? entry.method;
+  const optionsText = formatOptions(entry.options);
+  return (
+    <Box borderWidth="1px" borderRadius="md" p={3} bg="gray.50">
+      <HStack gap={4} wrap="wrap" align="baseline">
+        <Text fontSize="sm" fontWeight="bold">
+          {label}
+        </Text>
+        <Text fontSize="xs" color="gray.600">
+          {formatTime(entry.createdAt)}
+        </Text>
+      </HStack>
+      {entry.variables.length > 0 && (
+        <Text fontSize="xs" color="gray.700" mt={1}>
+          変数: {entry.variables.join(', ')}
+        </Text>
+      )}
+      {optionsText && (
+        <Text fontSize="xs" color="gray.700" mt={1}>
+          設定: {optionsText}
+        </Text>
+      )}
+    </Box>
+  );
+}

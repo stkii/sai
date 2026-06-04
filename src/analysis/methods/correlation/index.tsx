@@ -1,19 +1,7 @@
-import type { MethodDefinition, MethodModule } from '../contracts';
+import type { MethodModule } from '../contracts';
 import { CorrelationModal } from './modal';
-import { buildCorrelationExportSections, renderCorrelationResult } from './result';
 
-export const correlationDefinition: MethodDefinition<'correlation'> = {
-  key: 'correlation',
-  label: '相関',
-};
-
-export const correlationMethod: MethodModule<'correlation'> = {
-  definition: correlationDefinition,
-  renderModal: ({ open, onClose, variables, onExecute }) => {
-    return (
-      <CorrelationModal open={open} onClose={onClose} variables={variables} onExecute={onExecute} />
-    );
-  },
-  renderResult: renderCorrelationResult,
-  buildExportSections: buildCorrelationExportSections,
+export const correlationModule: MethodModule<'correlation'> = {
+  definition: { key: 'correlation', label: '相関分析' },
+  renderModal: (props) => <CorrelationModal {...props} />,
 };
