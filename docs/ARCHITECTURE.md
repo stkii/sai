@@ -99,7 +99,7 @@ src/
 │
 ├── analysis/                     # 分析実行 (modal + 実行フロー)
 │   ├── ui/                       # MethodSelector, VariablePicker, AnalysisModalHost
-│   └── methods/                  # 各分析メソッド (modal / result / index の 3 ファイル構成)
+│   └── methods/                  # 各分析メソッド (modal.tsx + index.tsx の 2 ファイル構成。result.tsx はカスタム表示が必要な場合のみ追加)
 │       ├── descriptive/
 │       ├── correlation/
 │       ├── regression/
@@ -263,7 +263,7 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
    - `cli.R` の `source()` 呼び出しにも追加
 2. **Frontend** (`src/`)
    - `shared/types/index.ts` の `Method` union に追加
-   - `analysis/methods/<method>/` に `modal.tsx` / `result.tsx` / `index.tsx` を追加
+   - `analysis/methods/<method>/` に `modal.tsx` / `index.tsx` を追加 (`result.tsx` はカスタム表示が必要な場合のみ追加)
    - `analysis/methods/index.ts` の `ANALYSIS_METHODS` に登録
 3. **Rust** (`src-tauri/`)
    - **原則として変更不要**。Rust は配管に徹し、未対応メソッドのエラーは R から返る

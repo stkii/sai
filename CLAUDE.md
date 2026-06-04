@@ -53,8 +53,9 @@ src-r/        → R scripts for statistical computation
 - **機能フォルダ構造**: 各機能は `ui/` (view・操作フロー) + `state/` (Context・hook) の 2 階層。`flow/` 専用フォルダは持たない
 
 **Analysis module** (`src/analysis/`):
-- `methods/<method>/` — 各メソッド 3 ファイル: `modal.tsx`（入力 UI）/ `result.tsx`（結果表示）/ `index.tsx`（`MethodModule` 組立）
-- `methods/contracts.ts` — `MethodModule` interface（`renderModal`, `renderResult` の 2 メソッド）
+- `methods/<method>/` — 各メソッドは原則 2 ファイル: `modal.tsx`（入力 UI）/ `index.tsx`（`MethodModule` 組立）。共通の `<SectionsView>` で結果表示が足りる場合はそれだけで完結する
+- `methods/<method>/result.tsx` — **オプション**。結果表示をカスタマイズしたい場合のみ追加し、`index.tsx` の `renderResult` にバインドする。未指定なら `ResultPane` が `<SectionsView result={result} />` でフォールバック描画する
+- `methods/contracts.ts` — `MethodModule` interface（`renderModal` 必須、`renderResult` オプショナル）
 - `methods/index.ts` — `ANALYSIS_METHODS` レジストリ。配列に push するだけでヘッダーメニューと結果表示に自動登録
 - `ui/AnalysisModalHost.tsx` — モーダル開閉・データセット参照・`runAnalysis` 呼出・結果を `ResultContext` に追加するフローオーナー
 - 横断的な分析系の型 (`Method`, `AnalysisResult` 等) は `src/shared/types/index.ts` に集約
@@ -97,8 +98,8 @@ src-r/        → R scripts for statistical computation
 
 3. **`src/shared/types/index.ts`** — `Method` union 型に `'<method>'` を追加
 4. **`src/analysis/methods/<method>/modal.tsx`** — 入力 UI。`ModalProps` を受け取り、submit 時に `onExecute(variables, options)` を呼ぶ
-5. **`src/analysis/methods/<method>/result.tsx`** — 結果表示。`{ result: AnalysisResult }` を受け取り、共通の `<SectionsView result={result} />` で表示可能（カスタム表示が必要なら自前で `result.sections` を render）
-6. **`src/analysis/methods/<method>/index.tsx`** — `MethodModule<'<method>'>` を組み立てて export。`definition` に `key` + `label`、`renderModal`/`renderResult` をバインド
+5. **`src/analysis/methods/<method>/index.tsx`** — `MethodModule<'<method>'>` を組み立てて export。`definition` に `key` + `label`、`renderModal` をバインド
+6. (オプション) **`src/analysis/methods/<method>/result.tsx`** — 結果表示をカスタマイズしたい場合のみ追加。`{ result: AnalysisResult }` を受け取り、`index.tsx` で `renderResult` にバインドする。未指定なら `ResultPane` が `<SectionsView result={result} />` でフォールバック描画する
 7. **`src/analysis/methods/index.ts`** の `ANALYSIS_METHODS` 配列に `<method>Module` を追加
 
 ### 3. Rust Backend (原則不要)

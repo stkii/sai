@@ -17,5 +17,6 @@ export interface MethodDefinition<K extends Method = Method> {
 export interface MethodModule<K extends Method = Method> {
   definition: MethodDefinition<K>;
   renderModal: (props: ModalProps) => ReactNode;
-  renderResult: (result: AnalysisResult) => ReactNode;
+  // 省略時は ResultPane が共通の SectionsView でフォールバック描画する。
+  renderResult?: (result: AnalysisResult) => ReactNode;
 }
