@@ -33,20 +33,22 @@
     headers <- c("項", "Df", "平方和", "平均平方", "F値", "p値")
     rows <- list()
     for (i in seq_len(nrow(table))) {
+      p <- table[i, "Pr(>F)"]
       rows[[length(rows) + 1]] <- list(
         rownames(table)[i],
         .FmtNum(table[i, "Df"]),
         .FmtNum(table[i, "Sum Sq"]),
         .FmtNum(table[i, "Mean Sq"]),
         .FmtNum(table[i, "F value"]),
-        .FmtNum(table[i, "Pr(>F)"])
+        sprintf("%s%s", .FmtNum(p), .Stars(p))
       )
     }
-    list(headers = headers, rows = rows)
+    list(headers = headers, rows = rows, note = "** p<.01, * p<.05")
   } else {
     headers <- c("層", "項", "Df", "平方和", "平均平方", "F値", "p値")
     rows <- list()
     for (i in seq_len(nrow(table))) {
+      p <- table[i, "Pr(>F)"]
       rows[[length(rows) + 1]] <- list(
         as.character(table$Stratum[i]),
         as.character(table$Term[i]),
@@ -54,10 +56,10 @@
         .FmtNum(table[i, "Sum Sq"]),
         .FmtNum(table[i, "Mean Sq"]),
         .FmtNum(table[i, "F value"]),
-        .FmtNum(table[i, "Pr(>F)"])
+        sprintf("%s%s", .FmtNum(p), .Stars(p))
       )
     }
-    list(headers = headers, rows = rows)
+    list(headers = headers, rows = rows, note = "** p<.01, * p<.05")
   }
 }
 

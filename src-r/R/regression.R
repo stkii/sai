@@ -13,12 +13,13 @@
   coef_headers <- c("項", "推定値", "標準誤差", "t値", "p値")
   coef_rows <- list()
   for (i in seq_len(nrow(coefs))) {
+    p <- coefs[i, 4]
     coef_rows[[length(coef_rows) + 1]] <- list(
       rownames(coefs)[i],
       .FmtNum(coefs[i, 1]),
       .FmtNum(coefs[i, 2]),
       .FmtNum(coefs[i, 3]),
-      .FmtNum(coefs[i, 4])
+      sprintf("%s%s", .FmtNum(p), .Stars(p))
     )
   }
   fstat <- s$fstatistic
@@ -32,7 +33,7 @@
     fit_rows[[length(fit_rows) + 1]] <- list("自由度", sprintf("%d, %d", as.integer(fstat[[2]]), as.integer(fstat[[3]])))
   }
   list(
-    coefs = list(headers = coef_headers, rows = coef_rows),
+    coefs = list(headers = coef_headers, rows = coef_rows, note = "** p<.01, * p<.05"),
     fit_stats = list(headers = c("統計量", "値"), rows = fit_rows)
   )
 }
