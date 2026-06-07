@@ -9,11 +9,12 @@
   as.integer(n)
 }
 
-.SortByFactor <- function(load_matrix) {
+.SortByFactor <- function(load_matrix, threshold = 0.40) {
   ab <- abs(load_matrix)
   primary <- max.col(ab)
   primary_load <- ab[cbind(seq_len(nrow(ab)), primary)]
-  order(primary, -primary_load)
+  group <- ifelse(primary_load >= threshold, primary, ncol(load_matrix) + 1L)
+  order(group, -primary_load)
 }
 
 .FormatLoading <- function(x, threshold = 0.40) {
