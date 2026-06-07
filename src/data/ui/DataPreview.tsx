@@ -7,14 +7,15 @@ interface Props {
   summary: DatasetSummary;
 }
 
-const ROW_HEIGHT = 28;
-const COL_WIDTH = 96;
+const ROW_HEIGHT = 37;
+const COL_WIDTH = 60;
 const ROW_NUM_WIDTH = 48;
 
 const headerStyle: CSSProperties = {
   position: 'sticky',
   top: 0,
   display: 'flex',
+  alignItems: 'center',
   background: '#f3f4f6',
   borderBottom: '1px solid #e5e7eb',
   zIndex: 2,
@@ -100,6 +101,7 @@ const Row = memo(function Row({ rowNumber, row, top, height, totalWidth }: RowPr
         height: `${height}px`,
         transform: `translateY(${top}px)`,
         display: 'flex',
+        alignItems: 'center',
       }}
     >
       <div style={rowNumCellStyle}>{rowNumber}</div>

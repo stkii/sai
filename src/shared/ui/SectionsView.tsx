@@ -71,7 +71,10 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
                         fontSize="xs"
                         whiteSpace="nowrap"
                         fontWeight="bold"
-                        textAlign={numericCols[j] ? 'right' : 'left'}
+                        minW="60px"
+                        h="37px"
+                        textAlign="center"
+                        verticalAlign="middle"
                         fontFamily={numericCols[j] ? 'mono' : undefined}
                         position={j === 0 ? 'sticky' : undefined}
                         left={j === 0 ? 0 : undefined}
@@ -93,7 +96,10 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
                           key={`c-${idx}-${i}-${j}`}
                           fontSize="xs"
                           whiteSpace="nowrap"
-                          textAlign={numericCols[j] ? 'right' : 'left'}
+                          minW="60px"
+                          h="37px"
+                          textAlign="right"
+                          verticalAlign="middle"
                           fontFamily={numericCols[j] ? 'mono' : undefined}
                           position={j === 0 ? 'sticky' : undefined}
                           left={j === 0 ? 0 : undefined}
