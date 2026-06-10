@@ -59,6 +59,13 @@
   formatC(x, digits = 4, format = "g")
 }
 
+# 有意水準の星印 (correlation / regression / anova 共用)。
+# 数値の直後に連結し、フロントの SectionsView が右肩 (上付き) に描画する。
+.Stars <- function(p) {
+  if (is.null(p) || length(p) == 0 || is.na(p)) return("")
+  if (p < 0.01) "**" else if (p < 0.05) "*" else ""
+}
+
 .ListwiseNote <- function(removed) {
   if (removed > 0) sprintf("リストワイズ削除により、%d件の観測が除外されました", removed) else NULL
 }

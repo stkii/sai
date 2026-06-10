@@ -1,8 +1,3 @@
-.Stars <- function(p) {
-  if (is.null(p) || length(p) == 0 || is.na(p)) return("")
-  if (p < 0.01) "**" else if (p < 0.05) "*" else ""
-}
-
 .Correlation <- function(df, method, use) {
   cor_mat <- cor(df, method = method, use = use)
   k <- ncol(df)
@@ -10,8 +5,10 @@
   for (i in seq_len(k)) {
     for (j in seq_len(k)) {
       if (i == j) next
+      # cor.test は欠測ペアを自動除外する (= ペアワイズ)。リストワイズの場合は
+      # 呼び出し前に df を complete.cases で絞っているため、r と p は同一サンプルになる。
       r <- tryCatch(
-        cor.test(df[[i]], df[[j]], method = method, use = "complete.obs"),
+        cor.test(df[[i]], df[[j]], method = method),
         error = function(e) NULL
       )
       if (!is.null(r)) p_mat[i, j] <- r$p.value
@@ -41,18 +38,28 @@ RunCorrelation <- function(df, options) {
   if (ncol(df) < 2) stop("相関分析には2つ以上の変数が必要です")
   method <- if (is.null(options$method)) "pearson" else options$method
   use <- if (is.null(options$na)) "complete.obs" else options$na
-
-  res <- .Correlation(df, method, use)
-  parsed <- .CorrelationParsed(res, colnames(df))
+  if (!method %in% c("pearson", "spearman", "kendall")) {
+    stop(sprintf("未対応の相関係数: %s", method))
+  }
+  if (!use %in% c("complete.obs", "pairwise.complete.obs")) {
+    stop(sprintf("未対応の欠測値処理: %s", use))
+  }
 
   if (use == "complete.obs") {
-    valid_n <- sum(complete.cases(df))
+    before <- nrow(df)
+    df <- df[complete.cases(df), , drop = FALSE]
+    valid_n <- nrow(df)
+    if (valid_n < 3) stop("有効な観測が不足しています (リストワイズ削除後)")
+    res <- .Correlation(df, method, "complete.obs")
+    parsed <- .CorrelationParsed(res, colnames(df))
     list(
       sections = list(list(title = "相関行列", table = parsed)),
       n = valid_n,
-      n_note = .ListwiseNote(nrow(df) - valid_n)
+      n_note = .ListwiseNote(before - valid_n)
     )
   } else {
+    res <- .Correlation(df, method, "pairwise.complete.obs")
+    parsed <- .CorrelationParsed(res, colnames(df))
     list(
       sections = list(list(title = "相関行列", table = parsed)),
       n = nrow(df),
