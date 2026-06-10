@@ -31,21 +31,65 @@
   )
 }
 
+.PowerLabel <- function(name) {
+  labels <- c(
+    n = "サンプルサイズ n",
+    delta = "効果量 delta",
+    sd = "標準偏差",
+    sig.level = "有意水準 α",
+    power = "検出力 (1−β)",
+    type = "検定タイプ",
+    alternative = "対立仮説",
+    groups = "群数",
+    between.var = "群間分散",
+    within.var = "群内分散",
+    p1 = "比率1",
+    p2 = "比率2"
+  )
+  if (name %in% names(labels)) labels[[name]] else name
+}
+
+.PowerValue <- function(name, v) {
+  if (name == "type") {
+    return(switch(v,
+      one.sample = "1標本",
+      two.sample = "2標本 (独立)",
+      paired = "対応あり",
+      v
+    ))
+  }
+  if (name == "alternative") {
+    return(switch(v, two.sided = "両側", one.sided = "片側", v))
+  }
+  as.character(v)
+}
+
 .PowerParsed <- function(res, test_label) {
   rows <- list()
   for (name in names(res)) {
+    # method は節タイトルと重複するため表示しない。note は表の注記として扱う。
+    if (name %in% c("method", "note")) next
     v <- res[[name]]
     if (is.null(v) || length(v) == 0) next
     if (is.numeric(v) && length(v) == 1) {
-      rows[[length(rows) + 1]] <- list(name, .FmtNum(v))
+      rows[[length(rows) + 1]] <- list(.PowerLabel(name), .FmtNum(v))
     } else if (is.character(v)) {
-      rows[[length(rows) + 1]] <- list(name, as.character(v))
+      rows[[length(rows) + 1]] <- list(.PowerLabel(name), .PowerValue(name, v))
+    }
+  }
+  table <- list(headers = c("項目", "値"), rows = rows)
+  if (!is.null(res$note)) {
+    # base R の note は「n は各群の数」の旨。既知の文言は日本語化し、未知はそのまま表示する
+    table$note <- if (grepl("each", res$note, fixed = TRUE)) {
+      "n は各群のサンプルサイズです"
+    } else {
+      as.character(res$note)
     }
   }
   list(
     sections = list(list(
       title = sprintf("検出力分析 (%s)", test_label),
-      table = list(headers = c("項目", "値"), rows = rows)
+      table = table
     ))
   )
 }
