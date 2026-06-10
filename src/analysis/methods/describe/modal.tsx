@@ -20,7 +20,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'mean_asc', label: '平均値による昇順' },
 ];
 
-export function DescriptiveModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function DescribeModal({ headers, busy, onCancel, onExecute }: ModalProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [sort, setSort] = useState<SortMode>('default');
   const [skewness, setSkewness] = useState(false);
