@@ -22,7 +22,13 @@ pnpm format                 # Biome format with auto-fix
 
 R environment setup (one-time, from `src-r/` directory):
 ```bash
-cd src-r/ && RENV_PROFILE=default Rscript -e 'renv::restore()'
+cd src-r/ && RENV_PROFILE=default Rscript -e 'renv::restore()'   # 本番 (アプリ実行用)
+cd src-r/ && RENV_PROFILE=dev Rscript -e 'renv::restore()'       # テスト用 (testthat 入り)
+```
+
+R 層のテスト (dev profile で実行。本番 `renv.lock` に testthat は入らない):
+```bash
+cd src-r/ && RENV_PROFILE=dev Rscript tests/run_all.R
 ```
 
 Rust backend (from `src-tauri/`):
@@ -69,7 +75,7 @@ src-r/        → R scripts for statistical computation
 - **`bootstrap.rs`** — `AppState`（cache, dataset/analysis/history service の DI 配線）。services は infra の具象を直保有 (trait 抽象なし)
 - **`models.rs`** — `ParsedTable`, `AnalysisResult`, `HistoryRecord` 等の共通型
 
-登録済みコマンド: `get_sheets`, `load_dataset`, `run_analysis`, `load_history`, `append_history`, `clear_history`
+登録済みコマンド: `get_sheets`, `load_dataset`, `run_analysis`, `load_history`, `append_history`, `clear_history`, `remove_history`
 
 **Analysis execution flow**: Frontend `invoke('run_analysis')` → `AnalysisService::run()` がデータセットキャッシュから列を射影 (またはスキップ) → `RRunner::run()` が `Rscript src-r/cli.R <input.json> <output.json>` を起動 → R の dispatch table がメソッドを解決して実行 → 結果を `AnalysisResult` にパースして返却。未対応メソッドのエラーは **R 層が返す**
 
@@ -79,6 +85,7 @@ src-r/        → R scripts for statistical computation
 - `R/` — `common.R` の共通ヘルパに加え、`describe.R` / `correlation.R` / `regression.R` / `reliability.R` / `factor.R` / `anova.R` / `power.R`
 - `renv` で依存管理（`src-r/.Rprofile` で activate）
 - 主な外部パッケージ: `EFAtools`（因子分析）, `jsonlite`（JSON I/O）。パワー分析は base R の `stats::power.t.test` / `power.anova.test` / `power.prop.test` を使用（外部パッケージなし）
+- `tests/` — testthat によるテスト。`tests/testthat/test-<method>.R`（`Run<Method>` を直接呼ぶ関数テスト）+ `test-cli.R`（`cli.R` の E2E）。**dev profile**（`RENV_PROFILE=dev`、lockfile は `renv/profiles/dev/renv.lock`）で実行し、testthat は本番 `renv.lock` に入らない（`.renvignore` が `tests/` をスキャン除外、dev 依存は `DESCRIPTION` の `Config/renv/profiles/dev/dependencies` で宣言）。RStudio からは `testthat::test_dir("tests/testthat")` / `testthat::test_file(...)`
 
 ## Adding a New Analysis Method
 
@@ -93,6 +100,7 @@ src-r/        → R scripts for statistical computation
 2. **`src-r/cli.R`** に 2 行追加:
    - `source(file.path(r_dir, "<method>.R"))` を module-loading 部に追記
    - `dispatch` list に `<method> = list(requires_data = TRUE/FALSE, kind = "numeric"/"mixed"/"none", run = Run<Method>)` を追加
+3. **`src-r/tests/testthat/test-<method>.R`** を追加。正解値は base R の素の実装（`lm` / `cor.test` 等）か定義式の手計算と照合する。`n_note` が必要なメソッドは注記のテストも必ず入れる
 
 ### 2. Frontend (`src/`)
 
@@ -120,6 +128,7 @@ Rust 側のメソッドホワイトリストは廃止済み。未対応メソッ
 ```bash
 cd src-tauri && cargo check
 cd .. && pnpm fixall && pnpm check && pnpm ts
+cd src-r && RENV_PROFILE=dev Rscript tests/run_all.R
 ```
 
 ## Sample Size Notes (`n_note`)

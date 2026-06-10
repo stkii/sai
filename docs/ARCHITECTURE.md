@@ -100,7 +100,7 @@ src/
 ├── analysis/                     # 分析実行 (modal + 実行フロー)
 │   ├── ui/                       # MethodSelector, VariablePicker, AnalysisModalHost
 │   └── methods/                  # 各分析メソッド (modal.tsx + index.tsx の 2 ファイル構成。result.tsx はカスタム表示が必要な場合のみ追加)
-│       ├── descriptive/
+│       ├── describe/
 │       ├── correlation/
 │       ├── regression/
 │       ├── factor/
@@ -117,9 +117,10 @@ src/
 │   └── state/                    # useAIChatStore (開閉状態のみ)
 │
 └── shared/
-    ├── ui/                       # 汎用 UI (FieldFrame, SectionsView)
+    ├── ui/                       # 汎用 UI (FieldFrame, SectionsView, VerticalSplitter)
     ├── ipc/                      # Tauri wrapper (analysis, dataset, history)
-    └── types/                    # 横断的型 (AnalysisResult, Method, DatasetSummary, HistoryRecord)
+    ├── types/                    # 横断的型 (AnalysisResult, Method, DatasetSummary, HistoryRecord)
+    └── format.ts                 # 表示フォーマット (タイムスタンプ等)
 ```
 
 ### 依存方向
@@ -178,7 +179,7 @@ src-tauri/src/
 ├── commands/                     # Tauri コマンド (薄い変換層)
 │   ├── dataset.rs                # get_sheets, load_dataset
 │   ├── analysis.rs               # run_analysis
-│   └── history.rs                # load_history, append_history, clear_history
+│   └── history.rs                # load_history, append_history, clear_history, remove_history
 │
 ├── services/                     # ビジネスロジック
 │   ├── dataset.rs                # ファイル → データセット + キャッシュ
@@ -219,6 +220,7 @@ flowchart TD
 - 単一の `history.jsonl` に append-only
 - 起動時に全件 load。フィルタや paging は未実装 (件数が増えたら導入する)
 - `clear_history` はファイルごと削除する全消去
+- `remove_history` は対象 1 件を除いた内容を一時ファイルへ書き出し、rename で置換する
 
 #### standalone 分析
 PowerAnalysis 等は `dataset_key = null` で `run_analysis` を呼ぶ。`services/analysis.rs::run` は `dataset_key.is_some()` で「列射影」「空テーブル」を分岐するだけで、メソッド名のホワイトリストは持たない。**未対応メソッドのエラーは R 層 (`cli.R`) が返す**。
@@ -229,6 +231,43 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
 > **設計判断の経緯**: 旧設計では `AnalysisMethodHandler` trait を per-method ファイルで実装する registry pattern を採っていたが、実運用上 `normalize_options` の中身が `normalize_options_object()` を呼ぶだけのワンライナーになるメソッドが 7/8 を占め、`post_process` は誰も override しなかった。さらに `is_supported` / `requires_dataset` の二重定義 (Rust と R で同じメソッドリスト) を保守する負担もあった。
 >
 > 「将来必要かもしれない柔軟性」のために空シェルを並べる負債を避け、Rust 側のメソッド固有ロジックを完全に撤去した。もし将来、特定メソッドで Rust 側 normalize/post-process が必要になった場合は、`services/analysis.rs` のディスパッチ分岐 (または `services/<method>_handler.rs`) に追加する。trait 抽象は **必要になった時点で復活させる** 方針。
+
+---
+
+## R 層のテスト (`src-r/tests/`)
+
+```
+src-r/tests/
+├── run_all.R                 # 一括実行エントリ (RENV_PROFILE=dev Rscript tests/run_all.R)
+├── testthat/
+│   ├── helper-sai.R          # R/*.R の source・セル値パーサ・cli.R 実行ヘルパ
+│   ├── test-<method>.R       # Run<Method> を直接呼ぶ関数テスト (メソッドごとに1ファイル)
+│   └── test-cli.R            # cli.R を Rscript で起動する E2E (配管のみ薄く検証)
+└── fixtures/cli/             # test-cli.R 用の入力 JSON
+```
+
+### 設計方針
+
+- **主力は関数テスト**: `Run<Method>(df, options)` を直接呼ぶ。アプリ起動不要・RStudio (`testthat::test_dir("tests/testthat")`) でデバッグ可能
+- **正解値は base R との一致で担保**: `lm` / `cor.test` / `aov` / `power.t.test` の生出力や定義式の手計算と照合する。ゴールデンファイル比較は採らない (フォーマット変更に弱く、何を保証しているか読めないため)
+- **`n_note` の回帰テスト**: リストワイズ/ペアワイズ/反復測定の注記 (ダークパターン禁止規約の砦) を各メソッドで明示的に検証する
+
+### dev profile による依存分離
+
+テスト専用パッケージ (testthat) は renv の **dev profile** に隔離し、本番配布用 `renv.lock` には入れない:
+
+| 仕組み | 役割 |
+|---|---|
+| `renv/profiles/dev/renv.lock` | dev 専用 lockfile (本番一式 + testthat)。`RENV_PROFILE=dev` で有効化 |
+| `.renvignore` (`tests/` を除外) | default profile の依存スキャンが testthat を拾うことを構造的に防ぐ |
+| `DESCRIPTION` の `Config/renv/profiles/dev/dependencies` | dev profile の追加依存 (testthat) を宣言 |
+| `renv/.gitignore` の `profile` | `renv::activate(profile=)` による永続切替が誤ってコミットされるのを防ぐ (本番の Rust 実行は常に default profile) |
+
+セットアップと実行 (`src-r/` から):
+```bash
+RENV_PROFILE=dev Rscript -e 'renv::restore()'   # 初回のみ
+RENV_PROFILE=dev Rscript tests/run_all.R        # 全テスト実行
+```
 
 ---
 
@@ -261,6 +300,7 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
    - `R/<method>.R` を追加 (`.<Method>` / `.<Method>Parsed` / `Run<Method>` の 3 関数構成)
    - `cli.R` の dispatch table に `<method> = list(requires_data = ..., kind = ..., run = Run<Method>)` を追加
    - `cli.R` の `source()` 呼び出しにも追加
+   - `tests/testthat/test-<method>.R` を追加 (base R との一致 + `n_note` の検証)
 2. **Frontend** (`src/`)
    - `shared/types/index.ts` の `Method` union に追加
    - `analysis/methods/<method>/` に `modal.tsx` / `index.tsx` を追加 (`result.tsx` はカスタム表示が必要な場合のみ追加)
@@ -282,4 +322,5 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
 | 結果のエクスポート (PDF/CSV) | `services/export.rs` 追加 | services 1 つ追加のみ |
 | 複数データセット同時保持 | `infra/cache/` 拡張 | cache key の拡張のみ |
 | 履歴のフィルタ・ページング | `services/history.rs` + `commands/history.rs` 拡張 | API 1 つ追加 |
+| 配布パッケージング | `infra/r/runner.rs` + ビルド設定 | **要対応**: 現状は `CARGO_MANIFEST_DIR` (開発マシンのパス) が `cli.R` の既定パスとして焼き込まれ、`Rscript` も PATH 依存。配布時は R ランタイム同梱とパス解決の再設計が必要 |
 | マルチユーザー対応 | 全層 | **要再設計** (現設計はシングルユーザー前提) |
