@@ -1,13 +1,8 @@
 import { Box, HStack, Text } from '@chakra-ui/react';
 import { findMethod } from '../../analysis/methods';
+import { formatTimestamp } from '../../shared/format';
 import type { AnalysisOptions } from '../../shared/types';
 import type { ResultEntry } from '../state/ResultContext';
-
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
 
 function isEmptyValue(v: unknown): boolean {
   return v === null || v === undefined || v === '' || v === false;
@@ -50,7 +45,7 @@ export function ResultMetadata({ entry }: { entry: ResultEntry }) {
           {label}
         </Text>
         <Text fontSize="xs" color="gray.600">
-          {formatTime(entry.createdAt)}
+          {formatTimestamp(entry.createdAt)}
         </Text>
       </HStack>
       {entry.variables.length > 0 && (
