@@ -1,0 +1,6 @@
+# renv の依存スキャン対象から除外するパス (.gitignore と同じ書式)。
+# tests/ を除外することで、default profile の snapshot が testthat を
+# 本番用 renv.lock に取り込むことを構造的に防ぐ。
+# dev profile の testthat 依存は DESCRIPTION の
+# Config/renv/profiles/dev/dependencies で宣言している。
+tests/

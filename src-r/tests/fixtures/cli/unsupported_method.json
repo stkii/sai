@@ -1,0 +1,6 @@
+{
+  "method": "bogus",
+  "headers": ["x"],
+  "rows": [["1"]],
+  "options": {}
+}
