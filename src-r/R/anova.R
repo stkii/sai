@@ -89,10 +89,13 @@ RunAnova <- function(df, options) {
     if (is.null(subject) || nchar(subject) == 0) stop("反復測定では被験者ID列の指定が必要です")
     res <- .AnovaWithin(df, dependent, subject, factors)
     parsed <- .AnovaParsed(res$table, "within")
+    # 反復測定の注記に加え、リストワイズ削除が起きた場合はその事実も必ず通知する
+    base_note <- "反復測定デザインのため、サンプルサイズは総観測数（被験者数 × 条件数）です"
+    lw_note <- .ListwiseNote(before - after)
     list(
       sections = list(list(title = "分散分析表 (反復測定)", table = parsed)),
       n = after,
-      n_note = "反復測定デザインのため、サンプルサイズは総観測数（被験者数 × 条件数）です"
+      n_note = if (is.null(lw_note)) base_note else paste0(base_note, "。", lw_note)
     )
   } else {
     res <- .AnovaBetween(df, dependent, factors)
