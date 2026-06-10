@@ -13,10 +13,13 @@ pub fn read_csv(path: &Path) -> Result<ParsedTable, String> {
                      .map(String::from)
                      .collect();
 
-    let rows = rdr.records()
-                  .filter_map(Result::ok)
-                  .map(|r| r.iter().map(String::from).collect())
-                  .collect();
+    // 不正な行を黙って捨てると観測が silent に消えるため、fail-fast でエラーにする
+    let mut rows: Vec<Vec<String>> = Vec::new();
+    for (i, record) in rdr.records().enumerate() {
+        // ヘッダ行ぶんを足して実ファイルの行番号 (1-based) に合わせる
+        let record = record.map_err(|e| format!("CSV {} 行目の読込失敗: {e}", i + 2))?;
+        rows.push(record.iter().map(String::from).collect());
+    }
 
     Ok(ParsedTable { headers, rows })
 }
