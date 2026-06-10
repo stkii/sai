@@ -32,16 +32,28 @@ function detectNumericColumns(rows: string[][], colCount: number): boolean[] {
   return flags;
 }
 
+// 有意性の星付き数値 (例: "0.087**")。星は上付きで右肩に表示する
+const SIGNIF_STARS_RE = /^(-?\d+(\.\d+)?(e[+-]?\d+)?)(\*{1,2})$/i;
+
 function renderCellContent(s: string): ReactNode {
   const { text, bold } = parseBold(s);
+  const starred = text.trim().match(SIGNIF_STARS_RE);
+  const content = starred ? (
+    <>
+      {starred[1]}
+      <sup>{starred[4]}</sup>
+    </>
+  ) : (
+    text
+  );
   if (bold) {
     return (
       <Text as="span" fontWeight="bold">
-        {text}
+        {content}
       </Text>
     );
   }
-  return text;
+  return content;
 }
 
 export function SectionsView({ result }: { result: AnalysisResult }) {
