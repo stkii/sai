@@ -120,7 +120,7 @@ export function DataPreview({ summary }: Props) {
   const getScrollElement = useCallback(() => parentRef.current, []);
 
   const rowVirtualizer = useVirtualizer({
-    count: summary.preview.length,
+    count: summary.rows.length,
     getScrollElement,
     estimateSize: () => ROW_HEIGHT,
     overscan: 8,
@@ -134,7 +134,7 @@ export function DataPreview({ summary }: Props) {
   return (
     <VStack align="stretch" gap={2} px={3} py={2} flex={1} overflow="hidden" minHeight={0}>
       <Text fontSize="xs" color="gray.600">
-        {summary.rowCount.toLocaleString()} 行 × {colCount} 列
+        {summary.rows.length.toLocaleString()} 行 × {colCount} 列
       </Text>
       <div
         ref={parentRef}
@@ -161,7 +161,7 @@ export function DataPreview({ summary }: Props) {
               <Row
                 key={virtualRow.key}
                 rowNumber={virtualRow.index + 1}
-                row={summary.preview[virtualRow.index]}
+                row={summary.rows[virtualRow.index]}
                 top={virtualRow.start}
                 height={virtualRow.size}
                 totalWidth={totalWidth}

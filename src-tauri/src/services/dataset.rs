@@ -41,8 +41,9 @@ impl DatasetService {
         let key = Uuid::new_v4().to_string();
         let summary = DatasetSummary { key: key.clone(),
                                        headers: table.headers.clone(),
-                                       row_count: table.rows.len(),
-                                       preview: table.rows.clone() };
+                                       rows: table.rows.clone() };
+        // フロントは単一データセット前提のため、新規ロード時に旧エントリを破棄する
+        self.cache.clear();
         self.cache.insert(key, table);
         Ok(summary)
     }

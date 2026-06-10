@@ -14,8 +14,7 @@ pub struct ParsedTable {
 pub struct DatasetSummary {
     pub key: String,
     pub headers: Vec<String>,
-    pub row_count: usize,
-    pub preview: Vec<Vec<String>>,
+    pub rows: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

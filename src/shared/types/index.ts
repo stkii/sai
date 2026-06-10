@@ -10,8 +10,6 @@ export type Method =
   | 'anova'
   | 'power';
 
-export type DatasetKind = 'numeric' | 'mixed';
-
 export type AnalysisOptions = Record<string, unknown>;
 
 export interface AnalysisTable {
@@ -34,8 +32,7 @@ export interface AnalysisResult {
 export interface DatasetSummary {
   key: string;
   headers: string[];
-  rowCount: number;
-  preview: string[][];
+  rows: string[][];
 }
 
 export interface HistoryRecord {

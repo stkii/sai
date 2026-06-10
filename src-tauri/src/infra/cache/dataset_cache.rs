@@ -24,7 +24,6 @@ impl DatasetCache {
         self.inner.lock().unwrap().get(key).cloned()
     }
 
-    #[allow(dead_code)]
     pub fn clear(&self) {
         self.inner.lock().unwrap().clear();
     }
