@@ -4,35 +4,37 @@ import type { ModalProps } from '../contracts';
 
 type TestType = 't' | 'anova' | 'prop';
 
-interface CommonOptions {
+// onExecute の AnalysisOptions (Record<string, unknown>) に直接代入できるよう
+// interface ではなく type で定義する (interface は implicit index signature を持たない)
+type CommonOptions = {
   test_type: TestType;
   sig_level: number;
-}
+};
 
-interface TTestOptions extends CommonOptions {
+type TTestOptions = CommonOptions & {
   test_type: 't';
   n?: number;
   effect_size?: number;
   power?: number;
   ttest_type: 'one.sample' | 'two.sample' | 'paired';
-}
+};
 
-interface AnovaOptions extends CommonOptions {
+type AnovaOptions = CommonOptions & {
   test_type: 'anova';
   groups?: number;
   n?: number;
   between_var?: number;
   within_var?: number;
   power?: number;
-}
+};
 
-interface PropOptions extends CommonOptions {
+type PropOptions = CommonOptions & {
   test_type: 'prop';
   n?: number;
   p1?: number;
   p2?: number;
   power?: number;
-}
+};
 
 type PowerOptions = TTestOptions | AnovaOptions | PropOptions;
 
@@ -118,7 +120,7 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
   }
 
   function handleSubmit() {
-    onExecute([], buildOptions() as unknown as Record<string, unknown>);
+    onExecute([], buildOptions());
   }
 
   return (

@@ -1,5 +1,6 @@
-import { Button, HStack, Text, VStack } from '@chakra-ui/react';
+import { Button, HStack, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
+import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
@@ -12,11 +13,10 @@ export function ReliabilityModal({ headers, busy, onCancel, onExecute }: ModalPr
   }
 
   return (
-    <VStack align="stretch" gap={3}>
-      <Text fontSize="sm" color="gray.600">
-        尺度を構成する項目 (2つ以上) を選択してください
-      </Text>
-      <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
+    <VStack align="stretch" gap={4}>
+      <FieldFrame label="尺度を構成する項目 (2つ以上)">
+        <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
+      </FieldFrame>
       <HStack justify="flex-end" gap={2}>
         <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
           キャンセル
