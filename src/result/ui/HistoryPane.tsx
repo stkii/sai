@@ -1,13 +1,9 @@
 import { Box, Button, Center, HStack, IconButton, Stack, Text, VStack } from '@chakra-ui/react';
+import { confirm } from '@tauri-apps/plugin-dialog';
 import { useState } from 'react';
 import { findMethod } from '../../analysis/methods';
+import { formatTimestampShort } from '../../shared/format';
 import { type ResultEntry, useResult } from '../state/ResultContext';
-
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
 
 function HistoryItem({
   entry,
@@ -52,7 +48,7 @@ function HistoryItem({
         </Text>
         <HStack gap={1} align="center">
           <Text fontSize="xs" color="gray.500">
-            {formatTime(entry.createdAt)}
+            {formatTimestampShort(entry.createdAt)}
           </Text>
           <IconButton
             aria-label="この履歴を削除"
@@ -82,6 +78,14 @@ function HistoryItem({
 export function HistoryPane() {
   const { results, currentId, selectResult, clearResults, removeResult } = useResult();
 
+  async function handleClearAll() {
+    const ok = await confirm('すべての分析履歴を削除します。この操作は元に戻せません。', {
+      title: '履歴の全削除',
+      kind: 'warning',
+    });
+    if (ok) clearResults();
+  }
+
   if (results.length === 0) {
     return (
       <Box height="100%" px={4} py={3}>
@@ -102,7 +106,7 @@ export function HistoryPane() {
         <Text fontSize="xs" color="gray.600">
           {results.length} 件
         </Text>
-        <Button size="xs" variant="ghost" onClick={clearResults}>
+        <Button size="xs" variant="ghost" onClick={handleClearAll}>
           全削除
         </Button>
       </HStack>
