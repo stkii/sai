@@ -17,18 +17,25 @@ import type { ModalProps } from '../contracts';
 type Rotation = 'none' | 'varimax' | 'promax';
 type NfactorsMode = 'guttman' | 'fixed';
 type Method = 'PAF' | 'ML' | 'ULS';
+type NaMode = 'complete.obs' | 'pairwise.complete.obs';
 
 interface FactorOptions {
   method: Method;
   nfactorsMode: NfactorsMode;
   nfactors: number;
   rotation: Rotation;
+  na: NaMode;
   sortByFactor: boolean;
 }
 
 const MODE_OPTIONS: { value: NfactorsMode; label: string }[] = [
   { value: 'guttman', label: '固有値に基づく' },
   { value: 'fixed', label: '任意の固定数' },
+];
+
+const NA_OPTIONS: { value: NaMode; label: string }[] = [
+  { value: 'complete.obs', label: 'リストワイズ削除' },
+  { value: 'pairwise.complete.obs', label: 'ペアワイズ削除' },
 ];
 
 const ROTATION_OPTIONS: { value: Rotation; label: string }[] = [
@@ -49,6 +56,7 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) 
   const [mode, setMode] = useState<NfactorsMode>('guttman');
   const [nfactors, setNfactors] = useState<number>(1);
   const [rotation, setRotation] = useState<Rotation>('none');
+  const [na, setNa] = useState<NaMode>('complete.obs');
   const [sortByFactor, setSortByFactor] = useState(false);
 
   function handleSubmit() {
@@ -59,6 +67,7 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) 
       nfactorsMode: mode,
       nfactors,
       rotation,
+      na,
       sortByFactor,
     } satisfies FactorOptions);
   }
@@ -134,6 +143,23 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) 
               >
                 <Flex wrap="wrap" rowGap={2} columnGap={4}>
                   {ROTATION_OPTIONS.map((opt) => (
+                    <RadioGroup.Item key={opt.value} value={opt.value}>
+                      <RadioGroup.ItemHiddenInput />
+                      <RadioGroup.ItemIndicator />
+                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
+                    </RadioGroup.Item>
+                  ))}
+                </Flex>
+              </RadioGroup.Root>
+            </FieldFrame>
+            <FieldFrame label="欠測値の扱い">
+              <RadioGroup.Root
+                size="sm"
+                value={na}
+                onValueChange={(d) => setNa(d.value as NaMode)}
+              >
+                <Flex wrap="wrap" rowGap={2} columnGap={4}>
+                  {NA_OPTIONS.map((opt) => (
                     <RadioGroup.Item key={opt.value} value={opt.value}>
                       <RadioGroup.ItemHiddenInput />
                       <RadioGroup.ItemIndicator />

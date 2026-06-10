@@ -1,9 +1,8 @@
-.GuttmanNfactors <- function(df) {
-  cor_mat <- cor(df, use = "complete.obs")
+.GuttmanNfactors <- function(cor_mat) {
   eigs <- eigen(cor_mat, symmetric = TRUE, only.values = TRUE)$values
   n <- sum(eigs > 1)
   if (n < 1) n <- 1L
-  p <- ncol(df)
+  p <- ncol(cor_mat)
   max_m <- floor((2 * p + 1 - sqrt(8 * p + 1)) / 2)
   if (n > max_m) n <- max_m
   as.integer(n)
@@ -64,27 +63,51 @@ RunFactor <- function(df, options) {
   nfactors_mode <- if (is.null(options$nfactorsMode)) "fixed" else options$nfactorsMode
   rotation <- if (is.null(options$rotation)) "none" else options$rotation
   method <- if (is.null(options$method)) "PAF" else options$method
+  na_mode <- if (is.null(options$na)) "complete.obs" else options$na
   sort_by_factor <- isTRUE(options$sortByFactor)
 
   if (!method %in% c("PAF", "ML", "ULS")) stop(sprintf("未対応の抽出法: %s", method))
   if (!rotation %in% c("none", "varimax", "promax")) stop(sprintf("未対応の回転: %s", rotation))
+  if (!na_mode %in% c("complete.obs", "pairwise.complete.obs")) {
+    stop(sprintf("未対応の欠測値処理: %s", na_mode))
+  }
 
-  before <- nrow(df)
-  df <- df[complete.cases(df), , drop = FALSE]
-  after <- nrow(df)
-  if (after < ncol(df) + 1) stop("有効な観測が不足しています (リストワイズ削除後)")
+  if (na_mode == "pairwise.complete.obs") {
+    # ペアワイズ: 相関行列を EFA に直接渡す。N はペアごとの共通観測数の最小値
+    # (最も保守的な値) を採用する。非正定値などで EFA が失敗した場合はその
+    # エラーをそのままユーザーに返す。
+    pair_n <- crossprod(!is.na(as.matrix(df)))
+    n_eff <- as.integer(min(pair_n))
+    if (n_eff < ncol(df) + 1) stop("有効な観測が不足しています (ペアワイズの共通観測が少なすぎます)")
+    cor_mat <- cor(df, use = "pairwise.complete.obs")
+    if (anyNA(cor_mat)) stop("相関行列を計算できません (共通の観測を持たない変数ペアがあります)")
+    efa_x <- cor_mat
+    efa_n <- n_eff
+    result_n <- nrow(df)
+    n_note <- .PairwiseNote()
+  } else {
+    before <- nrow(df)
+    df <- df[complete.cases(df), , drop = FALSE]
+    after <- nrow(df)
+    if (after < ncol(df) + 1) stop("有効な観測が不足しています (リストワイズ削除後)")
+    cor_mat <- cor(df)
+    efa_x <- df
+    efa_n <- after
+    result_n <- after
+    n_note <- .ListwiseNote(before - after)
+  }
 
   nfactors <- if (nfactors_mode == "guttman") {
-    .GuttmanNfactors(df)
+    .GuttmanNfactors(cor_mat)
   } else {
     if (is.null(options$nfactors)) 1L else as.integer(options$nfactors)
   }
   if (nfactors < 1) stop("因子数は1以上で指定してください")
 
   efa <- EFAtools::EFA(
-    x = df,
+    x = efa_x,
     n_factors = nfactors,
-    N = nrow(df),
+    N = efa_n,
     method = method,
     rotation = rotation,
     type = "SPSS"
@@ -148,7 +171,7 @@ RunFactor <- function(df, options) {
 
   list(
     sections = sections,
-    n = after,
-    n_note = .ListwiseNote(before - after)
+    n = result_n,
+    n_note = n_note
   )
 }
