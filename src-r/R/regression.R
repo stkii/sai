@@ -1,8 +1,21 @@
-.Regression <- function(df, dependent) {
+.CleanTerm <- function(s) {
+  s <- gsub("`", "", s, fixed = TRUE)
+  gsub(":", " × ", s, fixed = TRUE)
+}
+
+.Regression <- function(df, dependent, all_interactions, interactions) {
   predictors <- setdiff(colnames(df), dependent)
-  formula <- as.formula(
-    sprintf("`%s` ~ %s", dependent, paste(sprintf("`%s`", predictors), collapse = " + "))
-  )
+  terms <- sprintf("`%s`", predictors)
+  if (isTRUE(all_interactions) && length(predictors) >= 2) {
+    # (x1 + x2 + ...)^2 は全主効果 + 全2次交互作用に展開される
+    rhs <- sprintf("(%s)^2", paste(terms, collapse = " + "))
+  } else {
+    rhs <- paste(terms, collapse = " + ")
+    for (pair in interactions) {
+      rhs <- paste(rhs, sprintf("`%s`:`%s`", pair[[1]], pair[[2]]), sep = " + ")
+    }
+  }
+  formula <- as.formula(sprintf("`%s` ~ %s", dependent, rhs))
   fit <- lm(formula, data = df)
   list(fit = fit, summary = summary(fit))
 }
@@ -15,7 +28,7 @@
   for (i in seq_len(nrow(coefs))) {
     p <- coefs[i, 4]
     coef_rows[[length(coef_rows) + 1]] <- list(
-      rownames(coefs)[i],
+      .CleanTerm(rownames(coefs)[i]),
       .FmtNum(coefs[i, 1]),
       .FmtNum(coefs[i, 2]),
       .FmtNum(coefs[i, 3]),
@@ -44,12 +57,27 @@ RunRegression <- function(df, options) {
   if (!(dependent %in% colnames(df))) stop(sprintf("目的変数 '%s' がデータにありません", dependent))
   if (ncol(df) < 2) stop("説明変数が必要です")
 
+  all_interactions <- isTRUE(options$allInteractions)
+  raw_pairs <- if (is.null(options$interactions)) list() else options$interactions
+  predictors <- setdiff(colnames(df), dependent)
+  interactions <- list()
+  for (pair in raw_pairs) {
+    pair <- as.character(unlist(pair))
+    if (length(pair) != 2) stop("交互作用の指定が不正です (2変数のペアが必要です)")
+    for (v in pair) {
+      if (!(v %in% predictors)) {
+        stop(sprintf("交互作用 '%s × %s' の変数 '%s' が独立変数に含まれていません", pair[[1]], pair[[2]], v))
+      }
+    }
+    interactions[[length(interactions) + 1]] <- pair
+  }
+
   before <- nrow(df)
   df <- df[complete.cases(df), , drop = FALSE]
   after <- nrow(df)
   if (after < 2) stop("有効な観測が不足しています (リストワイズ削除後)")
 
-  res <- .Regression(df, dependent)
+  res <- .Regression(df, dependent, all_interactions, interactions)
   parsed <- .RegressionParsed(res)
   list(
     sections = list(

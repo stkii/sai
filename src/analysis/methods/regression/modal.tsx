@@ -29,6 +29,14 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
   const [pairA, setPairA] = useState<string>('');
   const [pairB, setPairB] = useState<string>('');
 
+  // 独立変数から外れた変数を参照する交互作用ペアは無効になるため間引く
+  function updatePredictors(next: string[]) {
+    setPredictors(next);
+    setInteractions((prev) => prev.filter(([a, b]) => next.includes(a) && next.includes(b)));
+    setPairA((prev) => (next.includes(prev) ? prev : ''));
+    setPairB((prev) => (next.includes(prev) ? prev : ''));
+  }
+
   function handleSubmit() {
     if (!dependent || predictors.length === 0) return;
     const variables = [dependent, ...predictors.filter((p) => p !== dependent)];
@@ -65,7 +73,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
               headers={headers}
               selected={predictors}
               exclude={dependent ? [dependent] : []}
-              onChange={setPredictors}
+              onChange={updatePredictors}
             />
           </FieldFrame>
         </Box>
@@ -77,7 +85,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
                 onChange={(e) => {
                   const v = e.currentTarget.value;
                   setDependent(v);
-                  setPredictors((prev) => prev.filter((p) => p !== v));
+                  updatePredictors(predictors.filter((p) => p !== v));
                 }}
               >
                 <option value="">-- 選択 --</option>
@@ -101,7 +109,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
           >
             <Checkbox.HiddenInput />
             <Checkbox.Control />
-            <Checkbox.Label fontSize="sm">全ての交互作用を投入する</Checkbox.Label>
+            <Checkbox.Label fontSize="sm">全ての2次の交互作用を投入する</Checkbox.Label>
           </Checkbox.Root>
           {!allInteractions && (
             <VStack align="stretch" gap={2}>
