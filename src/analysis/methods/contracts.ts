@@ -12,6 +12,7 @@ export interface MethodDefinition<K extends Method = Method> {
   key: K;
   label: string;
   requiresDataset?: boolean; // default true
+  persistHistory?: boolean; // default true
 }
 
 export interface MethodModule<K extends Method = Method> {

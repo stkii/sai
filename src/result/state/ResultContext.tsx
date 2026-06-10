@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { findMethod } from '../../analysis/methods';
 import { appendHistory, clearHistory, loadHistory, removeHistory } from '../../shared/ipc';
 import type { AnalysisOptions, AnalysisResult, HistoryRecord, Method } from '../../shared/types';
 
@@ -50,7 +51,7 @@ export function ResultProvider({ children }: { children: ReactNode }) {
     };
     setResults((prev) => [...prev, entry]);
     setCurrentId(id);
-    if (input.method !== 'power') {
+    if (findMethod(input.method)?.definition.persistHistory !== false) {
       appendHistory(entry).catch((e) => console.warn('履歴の保存に失敗:', e));
     }
     return id;
