@@ -23,15 +23,18 @@
   for (i in seq_along(vars)) {
     cells <- list(vars[i])
     for (j in seq_along(vars)) {
-      if (i == j) {
-        cells[[length(cells) + 1]] <- "—"
+      cells[[length(cells) + 1]] <- if (i == j) {
+        "—"
+      } else if (i > j) {
+        # 対称行列のため上三角のみ表示する (下三角は空欄)
+        ""
       } else {
-        cells[[length(cells) + 1]] <- sprintf("%s%s", .FmtNum(res$r[i, j]), .Stars(res$p[i, j]))
+        sprintf("%s%s", .FmtNum(res$r[i, j]), .Stars(res$p[i, j]))
       }
     }
     rows[[length(rows) + 1]] <- cells
   }
-  list(headers = headers, rows = rows, note = "** p<.01, * p<.05")
+  list(headers = headers, rows = rows, note = "*** p < .001, ** p < .01, * p < .05")
 }
 
 RunCorrelation <- function(df, options) {

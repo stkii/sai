@@ -22,7 +22,7 @@ test_that("listwise: r と p が同一の complete cases から計算される",
   # 星 (有意水準) も同一サンプルの cor.test と対応していること
   p <- cor.test(cc$a, cc$b)$p.value
   stars <- gsub("[^*]", "", cell_ab)
-  expected <- if (p < 0.01) "**" else if (p < 0.05) "*" else ""
+  expected <- if (p < 0.001) "***" else if (p < 0.01) "**" else if (p < 0.05) "*" else ""
   expect_equal(stars, expected)
 })
 
@@ -37,6 +37,15 @@ test_that("pairwise: r はペアごとの観測から計算され、注記が付
   ok <- complete.cases(df$b, df$c)
   cell_bc <- res$sections[[1]]$table$rows[[2]][[4]]
   expect_equal(sai_cell_num(cell_bc), cor(df$b[ok], df$c[ok]), tolerance = 1e-3)
+})
+
+test_that("相関行列は上三角のみ表示される (対角は —, 下三角は空欄)", {
+  df <- make_corr_data()
+  res <- RunCorrelation(df, list(method = "pearson", na = "complete.obs"))
+  rows <- res$sections[[1]]$table$rows
+  expect_identical(rows[[1]][[2]], "—") # 対角 (a×a)
+  expect_identical(rows[[2]][[2]], "") # 下三角 (b×a)
+  expect_true(nzchar(rows[[1]][[3]])) # 上三角 (a×b) には係数が入る
 })
 
 test_that("spearman / kendall も base R と一致する", {
