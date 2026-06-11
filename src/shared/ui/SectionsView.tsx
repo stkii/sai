@@ -73,8 +73,14 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
           // biome-ignore lint/suspicious/noArrayIndexKey: section order is stable per result
           <VStack key={`s-${idx}`} align="stretch" gap={2}>
             <Heading size="sm">{section.title}</Heading>
-            <Box borderWidth="1px" borderRadius="md" overflow="auto" maxWidth="100%">
-              <Table.Root size="sm" variant="line">
+            <Box
+              borderWidth="1px"
+              borderRadius="md"
+              overflow="auto"
+              width="fit-content"
+              maxWidth="100%"
+            >
+              <Table.Root size="sm" variant="line" width="auto">
                 <Table.Header>
                   <Table.Row bg="gray.50">
                     {section.table.headers.map((h, j) => (
