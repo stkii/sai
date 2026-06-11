@@ -131,18 +131,9 @@ RunFactor <- function(df, options) {
   is_oblique <- rotation == "promax"
   pattern_title <- if (is_oblique) "パターン行列" else "因子行列"
 
-  method_label <- switch(method, PAF = "主因子法", ML = "最尤法", ULS = "最小二乗法")
-  rot_label <- switch(rotation, none = "回転なし", varimax = "varimax 回転", promax = "promax 回転")
-  factor_count_label <- if (nfactors_mode == "guttman") {
-    sprintf("固有値>1により%d因子", nfactors)
-  } else {
-    sprintf("%d因子", nfactors)
-  }
-  title_suffix <- sprintf("%s, %s, %s", method_label, rot_label, factor_count_label)
-
   sections <- list()
   sections[[length(sections) + 1]] <- list(
-    title = sprintf("%s (%s)", pattern_title, title_suffix),
+    title = pattern_title,
     table = .LoadingTable(loadings, vars, factor_labels)
   )
 

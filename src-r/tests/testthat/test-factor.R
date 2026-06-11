@@ -38,7 +38,8 @@ test_that("guttman モードは固有値>1 の因子数を選ぶ", {
   df <- sai_factor_data()
   opts <- modifyList(base_options, list(nfactorsMode = "guttman"))
   res <- run_factor_quietly(df, opts)
-  expect_match(res$sections[[1]]$title, "固有値>1により2因子")
+  # 解決された因子数は負荷量テーブルの因子列 (F1, F2, ...) で確認する
+  expect_equal(unlist(res$sections[[1]]$table$headers), c("変数", "F1", "F2"))
 })
 
 test_that("pairwise: 全行が n に保持され、注記が付く", {
