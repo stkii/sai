@@ -1,8 +1,9 @@
 import { Box, Button, Checkbox, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
+import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { VariablePicker } from '../../ui/VariablePicker';
-import type { ModalProps } from '../contracts';
+import { labelOf, type ModalProps } from '../contracts';
 
 type SortMode = 'default' | 'mean_desc' | 'mean_asc';
 
@@ -19,6 +20,17 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'mean_desc', label: '平均値による降順' },
   { value: 'mean_asc', label: '平均値による昇順' },
 ];
+
+export function formatDescribeOptions(options: AnalysisOptions): string | null {
+  const o = options as Partial<DescribeOptions>;
+  const parts: string[] = [];
+  if (o.sort) parts.push(`表示順: ${labelOf(SORT_OPTIONS, o.sort)}`);
+  const extras: string[] = [];
+  if (o.extras?.skewness) extras.push('歪度');
+  if (o.extras?.kurtosis) extras.push('尖度');
+  if (extras.length > 0) parts.push(`追加の代表値: ${extras.join(', ')}`);
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
 
 export function DescribeModal({ headers, busy, onCancel, onExecute }: ModalProps) {
   const [selected, setSelected] = useState<string[]>([]);

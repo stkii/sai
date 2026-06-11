@@ -61,7 +61,7 @@ src-r/        → R scripts for statistical computation
 **Analysis module** (`src/analysis/`):
 - `methods/<method>/` — 各メソッドは原則 2 ファイル: `modal.tsx`（入力 UI）/ `index.tsx`（`MethodModule` 組立）。共通の `<SectionsView>` で結果表示が足りる場合はそれだけで完結する
 - `methods/<method>/result.tsx` — **オプション**。結果表示をカスタマイズしたい場合のみ追加し、`index.tsx` の `renderResult` にバインドする。未指定なら `ResultPane` が `<SectionsView result={result} />` でフォールバック描画する
-- `methods/contracts.ts` — `MethodModule` interface（`renderModal` 必須、`renderResult` オプショナル）
+- `methods/contracts.ts` — `MethodModule` interface（`renderModal` 必須、`renderResult` / `formatOptions` オプショナル）。`formatOptions` は `ResultMetadata` の「設定」行をモーダルの選択肢ラベルで整形する（未指定なら内部値をそのまま並べる汎用フォーマット）
 - `methods/index.ts` — `ANALYSIS_METHODS` レジストリ。配列に push するだけでヘッダーメニューと結果表示に自動登録
 - `ui/AnalysisModalHost.tsx` — モーダル開閉・データセット参照・`runAnalysis` 呼出・結果を `ResultContext` に追加するフローオーナー
 - 横断的な分析系の型 (`Method`, `AnalysisResult` 等) は `src/shared/types/index.ts` に集約
@@ -105,8 +105,8 @@ src-r/        → R scripts for statistical computation
 ### 2. Frontend (`src/`)
 
 3. **`src/shared/types/index.ts`** — `Method` union 型に `'<method>'` を追加
-4. **`src/analysis/methods/<method>/modal.tsx`** — 入力 UI。`ModalProps` を受け取り、submit 時に `onExecute(variables, options)` を呼ぶ
-5. **`src/analysis/methods/<method>/index.tsx`** — `MethodModule<'<method>'>` を組み立てて export。`definition` に `key` + `label`、`renderModal` をバインド
+4. **`src/analysis/methods/<method>/modal.tsx`** — 入力 UI。`ModalProps` を受け取り、submit 時に `onExecute(variables, options)` を呼ぶ。options を持つメソッドは、選択肢ラベル定数を使って「設定」行を整形する `format<Method>Options(options): string | null` もここに定義する（内部値をユーザーに見せない）
+5. **`src/analysis/methods/<method>/index.tsx`** — `MethodModule<'<method>'>` を組み立てて export。`definition` に `key` + `label`、`renderModal`（+ options があれば `formatOptions`）をバインド
 6. (オプション) **`src/analysis/methods/<method>/result.tsx`** — 結果表示をカスタマイズしたい場合のみ追加。`{ result: AnalysisResult }` を受け取り、`index.tsx` で `renderResult` にバインドする。未指定なら `ResultPane` が `<SectionsView result={result} />` でフォールバック描画する
 7. **`src/analysis/methods/index.ts`** の `ANALYSIS_METHODS` 配列に `<method>Module` を追加
 
@@ -152,7 +152,7 @@ The following cases **must** display a note to the user. Omitting these notes is
 - Rust の `AnalysisResult { sections, n, n_note }` として serde で受け、フロントへは camelCase（`nNote`）で配信
 - 履歴レコード `HistoryRecord.result.nNote` として保存される
 
-> **表示位置**: `n` と `nNote` は `src/shared/ui/SectionsView.tsx` (結果ペインの本体) で表示される。`n` は灰色、`nNote` はオレンジ。`ResultMetadata.tsx` (結果見出しカード) には重複表示しない方針。新メソッドが `n_note` を生成すれば追加配線なしで表示される。
+> **表示位置**: `n` と `nNote` は `src/result/ui/ResultMetadata.tsx` (結果見出しカード) で表示される。`n` は灰色、`nNote` はオレンジ。テーブルが多い結果（因子分析等）で埋もれないよう、`SectionsView` (結果ペイン本体) には表示しない。新メソッドが `n_note` を生成すれば追加配線なしで表示される。
 
 ### Adding new notes
 

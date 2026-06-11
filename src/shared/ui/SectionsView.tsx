@@ -139,16 +139,6 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
           </VStack>
         );
       })}
-      {result.n !== undefined && (
-        <Text fontSize="xs" color="gray.600">
-          有効サンプルサイズ: n = {result.n}
-        </Text>
-      )}
-      {result.nNote && (
-        <Text fontSize="xs" color="orange.600">
-          {result.nNote}
-        </Text>
-      )}
     </VStack>
   );
 }

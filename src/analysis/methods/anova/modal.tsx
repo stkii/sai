@@ -1,8 +1,9 @@
 import { Box, Button, Flex, HStack, NativeSelect, RadioGroup, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
+import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { VariablePicker } from '../../ui/VariablePicker';
-import type { ModalProps } from '../contracts';
+import { labelOf, type ModalProps } from '../contracts';
 
 type Design = 'between' | 'within';
 
@@ -19,6 +20,16 @@ const DESIGN_OPTIONS: { value: Design; label: string }[] = [
   { value: 'between', label: '被験者間' },
   { value: 'within', label: '反復測定' },
 ];
+
+export function formatAnovaOptions(options: AnalysisOptions): string | null {
+  const o = options as Partial<AnovaOptions>;
+  const parts: string[] = [];
+  if (o.design) parts.push(`デザイン: ${labelOf(DESIGN_OPTIONS, o.design)}`);
+  if (o.dependent) parts.push(`従属変数: ${o.dependent}`);
+  if (o.factors && o.factors.length > 0) parts.push(`要因: ${o.factors.join(', ')}`);
+  if (o.subject) parts.push(`被験者ID列: ${o.subject}`);
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
 
 export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps) {
   const [dependent, setDependent] = useState<string>('');

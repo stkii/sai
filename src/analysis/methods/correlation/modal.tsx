@@ -1,8 +1,9 @@
 import { Box, Button, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
+import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { VariablePicker } from '../../ui/VariablePicker';
-import type { ModalProps } from '../contracts';
+import { labelOf, type ModalProps } from '../contracts';
 
 type CorrMethod = 'pearson' | 'spearman' | 'kendall';
 type NaMode = 'complete.obs' | 'pairwise.complete.obs';
@@ -22,6 +23,14 @@ const NA_OPTIONS: { value: NaMode; label: string }[] = [
   { value: 'complete.obs', label: 'リストワイズ削除' },
   { value: 'pairwise.complete.obs', label: 'ペアワイズ削除' },
 ];
+
+export function formatCorrelationOptions(options: AnalysisOptions): string | null {
+  const o = options as Partial<CorrelationOptions>;
+  const parts: string[] = [];
+  if (o.method) parts.push(`相関係数の種類: ${labelOf(METHOD_OPTIONS, o.method)}`);
+  if (o.na) parts.push(`欠測値の扱い: ${labelOf(NA_OPTIONS, o.na)}`);
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
 
 export function CorrelationModal({ headers, busy, onCancel, onExecute }: ModalProps) {
   const [selected, setSelected] = useState<string[]>([]);

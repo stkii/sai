@@ -1,6 +1,7 @@
 import { Box, Button, HStack, Input, NativeSelect, Text, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { ModalProps } from '../contracts';
+import type { AnalysisOptions } from '../../../shared/types';
+import { labelOf, type ModalProps } from '../contracts';
 
 type TestType = 't' | 'anova' | 'prop';
 
@@ -37,6 +38,50 @@ type PropOptions = CommonOptions & {
 };
 
 type PowerOptions = TTestOptions | AnovaOptions | PropOptions;
+
+const TEST_TYPE_OPTIONS: { value: TestType; label: string }[] = [
+  { value: 't', label: 't検定' },
+  { value: 'anova', label: '一元配置分散分析' },
+  { value: 'prop', label: '比率の差' },
+];
+
+const TTEST_TYPE_OPTIONS: { value: TTestOptions['ttest_type']; label: string }[] = [
+  { value: 'one.sample', label: '1標本' },
+  { value: 'two.sample', label: '2標本 (独立)' },
+  { value: 'paired', label: '対応あり' },
+];
+
+// PowerOptions は判別共用体のためフィールド参照できる形に平坦化して読む
+interface PowerOptionsFlat {
+  test_type?: TestType;
+  sig_level?: number;
+  power?: number;
+  n?: number;
+  effect_size?: number;
+  ttest_type?: TTestOptions['ttest_type'];
+  groups?: number;
+  between_var?: number;
+  within_var?: number;
+  p1?: number;
+  p2?: number;
+}
+
+export function formatPowerOptions(options: AnalysisOptions): string | null {
+  const o = options as PowerOptionsFlat;
+  const parts: string[] = [];
+  if (o.test_type) parts.push(`検定の種類: ${labelOf(TEST_TYPE_OPTIONS, o.test_type)}`);
+  if (o.sig_level !== undefined) parts.push(`有意水準 α: ${o.sig_level}`);
+  if (o.power !== undefined) parts.push(`検出力 (1−β): ${o.power}`);
+  if (o.n !== undefined) parts.push(`サンプルサイズ n: ${o.n}`);
+  if (o.effect_size !== undefined) parts.push(`効果量 (delta): ${o.effect_size}`);
+  if (o.ttest_type) parts.push(`t検定の種類: ${labelOf(TTEST_TYPE_OPTIONS, o.ttest_type)}`);
+  if (o.groups !== undefined) parts.push(`群数: ${o.groups}`);
+  if (o.between_var !== undefined) parts.push(`群間分散: ${o.between_var}`);
+  if (o.within_var !== undefined) parts.push(`群内分散: ${o.within_var}`);
+  if (o.p1 !== undefined) parts.push(`比率1: ${o.p1}`);
+  if (o.p2 !== undefined) parts.push(`比率2: ${o.p2}`);
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
 
 function NumField({
   label,
@@ -137,9 +182,11 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
             value={testType}
             onChange={(e) => setTestType(e.currentTarget.value as TestType)}
           >
-            <option value="t">t検定</option>
-            <option value="anova">一元配置分散分析</option>
-            <option value="prop">比率の差</option>
+            {TEST_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </NativeSelect.Field>
           <NativeSelect.Indicator />
         </NativeSelect.Root>
@@ -160,9 +207,11 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
                 value={ttestType}
                 onChange={(e) => setTtestType(e.currentTarget.value as TTestOptions['ttest_type'])}
               >
-                <option value="one.sample">1標本</option>
-                <option value="two.sample">2標本 (独立)</option>
-                <option value="paired">対応あり</option>
+                {TTEST_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>

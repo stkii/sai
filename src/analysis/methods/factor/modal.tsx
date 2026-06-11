@@ -10,9 +10,10 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { useState } from 'react';
+import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { VariablePicker } from '../../ui/VariablePicker';
-import type { ModalProps } from '../contracts';
+import { labelOf, type ModalProps } from '../contracts';
 
 type Rotation = 'none' | 'varimax' | 'promax';
 type NfactorsMode = 'guttman' | 'fixed';
@@ -49,6 +50,21 @@ const METHOD_OPTIONS: { value: Method; label: string }[] = [
   { value: 'ML', label: '最尤法 (ML)' },
   { value: 'ULS', label: '最小二乗法 (ULS)' },
 ];
+
+export function formatFactorOptions(options: AnalysisOptions): string | null {
+  const o = options as Partial<FactorOptions>;
+  const parts: string[] = [];
+  if (o.method) parts.push(`抽出法: ${labelOf(METHOD_OPTIONS, o.method)}`);
+  if (o.nfactorsMode === 'fixed') {
+    parts.push(`因子数: ${labelOf(MODE_OPTIONS, o.nfactorsMode)} (${o.nfactors ?? '?'})`);
+  } else if (o.nfactorsMode) {
+    parts.push(`因子数: ${labelOf(MODE_OPTIONS, o.nfactorsMode)}`);
+  }
+  if (o.rotation) parts.push(`回転: ${labelOf(ROTATION_OPTIONS, o.rotation)}`);
+  if (o.na) parts.push(`欠測値の扱い: ${labelOf(NA_OPTIONS, o.na)}`);
+  if (o.sortByFactor) parts.push('表示: 因子ごとにソート');
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
 
 export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) {
   const [selected, setSelected] = useState<string[]>([]);

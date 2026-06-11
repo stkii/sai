@@ -37,7 +37,9 @@ function formatOptions(options: AnalysisOptions): string | null {
 export function ResultMetadata({ entry }: { entry: ResultEntry }) {
   const mod = findMethod(entry.method);
   const label = mod?.definition.label ?? entry.method;
-  const optionsText = formatOptions(entry.options);
+  const optionsText = mod?.formatOptions
+    ? mod.formatOptions(entry.options)
+    : formatOptions(entry.options);
   return (
     <Box borderWidth="1px" borderRadius="md" p={3} bg="gray.50">
       <HStack gap={4} wrap="wrap" align="baseline">
@@ -56,6 +58,16 @@ export function ResultMetadata({ entry }: { entry: ResultEntry }) {
       {optionsText && (
         <Text fontSize="xs" color="gray.700" mt={1}>
           設定: {optionsText}
+        </Text>
+      )}
+      {entry.result.n !== undefined && (
+        <Text fontSize="xs" color="gray.700" mt={1}>
+          有効サンプルサイズ: n = {entry.result.n}
+        </Text>
+      )}
+      {entry.result.nNote && (
+        <Text fontSize="xs" color="orange.600" mt={1}>
+          {entry.result.nNote}
         </Text>
       )}
     </Box>

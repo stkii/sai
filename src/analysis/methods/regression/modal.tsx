@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { LuX } from 'react-icons/lu';
+import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
@@ -19,6 +20,18 @@ interface RegressionOptions {
   dependent: string;
   allInteractions: boolean;
   interactions: [string, string][];
+}
+
+export function formatRegressionOptions(options: AnalysisOptions): string | null {
+  const o = options as Partial<RegressionOptions>;
+  const parts: string[] = [];
+  if (o.dependent) parts.push(`目的変数: ${o.dependent}`);
+  if (o.allInteractions) {
+    parts.push('交互作用: 全ての2次の交互作用');
+  } else if (o.interactions && o.interactions.length > 0) {
+    parts.push(`交互作用: ${o.interactions.map(([a, b]) => `${a} × ${b}`).join(', ')}`);
+  }
+  return parts.length > 0 ? parts.join(' / ') : null;
 }
 
 export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalProps) {
