@@ -59,11 +59,28 @@
   formatC(x, digits = 4, format = "g")
 }
 
+# p値の表示 (regression / anova 共用)。3桁固定で、p < .001 は "< 0.001" を返す。
+# .FmtNum (format = "g") は微小な p で指数表記になりユーザー向け表示に適さないため分ける。
+# 丸めた表示が .Stars の判定閾値を跨いで見える場合 (例: p=0.0497 -> "0.050*",
+# p=0.0099 -> "0.010**") は、星との矛盾が消えるまで表示桁を増やす。
+.FmtP <- function(p) {
+  if (is.null(p) || length(p) == 0 || is.na(p)) return("NA")
+  if (p < 0.001) return("< 0.001")
+  digits <- 3
+  s <- formatC(p, digits = digits, format = "f")
+  while (digits < 6 &&
+    ((p < 0.05 && as.numeric(s) >= 0.05) || (p < 0.01 && as.numeric(s) >= 0.01))) {
+    digits <- digits + 1
+    s <- formatC(p, digits = digits, format = "f")
+  }
+  s
+}
+
 # 有意水準の星印 (correlation / regression / anova 共用)。
 # 数値の直後に連結し、フロントの SectionsView が右肩 (上付き) に描画する。
 .Stars <- function(p) {
   if (is.null(p) || length(p) == 0 || is.na(p)) return("")
-  if (p < 0.01) "**" else if (p < 0.05) "*" else ""
+  if (p < 0.001) "***" else if (p < 0.01) "**" else if (p < 0.05) "*" else ""
 }
 
 .ListwiseNote <- function(removed) {

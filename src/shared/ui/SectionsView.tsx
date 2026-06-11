@@ -2,7 +2,8 @@ import { Box, Heading, Table, Text, VStack } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import type { AnalysisResult } from '../types';
 
-const NUMBER_RE = /^-?\d+(\.\d+)?(e[+-]?\d+)?\*{0,2}$/i;
+// "< 0.001" のような p 値の上限表記も数値セルとして扱う
+const NUMBER_RE = /^(?:< ?)?-?\d+(\.\d+)?(e[+-]?\d+)?\*{0,3}$/i;
 const BOLD_RE = /^\*\*(.+)\*\*$/;
 
 function parseBold(s: string): { text: string; bold: boolean } {
@@ -32,8 +33,8 @@ function detectNumericColumns(rows: string[][], colCount: number): boolean[] {
   return flags;
 }
 
-// 有意性の星付き数値 (例: "0.087**")。星は上付きで右肩に表示する
-const SIGNIF_STARS_RE = /^(-?\d+(\.\d+)?(e[+-]?\d+)?)(\*{1,2})$/i;
+// 有意性の星付き数値 (例: "0.087**", "< 0.001***")。星は上付きで右肩に表示する
+const SIGNIF_STARS_RE = /^((?:< ?)?-?\d+(\.\d+)?(e[+-]?\d+)?)(\*{1,3})$/i;
 
 function renderCellContent(s: string): ReactNode {
   const { text, bold } = parseBold(s);

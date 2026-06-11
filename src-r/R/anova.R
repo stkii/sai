@@ -40,10 +40,10 @@
         .FmtNum(table[i, "Sum Sq"]),
         .FmtNum(table[i, "Mean Sq"]),
         .FmtNum(table[i, "F value"]),
-        sprintf("%s%s", .FmtNum(p), .Stars(p))
+        sprintf("%s%s", .FmtP(p), .Stars(p))
       )
     }
-    list(headers = headers, rows = rows, note = "** p<.01, * p<.05")
+    list(headers = headers, rows = rows, note = "*** p < .001, ** p < .01, * p < .05")
   } else {
     headers <- c("層", "項", "Df", "平方和", "平均平方", "F値", "p値")
     rows <- list()
@@ -56,10 +56,10 @@
         .FmtNum(table[i, "Sum Sq"]),
         .FmtNum(table[i, "Mean Sq"]),
         .FmtNum(table[i, "F value"]),
-        sprintf("%s%s", .FmtNum(p), .Stars(p))
+        sprintf("%s%s", .FmtP(p), .Stars(p))
       )
     }
-    list(headers = headers, rows = rows, note = "** p<.01, * p<.05")
+    list(headers = headers, rows = rows, note = "*** p < .001, ** p < .01, * p < .05")
   }
 }
 

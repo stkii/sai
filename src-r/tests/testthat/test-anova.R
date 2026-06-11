@@ -23,7 +23,8 @@ test_that("被験者間: F 値と p 値が aov と一致する", {
 
   rows <- res$sections[[1]]$table$rows
   expect_equal(sai_cell_num(rows[[1]][[5]]), ref[1, "F value"], tolerance = 1e-3)
-  expect_equal(sai_cell_num(rows[[1]][[6]]), ref[1, "Pr(>F)"], tolerance = 1e-3)
+  # p値セルは .FmtP の整形 (+ 星印) と一致する
+  expect_identical(gsub("\\*+$", "", rows[[1]][[6]]), .FmtP(ref[1, "Pr(>F)"]))
   expect_equal(res$n, nrow(df))
 })
 
