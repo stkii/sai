@@ -23,7 +23,7 @@
 .RegressionParsed <- function(res) {
   s <- res$summary
   coefs <- s$coefficients
-  coef_headers <- c("項", "推定値", "標準誤差", "t値", "p値")
+  coef_headers <- c("＃", "推定値", "標準誤差", "t値", "p値")
   coef_rows <- list()
   for (i in seq_len(nrow(coefs))) {
     p <- coefs[i, 4]
@@ -32,22 +32,26 @@
       .FmtNum(coefs[i, 1]),
       .FmtNum(coefs[i, 2]),
       .FmtNum(coefs[i, 3]),
-      sprintf("%s%s", .FmtNum(p), .Stars(p))
+      sprintf("%s%s", .FmtP(p), .Stars(p))
     )
   }
+  # モデル適合度は統計量を列に取った横一行のテーブルにする
   fstat <- s$fstatistic
-  fit_rows <- list(
-    list("R²", .FmtNum(s$r.squared)),
-    list("調整済みR²", .FmtNum(s$adj.r.squared)),
-    list("残差標準誤差", .FmtNum(s$sigma))
-  )
+  fit_headers <- c("R²", "調整済みR²", "残差標準誤差")
+  fit_cells <- list(.FmtNum(s$r.squared), .FmtNum(s$adj.r.squared), .FmtNum(s$sigma))
   if (!is.null(fstat)) {
-    fit_rows[[length(fit_rows) + 1]] <- list("F値", .FmtNum(fstat[[1]]))
-    fit_rows[[length(fit_rows) + 1]] <- list("自由度", sprintf("%d, %d", as.integer(fstat[[2]]), as.integer(fstat[[3]])))
+    # モデル全体の F 検定の p 値 (summary.lm は p を直接持たないため pf で計算)
+    model_p <- pf(fstat[[1]], fstat[[2]], fstat[[3]], lower.tail = FALSE)
+    fit_headers <- c(fit_headers, "F値", "自由度", "p値")
+    fit_cells <- c(fit_cells, list(
+      .FmtNum(fstat[[1]]),
+      sprintf("%d, %d", as.integer(fstat[[2]]), as.integer(fstat[[3]])),
+      sprintf("%s%s", .FmtP(model_p), .Stars(model_p))
+    ))
   }
   list(
-    coefs = list(headers = coef_headers, rows = coef_rows, note = "** p<.01, * p<.05"),
-    fit_stats = list(headers = c("統計量", "値"), rows = fit_rows)
+    coefs = list(headers = coef_headers, rows = coef_rows, note = "*** p < .001, ** p < .01, * p < .05"),
+    fit_stats = list(headers = fit_headers, rows = list(fit_cells))
   )
 }
 

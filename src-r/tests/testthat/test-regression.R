@@ -21,8 +21,25 @@ test_that("主効果モデルの係数が lm と一致する", {
       tolerance = 1e-3
     )
   }
-  fit_rows <- res$sections[[2]]$table$rows
-  expect_equal(sai_cell_num(fit_rows[[1]][[2]]), fit$r.squared, tolerance = 1e-3)
+  # p値セルは .FmtP の整形 (+ 星印) と一致し、指数表記にならない
+  expect_identical(
+    gsub("\\*+$", "", tbl$rows[[2]][[5]]),
+    .FmtP(unname(fit$coefficients[2, 4]))
+  )
+
+  # モデル適合度は統計量を列に取った横一行のテーブル
+  fit_tbl <- res$sections[[2]]$table
+  expect_equal(
+    unlist(fit_tbl$headers),
+    c("R²", "調整済みR²", "残差標準誤差", "F値", "自由度", "p値")
+  )
+  expect_equal(length(fit_tbl$rows), 1)
+  expect_equal(sai_cell_num(fit_tbl$rows[[1]][[1]]), fit$r.squared, tolerance = 1e-3)
+
+  # モデル全体の p 値は F 分布の上側確率と一致する
+  fs <- fit$fstatistic
+  model_p <- pf(fs[[1]], fs[[2]], fs[[3]], lower.tail = FALSE)
+  expect_identical(gsub("\\*+$", "", fit_tbl$rows[[1]][[6]]), .FmtP(model_p))
 })
 
 test_that("指定した交互作用ペアがモデルに投入される", {
