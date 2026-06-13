@@ -26,12 +26,10 @@
   for (i in seq_along(res$items)) {
     items_rows[[length(items_rows) + 1]] <- list(res$items[i], .FmtNum(res$alpha_deleted[i]))
   }
+  # 信頼性統計は統計量を列に取った横一行のテーブルにする
   summary_table <- list(
-    headers = c("統計量", "値"),
-    rows = list(
-      list("項目数", as.character(res$k)),
-      list("Cronbachのα", .FmtNum(res$alpha))
-    )
+    headers = c("項目数", "Cronbachのアルファ"),
+    rows = list(list(as.character(res$k), .FmtNum(res$alpha)))
   )
   items_table <- list(
     headers = c("項目", "削除時α"),
@@ -41,6 +39,11 @@
 }
 
 RunReliability <- function(df, options) {
+  coefficient <- if (is.null(options$coefficient)) "alpha" else options$coefficient
+  if (!coefficient %in% c("alpha")) {
+    stop(sprintf("未対応の信頼性係数: %s", coefficient))
+  }
+
   before <- nrow(df)
   df <- df[complete.cases(df), , drop = FALSE]
   after <- nrow(df)

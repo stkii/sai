@@ -17,15 +17,23 @@ alpha_by_total_variance <- function(df) {
 
 test_that("Cronbach の α が分散の定義式と一致する", {
   df <- make_scale_data()
-  res <- RunReliability(df, list())
+  res <- RunReliability(df, list(coefficient = "alpha"))
 
-  summary_rows <- res$sections[[1]]$table$rows
-  expect_equal(sai_cell_num(summary_rows[[1]][[2]]), 4) # 項目数
+  # 信頼性統計は統計量を列に取った横一行のテーブル
+  summary_tbl <- res$sections[[1]]$table
+  expect_equal(unlist(summary_tbl$headers), c("項目数", "Cronbachのα"))
+  expect_equal(length(summary_tbl$rows), 1)
+  expect_equal(sai_cell_num(summary_tbl$rows[[1]][[1]]), 4)
   expect_equal(
-    sai_cell_num(summary_rows[[2]][[2]]),
+    sai_cell_num(summary_tbl$rows[[1]][[2]]),
     alpha_by_total_variance(df),
     tolerance = 1e-3
   )
+})
+
+test_that("未対応の信頼性係数は黙って既定値にせずエラーにする", {
+  df <- make_scale_data()
+  expect_error(RunReliability(df, list(coefficient = "omega")), "未対応")
 })
 
 test_that("項目削除時 α は当該項目を除いた再計算と一致する", {

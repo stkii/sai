@@ -46,15 +46,31 @@
   list(headers = c("", factor_labels), rows = rows)
 }
 
-.VarianceTable <- function(load_matrix, factor_labels) {
-  ss <- unname(colSums(load_matrix^2))
-  n_vars <- nrow(load_matrix)
-  prop <- ss / n_vars
-  cum <- cumsum(prop)
+# vars_accounted は EFAtools::EFA の vars_accounted(_rot)。斜交回転の負荷量平方和は
+# 因子間相関を織り込んだ値 (diag(t(L) %*% L %*% Phi)) であり、パターン行列の
+# 単純な二乗和とは一致しない。SPSS に合わせ、斜交では寄与率・累積寄与率を出さない
+# (因子が相関するため負荷量平方和を加算して総分散を求められない)。
+.VarianceTable <- function(vars_accounted, factor_labels, oblique) {
   rows <- list()
-  rows[[1]] <- c(list("固有値"), lapply(ss, .FmtNum))
-  rows[[2]] <- c(list("寄与率"), lapply(prop, .FmtNum))
-  rows[[3]] <- c(list("累積寄与率"), lapply(cum, .FmtNum))
+  rows[[1]] <- c(
+    list("負荷量平方和"),
+    lapply(unname(vars_accounted["SS loadings", ]), .FmtNum)
+  )
+  if (oblique) {
+    return(list(
+      headers = c("指標", factor_labels),
+      rows = rows,
+      note = "因子が相関するため、負荷量平方和を加算して総分散を求めることはできません"
+    ))
+  }
+  rows[[2]] <- c(
+    list("寄与率"),
+    lapply(unname(vars_accounted["Prop Tot Var", ]), .FmtNum)
+  )
+  rows[[3]] <- c(
+    list("累積寄与率"),
+    lapply(unname(vars_accounted["Cum Prop Tot Var", ]), .FmtNum)
+  )
   list(headers = c("指標", factor_labels), rows = rows)
 }
 
@@ -155,9 +171,11 @@ RunFactor <- function(df, options) {
     }
   }
 
+  has_rot_va <- !is.null(efa$vars_accounted_rot)
+  va <- if (has_rot_va) efa$vars_accounted_rot else efa$vars_accounted
   sections[[length(sections) + 1]] <- list(
     title = "因子寄与",
-    table = .VarianceTable(loadings, factor_labels)
+    table = .VarianceTable(va, factor_labels, is_oblique && has_rot_va)
   )
 
   list(
