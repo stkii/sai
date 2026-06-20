@@ -128,25 +128,36 @@ src/
 ```mermaid
 flowchart TB
   M[main.tsx] --> APP[App.tsx]
-  APP --> HDR[Header.tsx]
+  M --> D[data/]
+  M --> R[result/]
 
-  APP --> D[data/]
+  APP --> HDR[Header.tsx]
+  APP --> D
   APP --> A[analysis/]
-  APP --> R[result/]
+  APP --> R
   APP --> AI[ai/]
+  APP --> SHR[shared/]
 
   HDR --> D
   HDR --> A
+  HDR --> SHR
 
-  D --> SHR[shared/]
+  D --> SHR
   A --> SHR
   R --> SHR
-  AI --> SHR
 
   A -.read-only.-> D
   A -.read-only.-> R
-  AI -.read-only.-> R
+  R -.read-only.-> A
+
+  %% ai/ は Phase 4 未着手の placeholder。下記は実装予定の依存で、現状コードには未存在
+  AI -.Phase 4 予定.-> SHR
+  AI -.Phase 4 予定・read-only.-> R
 ```
+
+> `M --> D` / `M --> R` は `main.tsx` のプロバイダ階層 (`DatasetProvider` / `ResultProvider`) による依存。
+> `R -.read-only.-> A` は `result/` が `analysis/methods` の `findMethod` を読むレジストリ参照 (例外(3))。
+> `ai/` 起点の点線は **Phase 4 で実装予定**であり、現状の `ai/` は他機能・`shared/` のいずれも import していない。
 
 ### ルール
 
@@ -204,14 +215,20 @@ flowchart TD
   L --> B[bootstrap.rs]
   L --> C[commands/]
 
-  C --> S[services/]
-  S --> I[infra/]
-  S --> MO[models.rs]
-  I --> MO
+  C --> B
+  C --> MO[models.rs]
+  C -.calls via AppState.-> S[services/]
 
   B --> S
+  B --> I[infra/]
+
+  S --> I
+  S --> MO
+  I --> MO
 ```
 
+> commands は `AppState` (bootstrap 定義) と `models` を直接 import し、サービスは `state.<service>.method()` と **`AppState` のフィールド経由で呼ぶ** (commands に `use crate::services` は無い)。
+> bootstrap は services だけでなく infra の具象 (`DatasetCache`, `HistoryStore`) も生成して DI 配線するため `B --> I` を持つ。
 > services は infra の具象を直保有する (例: `AnalysisService { runner: RRunner }`)。trait 抽象は導入していない。
 
 ### Backend 設計の補足
