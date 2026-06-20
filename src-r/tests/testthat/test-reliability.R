@@ -21,7 +21,7 @@ test_that("Cronbach の α が分散の定義式と一致する", {
 
   # 信頼性統計は統計量を列に取った横一行のテーブル
   summary_tbl <- res$sections[[1]]$table
-  expect_equal(unlist(summary_tbl$headers), c("項目数", "Cronbachのα"))
+  expect_equal(unlist(summary_tbl$headers), c("項目数", "Cronbachのアルファ"))
   expect_equal(length(summary_tbl$rows), 1)
   expect_equal(sai_cell_num(summary_tbl$rows[[1]][[1]]), 4)
   expect_equal(
