@@ -18,23 +18,12 @@
 }
 
 .CorrelationParsed <- function(res, vars) {
-  headers <- c("変数", vars)
-  rows <- list()
-  for (i in seq_along(vars)) {
-    cells <- list(vars[i])
-    for (j in seq_along(vars)) {
-      cells[[length(cells) + 1]] <- if (i == j) {
-        "—"
-      } else if (i > j) {
-        # 対称行列のため上三角のみ表示する (下三角は空欄)
-        ""
-      } else {
-        sprintf("%s%s", .FmtNum(res$r[i, j]), .Stars(res$p[i, j]))
-      }
-    }
-    rows[[length(rows) + 1]] <- cells
-  }
-  list(headers = headers, rows = rows, note = "*** p < .001, ** p < .01, * p < .05")
+  # 上三角のみ表示 (対角 "—"、下三角は空欄)。上三角セルは相関係数 + 有意水準の星。
+  tbl <- .UpperTriTable(vars, function(i, j) {
+    sprintf("%s%s", .FmtNum(res$r[i, j]), .Stars(res$p[i, j]))
+  })
+  tbl$note <- "*** p < .001, ** p < .01, * p < .05"
+  tbl
 }
 
 RunCorrelation <- function(df, options) {

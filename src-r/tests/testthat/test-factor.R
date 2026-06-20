@@ -80,10 +80,38 @@ factor_table_matrix <- function(table) {
   ))
 }
 
+# 上三角のみ表示された因子間相関テーブル (対角 "—"、下三角 "") から
+# 対称な Phi 行列を復元する。対角は 1 (因子の自己相関)、下三角は上三角の鏡像。
+factor_phi_matrix <- function(table) {
+  k <- length(table$headers) - 1
+  m <- matrix(NA_real_, k, k)
+  for (i in seq_len(k)) {
+    for (j in seq_len(k)) {
+      if (i == j) {
+        m[i, j] <- 1
+      } else if (i < j) {
+        m[i, j] <- sai_cell_num(table$rows[[i]][[j + 1]])
+        m[j, i] <- m[i, j]
+      }
+    }
+  }
+  m
+}
+
 factor_section <- function(res, title) {
   for (s in res$sections) if (s$title == title) return(s)
   stop(sprintf("セクションが見つかりません: %s", title))
 }
+
+test_that("因子間相関は上三角のみ表示される (対角は —, 下三角は空欄)", {
+  df <- sai_factor_data()
+  opts <- modifyList(base_options, list(rotation = "promax"))
+  res <- run_factor_quietly(df, opts)
+  rows <- factor_section(res, "因子間相関")$table$rows
+  expect_identical(rows[[1]][[2]], "—") # 対角 (F1×F1)
+  expect_identical(rows[[2]][[2]], "") # 下三角 (F2×F1)
+  expect_true(nzchar(rows[[1]][[3]])) # 上三角 (F1×F2) には係数が入る
+})
 
 test_that("因子寄与 (varimax) は負荷量平方和・寄与率・累積寄与率を出す", {
   df <- sai_factor_data()
@@ -128,7 +156,7 @@ test_that("因子寄与 (promax) は因子間相関を考慮し、寄与率を�
 
   # 斜交の負荷量平方和の定義式: diag(t(L) %*% L %*% Phi)
   pattern <- factor_table_matrix(factor_section(res, "パターン行列")$table)
-  phi <- factor_table_matrix(factor_section(res, "因子間相関")$table)
+  phi <- factor_phi_matrix(factor_section(res, "因子間相関")$table)
   expected <- diag(t(pattern) %*% pattern %*% phi)
   ss <- vapply(2:3, function(j) sai_cell_num(tbl$rows[[1]][[j]]), numeric(1))
   expect_equal(ss, unname(expected), tolerance = 1e-2)

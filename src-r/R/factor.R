@@ -34,16 +34,10 @@
   list(headers = c("変数", factor_labels), rows = rows)
 }
 
+# 因子間相関も相関行列と同じく上三角のみ表示する (対角 "—"、下三角は空欄)。
+# Phi は対称で対角は常に 1 のため、係数を出すのは上三角だけで十分。
 .PhiTable <- function(phi, factor_labels) {
-  rows <- list()
-  for (i in seq_along(factor_labels)) {
-    cells <- list(factor_labels[i])
-    for (j in seq_along(factor_labels)) {
-      cells[[length(cells) + 1]] <- .FmtNum(phi[i, j])
-    }
-    rows[[length(rows) + 1]] <- cells
-  }
-  list(headers = c("", factor_labels), rows = rows)
+  .UpperTriTable(factor_labels, function(i, j) .FmtNum(phi[i, j]), corner = "")
 }
 
 # vars_accounted は EFAtools::EFA の vars_accounted(_rot)。斜交回転の負荷量平方和は

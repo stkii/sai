@@ -83,6 +83,27 @@
   if (p < 0.001) "***" else if (p < 0.01) "**" else if (p < 0.05) "*" else ""
 }
 
+# 対称な相関系の行列を上三角だけで描画する共通ヘルパ (相関行列・因子間相関で共用)。
+# 対角は "—"、下三角は空欄、上三角のみ cell(i, j) の戻り値を表示する。
+# cell は上三角セルの整形関数 (相関は係数+星、因子間相関は係数のみ)。
+.UpperTriTable <- function(labels, cell, corner = "変数") {
+  rows <- list()
+  for (i in seq_along(labels)) {
+    cells <- list(labels[i])
+    for (j in seq_along(labels)) {
+      cells[[length(cells) + 1]] <- if (i == j) {
+        "—"
+      } else if (i > j) {
+        ""
+      } else {
+        cell(i, j)
+      }
+    }
+    rows[[length(rows) + 1]] <- cells
+  }
+  list(headers = c(corner, labels), rows = rows)
+}
+
 .ListwiseNote <- function(removed) {
   if (removed > 0) sprintf("リストワイズ削除により、%d件の観測が除外されました", removed) else NULL
 }
