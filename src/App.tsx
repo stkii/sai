@@ -9,19 +9,17 @@ import { useResult } from './result/state/ResultContext';
 import { HistoryPane } from './result/ui/HistoryPane';
 import { ResultPane } from './result/ui/ResultPane';
 import type { Method } from './shared/types';
+import { PANE } from './shared/ui/golden';
 import { VerticalSplitter } from './shared/ui/VerticalSplitter';
 
-const DATA_PANE_DEFAULT = 320;
-const DATA_PANE_MIN = 200;
-const DATA_PANE_MAX = 640;
-const AI_PANE_WIDTH = '360px';
+const AI_PANE_WIDTH = `${PANE.ai}px`;
 
 export function App() {
   const ai = useAIChatStore();
   const { currentId } = useResult();
   const [activeMethod, setActiveMethod] = useState<Method | null>(null);
   const [activeTab, setActiveTab] = useState<'result' | 'history'>('result');
-  const [dataWidth, setDataWidth] = useState(DATA_PANE_DEFAULT);
+  const [dataWidth, setDataWidth] = useState<number>(PANE.dataDefault);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,7 +29,7 @@ export function App() {
   const handleResize = useCallback((clientX: number) => {
     const left = containerRef.current?.getBoundingClientRect().left ?? 0;
     const next = clientX - left;
-    setDataWidth(Math.max(DATA_PANE_MIN, Math.min(DATA_PANE_MAX, next)));
+    setDataWidth(Math.max(PANE.dataMin, Math.min(PANE.dataMax, next)));
   }, []);
 
   return (
@@ -60,7 +58,8 @@ export function App() {
             display="flex"
             flexDirection="column"
           >
-            <Tabs.List px={2}>
+            {/* 高さは左ペインの「データ」見出し (40px) と揃え、下線を一直線にする */}
+            <Tabs.List px={2} h="40px">
               <Tabs.Trigger value="result">結果</Tabs.Trigger>
               <Tabs.Trigger value="history">履歴</Tabs.Trigger>
             </Tabs.List>

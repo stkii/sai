@@ -9,6 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { useMemo, useState } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
+import { PICKER_HEIGHT } from '../../shared/ui/golden';
 
 interface Item {
   label: string;
@@ -29,8 +30,8 @@ export function VariablePicker({
   selected,
   exclude,
   onChange,
-  minHeight = '200px',
-  maxHeight = '260px',
+  minHeight = PICKER_HEIGHT.min,
+  maxHeight = PICKER_HEIGHT.max,
 }: Props) {
   const excludeSet = useMemo(() => new Set(exclude ?? []), [exclude]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);

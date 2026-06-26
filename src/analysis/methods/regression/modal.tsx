@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Flex,
   HStack,
   IconButton,
   NativeSelect,
@@ -13,6 +12,7 @@ import { useState } from 'react';
 import { LuX } from 'react-icons/lu';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
 import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
@@ -79,8 +79,8 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
 
   return (
     <VStack align="stretch" gap={4}>
-      <Flex gap={5} align="stretch">
-        <Box flex={1} minW={0}>
+      <GoldenSplit
+        primary={
           <FieldFrame label="独立変数 (1つ以上)">
             <VariablePicker
               headers={headers}
@@ -89,8 +89,8 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
               onChange={updatePredictors}
             />
           </FieldFrame>
-        </Box>
-        <Box width="260px" flexShrink={0}>
+        }
+        secondary={
           <FieldFrame label="目的変数">
             <NativeSelect.Root size="sm">
               <NativeSelect.Field
@@ -111,8 +111,8 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
               <NativeSelect.Indicator />
             </NativeSelect.Root>
           </FieldFrame>
-        </Box>
-      </Flex>
+        }
+      />
       <FieldFrame label="交互作用">
         <VStack align="stretch" gap={3}>
           <Checkbox.Root

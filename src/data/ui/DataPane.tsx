@@ -8,7 +8,16 @@ export function DataPane() {
   return (
     <Box height="100%" bg="gray.50" borderRightWidth="1px" borderColor="gray.200">
       <VStack height="100%" align="stretch" gap={0}>
-        <Box px={3} py={2} borderBottomWidth="1px" borderColor="gray.200" bg="white">
+        {/* 高さは中央ペインの Tabs.List (40px) と揃え、下線を一直線にする */}
+        <Box
+          px={3}
+          h="40px"
+          display="flex"
+          alignItems="center"
+          borderBottomWidth="1px"
+          borderColor="gray.200"
+          bg="white"
+        >
           <Text fontSize="sm" fontWeight="semibold" color="gray.700">
             データ
           </Text>

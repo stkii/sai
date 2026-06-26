@@ -1,6 +1,7 @@
 import { Box, Heading, Table, Text, VStack } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import type { AnalysisResult } from '../types';
+import { TABLE } from './golden';
 
 // "< 0.001" のような p 値の上限表記も数値セルとして扱う
 const NUMBER_RE = /^(?:< ?)?-?\d+(\.\d+)?(e[+-]?\d+)?\*{0,3}$/i;
@@ -78,20 +79,20 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
               borderWidth="1px"
               borderRadius="md"
               overflow="auto"
-              width="fit-content"
-              maxWidth="100%"
+              width="100%"
+              maxWidth={TABLE.maxWidth}
             >
-              <Table.Root size="sm" variant="line" width="auto">
+              <Table.Root size="sm" variant="line" width="100%">
                 <Table.Header>
                   <Table.Row bg="gray.50">
                     {section.table.headers.map((h, j) => (
                       <Table.ColumnHeader
                         key={h}
-                        fontSize="xs"
+                        fontSize="sm"
                         whiteSpace="nowrap"
                         fontWeight="bold"
-                        minW="60px"
-                        h="37px"
+                        minW={TABLE.cellMinW}
+                        h={TABLE.rowHeight}
                         textAlign="center"
                         verticalAlign="middle"
                         fontFamily={numericCols[j] ? 'mono' : undefined}
@@ -113,10 +114,10 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
                         <Table.Cell
                           // biome-ignore lint/suspicious/noArrayIndexKey: column index stable
                           key={`c-${idx}-${i}-${j}`}
-                          fontSize="xs"
+                          fontSize="sm"
                           whiteSpace="nowrap"
-                          minW="60px"
-                          h="37px"
+                          minW={TABLE.cellMinW}
+                          h={TABLE.rowHeight}
                           textAlign="right"
                           verticalAlign="middle"
                           fontFamily={numericCols[j] ? 'mono' : undefined}

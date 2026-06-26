@@ -1,7 +1,8 @@
-import { Box, Button, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
+import { Button, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
 import { VariablePicker } from '../../ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
@@ -44,13 +45,13 @@ export function CorrelationModal({ headers, busy, onCancel, onExecute }: ModalPr
 
   return (
     <VStack align="stretch" gap={4}>
-      <Flex gap={5} align="stretch">
-        <Box flex={1} minW={0}>
+      <GoldenSplit
+        primary={
           <FieldFrame label="変数選択 (2つ以上)">
             <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
           </FieldFrame>
-        </Box>
-        <Box width="260px" flexShrink={0}>
+        }
+        secondary={
           <VStack align="stretch" gap={3}>
             <FieldFrame label="相関係数の種類">
               <RadioGroup.Root
@@ -87,8 +88,8 @@ export function CorrelationModal({ headers, busy, onCancel, onExecute }: ModalPr
               </RadioGroup.Root>
             </FieldFrame>
           </VStack>
-        </Box>
-      </Flex>
+        }
+      />
       <HStack justify="flex-end" gap={2}>
         <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
           キャンセル
