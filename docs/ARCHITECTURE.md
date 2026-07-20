@@ -10,7 +10,7 @@ SAI のゼロベース設計。GUI 統計分析ツールに必要十分な構造
 
 ### ユーザー機能
 1. ファイル読込 (CSV/XLSX)
-2. クリック操作のみで分析実行 (記述統計・相関・回帰・因子・信頼性・分散分析・パワー分析)
+2. クリック操作のみで分析実行 (記述統計・相関・回帰・因子・信頼性・分散分析・検出力分析)
 3. 分析結果の表示
 4. 過去の分析履歴の参照
 5. **AI による分析結果の解釈** — ⚠️ **Phase 4 未着手**（後述）
@@ -46,39 +46,39 @@ SAI のゼロベース設計。GUI 統計分析ツールに必要十分な構造
 ### 通常モード (2ペイン)
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  Header  [Dataset: data.csv ▼] [分析▼]          [🤖AI] [設定]│
-├──────────────────────┬─────────────────────────────────────┤
-│                      │  Tabs: [結果] [履歴]                │
-│                      ├─────────────────────────────────────┤
-│   Data Pane          │                                     │
-│   (always visible)   │   Result / History Pane             │
-│                      │                                     │
-│   Variable list      │                                     │
-│   Data preview       │                                     │
-│                      │                                     │
-└──────────────────────┴─────────────────────────────────────┘
+│ SAI  [データセットを開く] [分析▼]               [🤖AI] [設定]│
+├──────────────────────╥─────────────────────────────────────┤
+│ データ               ║ Tabs: [結果] [履歴]                 │  ← 見出しの高さを揃え
+├──────────────────────╢─────────────────────────────────────┤     下線を一直線にする
+│                      ║                                     │
+│  データプレビュー    ║   Result / History Pane             │
+│  (仮想スクロール)    ║                                     │
+│                      ║                                     │
+└──────────────────────╨─────────────────────────────────────┘
+                       ↑ スプリッタ (ドラッグ / ← → キーで幅可変)
 ```
 
 ### AIチャット起動時 (3ペイン) — ⚠️ Phase 4 未着手
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  Header  [Dataset: data.csv ▼] [分析▼]          [🤖×] [設定]│
+│ SAI  [データセット変更] [分析▼]                 [🤖AI] [設定]│
 ├──────────────┬─────────────────────┬───────────────────────┤
-│              │ Tabs: [結果] [履歴] │ AI Chat        [×]    │
-│              ├─────────────────────┼───────────────────────┤
-│  Data Pane   │                     │ ▸ 結果のコンテキスト  │
-│              │  Result Pane        │                       │
-│              │                     │ User: ...             │
+│ データ       │ Tabs: [結果] [履歴] │ 🤖 AI チャット   [×]  │
+├──────────────┼─────────────────────┼───────────────────────┤
+│              │                     │ ▸ 結果のコンテキスト  │
+│  データ      │  Result Pane        │                       │
+│  プレビュー  │                     │ User: ...             │
 │              │                     │ AI:   ...             │
 │              │                     │                       │
 │              │                     │ [入力欄]         [送信]│
 └──────────────┴─────────────────────┴───────────────────────┘
 ```
 
-- **左ペイン (固定)**: 現在のデータセット表示。変数一覧・データプレビュー
-- **中央ペイン**: 結果 / 履歴のタブ切替
+- **左ペイン (常時表示)**: 現在のデータセットのプレビュー表。行数が多いため仮想スクロール (`@tanstack/react-virtual`)。**変数の選択はここではなく分析モーダル側 (`VariablePicker`) で行う**
+- **中央ペイン**: 結果 / 履歴のタブ切替。新しい結果が追加されると自動で「結果」タブへ切り替わる
 - **右ペイン (オンデマンド)**: ヘッダーの 🤖 ボタンで右からスライドイン。**現状はプレースホルダ表示のみ (Phase 4 で実装)**
-- **ヘッダー**: データセット切替・分析メニュー・AI 起動トグル・設定
+- **ヘッダー**: データセット読込 / 切替・分析メニュー・AI 起動トグル・設定 (設定は未実装)
+- **スプリッタ**: 左ペイン幅をドラッグまたは矢印キーで変更 (可動域は `PANE.dataMin`〜`dataMax`)
 
 ---
 
@@ -117,7 +117,14 @@ src/
 │   └── state/                    # useAIChatStore (開閉状態のみ)
 │
 └── shared/
-    ├── ui/                       # 汎用 UI (FieldFrame, SectionsView, VerticalSplitter)
+    ├── ui/
+    │   ├── golden.ts             # 黄金比ベースの寸法トークン (PANE, TABLE, PICKER_HEIGHT)
+    │   ├── fields.tsx            # モーダル入力プリミティブ (Radio / Check / Select / Number)
+    │   ├── FieldFrame.tsx        # 入力グループの枠
+    │   ├── GoldenSplit.tsx       # モーダル 2 カラムの黄金分割
+    │   ├── ModalActions.tsx      # モーダル共通フッター (キャンセル / 実行)
+    │   ├── SectionsView.tsx      # AnalysisResult の既定表示
+    │   └── VerticalSplitter.tsx  # ペイン幅リサイズ
     ├── ipc/                      # Tauri wrapper (analysis, dataset, history)
     ├── types/                    # 横断的型 (AnalysisResult, Method, DatasetSummary, HistoryRecord)
     └── format.ts                 # 表示フォーマット (タイムスタンプ等)
@@ -125,39 +132,76 @@ src/
 
 ### 依存方向
 
+実際の `import` 文を全件追跡した結果に基づく（feature → shared は使用先サブモジュール単位まで分解）。
+
 ```mermaid
 flowchart TB
-  M[main.tsx] --> APP[App.tsx]
-  M --> D[data/]
-  M --> R[result/]
+  subgraph entry["エントリ・シェル"]
+    M[main.tsx]
+    APP[App.tsx]
+    HDR[Header.tsx]
+  end
 
-  APP --> HDR[Header.tsx]
+  subgraph features["機能フォルダ"]
+    D[data/]
+    A[analysis/]
+    R[result/]
+    AI["ai/ ⚠️Phase 4"]
+  end
+
+  subgraph shared["shared/"]
+    T[types/]
+    IPC[ipc/]
+    UI[ui/]
+    FMT[format.ts]
+  end
+
+  %% エントリ階層
+  M --> APP
+  M --> D
+  M --> R
+  APP --> HDR
   APP --> D
-  APP --> A[analysis/]
+  APP --> A
   APP --> R
-  APP --> AI[ai/]
-  APP --> SHR[shared/]
-
+  APP --> AI
+  APP --> T
+  APP --> UI
   HDR --> D
   HDR --> A
-  HDR --> SHR
+  HDR --> T
 
-  D --> SHR
-  A --> SHR
-  R --> SHR
+  %% 機能 → shared (使用サブモジュール単位)
+  D --> T
+  D --> IPC
+  D --> UI
+  A --> T
+  A --> IPC
+  A --> UI
+  R --> T
+  R --> IPC
+  R --> UI
+  R --> FMT
 
-  A -.read-only.-> D
-  A -.read-only.-> R
-  R -.read-only.-> A
+  %% shared 内部 (types が基盤)
+  IPC --> T
+  UI --> T
 
-  %% ai/ は Phase 4 未着手の placeholder。下記は実装予定の依存で、現状コードには未存在
-  AI -.Phase 4 予定.-> SHR
-  AI -.Phase 4 予定・read-only.-> R
+  %% 機能間 = 読み取り専用の例外のみ
+  A -. "read-only: useDataset" .-> D
+  A -. "read-only: useResult" .-> R
+  R -. "read-only: findMethod" .-> A
+
+  %% ai/ は現状どの機能・shared も import していない (Phase 4 予定)
+  AI -. "Phase 4 予定" .-> T
+  AI -. "Phase 4 予定" .-> R
 ```
 
-> `M --> D` / `M --> R` は `main.tsx` のプロバイダ階層 (`DatasetProvider` / `ResultProvider`) による依存。
-> `R -.read-only.-> A` は `result/` が `analysis/methods` の `findMethod` を読むレジストリ参照 (例外(3))。
-> `ai/` 起点の点線は **Phase 4 で実装予定**であり、現状の `ai/` は他機能・`shared/` のいずれも import していない。
+> **エントリ層**: `M --> D` / `M --> R` は `main.tsx` のプロバイダ階層 (`DatasetProvider` / `ResultProvider`)。`APP --> AI` は `App.tsx` が `ChatPane` / `useAIChatStore` を取り込む実在の依存（`ai/` の中身は placeholder だが配線はされている）。
+> **機能 → shared**: `types/` は全機能が参照する基盤。`ipc/` はデータ I/O を持つ `data/` `analysis/` `result/` のみ、`format.ts`（タイムスタンプ整形）は `result/` のみが使う。`ui/` は 3 機能とも参照する（`data/` は寸法トークン `golden.ts`、`analysis/` は入力プリミティブ群、`result/` は `SectionsView`）。
+> **shared 内部**: `ipc/*` と `SectionsView`（`ui/`）が `types/` を参照するため `IPC --> T` / `UI --> T`。`ui/` 内部では `fields.tsx → FieldFrame` / `SectionsView → golden.ts` の参照がある。`types/` `format.ts` `golden.ts` は他へ依存しない葉ノード。
+> **機能間の点線3本**は読み取り専用の例外 (ルール表の例外(2)(3)): `analysis/` が `useDataset` / `useResult` を読み、`result/` が `analysis/methods` の `findMethod` レジストリを読む。これ以外の機能間直接 import は存在しない。
+> **`ai/` の点線**は **Phase 4 で実装予定**。現状の `ai/` は `react` / `@chakra-ui/react` 以外を一切 import しておらず、他機能・`shared/` への依存は無い。
 
 ### ルール
 
@@ -169,8 +213,29 @@ flowchart TB
 | IPC | `shared/ipc/` 経由でのみ Tauri と通信 |
 | Header の例外 | `Header.tsx` は App と同レベル。複数機能を組み合わせる責務上、機能フォルダを直接参照してよい |
 
-### サブツール (PowerAnalysis 等)
+### UI 共通基盤 (`shared/ui/`)
+
+分析モーダルは 7 つあり、素の Chakra v3 compound component をそのまま書くと同じ定型が複製される。共通プリミティブを 1 枚挟んで各 `modal.tsx` を宣言的に保つ。
+
+| 種別 | 使うもの | 方針 |
+|---|---|---|
+| 単一選択 | `RadioField` / `RadioChoices` | 選択肢が少数のときはラジオ。枠内に他の入力を同居させる場合のみ枠なしの `RadioChoices` |
+| 複数選択 | `CheckField` | 独立した on/off |
+| 選択肢が多い | `SelectField` / `SelectInput` | 変数名リストなど。`toChoices(headers)` で変換 |
+| 数値 | `NumberField` | 空欄を `undefined` として扱う |
+| 枠・レイアウト | `FieldFrame` / `GoldenSplit` / `ModalActions` | 各フィールドを枠で囲い、2 カラムは φ : 1 で分割、フッターは共通 |
+
+寸法は `golden.ts` に集約する。ペイン幅 (233 / 377 / 610)、テーブル最大幅 (987)、セルの縦横比などをフィボナッチ数列・黄金比で刻み、マジックナンバーを各所へ散らさない。
+
+### サブツール (検出力分析 等)
 データセット不要の単独計算は `analysis/methods/<tool>/` に収納。フロントから `datasetKey: null` で `runAnalysis()` を呼ぶだけ。Rust 側は `dataset_key.is_some()` で分岐する。
+
+`MethodDefinition` の 2 つのフラグで挙動を宣言する:
+
+| フラグ | 既定 | 効果 |
+|---|---|---|
+| `requiresDataset` | `true` | `false` にするとデータセット未読込でもメニューが有効になり、`datasetKey: null` で実行される |
+| `persistHistory` | `true` | `false` にすると結果は履歴 JSONL に保存されない。データセットに紐付かない計算 (検出力分析) は再現条件が残らないため |
 
 ### result/ と history/ の同居について
 かつて `history/` を独立機能として分けていたが、`HistoryPane` は `useResult` を呼んで結果リストを表示するだけで固有ロジックを持たなかった。`ResultEntry = HistoryRecord` というエイリアスも示すとおり、結果と履歴は同一概念として扱っているため、`result/` 配下に同居させている。将来 history 固有のロジック (フィルタ・ページング・タグ付け 等) が必要になった時点で再分離する。
@@ -185,7 +250,7 @@ flowchart TB
 src-tauri/src/
 ├── main.rs                       # Tauri エントリ
 ├── lib.rs                        # アプリ起動・コマンド登録
-├── bootstrap.rs                  # AppState, DI 配線
+├── bootstrap.rs                  # AppState — 生成と結線 (Composition Root)
 │
 ├── commands/                     # Tauri コマンド (薄い変換層)
 │   ├── dataset.rs                # get_sheets, load_dataset
@@ -211,25 +276,42 @@ src-tauri/src/
 
 ```mermaid
 flowchart TD
-  M[main.rs] --> L[lib.rs]
-  L --> B[bootstrap.rs]
-  L --> C[commands/]
+  M[main.rs]
+  L[lib.rs]
+  B[bootstrap.rs]
+  MO[models.rs]
 
+  subgraph layers["3 層"]
+    C[commands/]
+    S[services/]
+    I[infra/]
+  end
+
+  %% 起動経路
+  M --> L
+  L --> B
+  L --> C
+
+  %% commands
   C --> B
-  C --> MO[models.rs]
-  C -.calls via AppState.-> S[services/]
+  C --> MO
+  C -. "calls via AppState" .-> S
 
+  %% 生成・結線
   B --> S
-  B --> I[infra/]
+  B --> I
 
+  %% 層間
   S --> I
   S --> MO
   I --> MO
 ```
 
-> commands は `AppState` (bootstrap 定義) と `models` を直接 import し、サービスは `state.<service>.method()` と **`AppState` のフィールド経由で呼ぶ** (commands に `use crate::services` は無い)。
-> bootstrap は services だけでなく infra の具象 (`DatasetCache`, `HistoryStore`) も生成して DI 配線するため `B --> I` を持つ。
-> services は infra の具象を直保有する (例: `AnalysisService { runner: RRunner }`)。trait 抽象は導入していない。
+> **commands**: `AppState` (bootstrap 定義) と `models` を直接 import し、サービスは `state.<service>.method()` と **`AppState` のフィールド経由で呼ぶ** (commands に `use crate::services` は無い)。Tauri が `State<'_, AppState>` を引数で渡すが、渡るのは束であり、必要なサービスは command 側が取り出す (Service Locator)。
+> **bootstrap**: services だけでなく infra の具象 (`DatasetCache`, `HistoryStore`) も生成するため `B --> I` を持つ。
+> **services**: infra の具象を直保有する (例: `AnalysisService { runner: RRunner }`)。trait 抽象は導入していない。
+
+**「DI」ではなく Composition Root**: `AppState::new` は `DatasetService::new(cache)` / `HistoryService::new(store)` の形で依存を渡すが、受け取る型は具象 (`Arc<DatasetCache>` 等) で trait ではない。差し替え可能性は無く、生成場所を一箇所に集約しているだけである。`AnalysisService::new()` に至っては引数を取らず、`RRunner` を自分で生成する。**依存性注入と呼べる構造ではない**点に注意 (trait 抽象を入れない YAGNI 判断の帰結)。
 
 ### Backend 設計の補足
 
@@ -240,7 +322,7 @@ flowchart TD
 - `remove_history` は対象 1 件を除いた内容を一時ファイルへ書き出し、rename で置換する
 
 #### standalone 分析
-PowerAnalysis 等は `dataset_key = null` で `run_analysis` を呼ぶ。`services/analysis.rs::run` は `dataset_key.is_some()` で「列射影」「空テーブル」を分岐するだけで、メソッド名のホワイトリストは持たない。**未対応メソッドのエラーは R 層 (`cli.R`) が返す**。
+検出力分析 (`power`) は `dataset_key = null` で `run_analysis` を呼ぶ。`services/analysis.rs::run` は `dataset_key.is_some()` で「列射影」「空テーブル」を分岐するだけで、メソッド名のホワイトリストは持たない。**未対応メソッドのエラーは R 層 (`cli.R`) が返す**。
 
 #### メソッドディスパッチは R 層に一元化
 Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cli.R` の dispatch table が唯一の真実で、`requires_data` / `kind` (numeric / mixed / none) もそこで宣言する。Rust は dataset_key の有無で分岐するだけ。
@@ -251,6 +333,62 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
 
 ---
 
+## R 層 (`src-r/`)
+
+### ディレクトリ構造
+
+```
+src-r/
+├── cli.R                     # Rust から Rscript で起動されるエントリ
+├── R/
+│   ├── common.R              # 共通ヘルパ (JSON I/O・df 変換・数値整形・n_note 生成)
+│   ├── describe.R
+│   ├── correlation.R
+│   ├── regression.R
+│   ├── reliability.R
+│   ├── factor.R
+│   ├── anova.R
+│   └── power.R
+├── DESCRIPTION               # renv の依存宣言 (dev profile の追加依存を含む)
+├── renv.lock                 # 本番 lockfile
+└── tests/                    # 後述
+```
+
+外部パッケージは `jsonlite` (JSON I/O) と `EFAtools` (因子分析) のみ。検出力分析は base R の `stats::power.t.test` / `power.anova.test` / `power.prop.test` を使い、追加依存を持たない。
+
+### cli.R の責務
+
+1. 必須パッケージを起動時に一括 `requireNamespace` で確認し、不足があれば fail-fast で停止する。**自動インストールはしない** (lockfile と実環境が silent に乖離するため)
+2. `input.json` (`{ method, headers, rows, options }`) を読む
+3. **dispatch table** でメソッドを解決し、`kind` に応じてデータフレームを組み立てる
+4. `Run<Method>(df, options)` を呼び、`{ sections, n?, n_note? }` を `output.json` へ書く
+
+| method | `requires_data` | `kind` | データフレーム変換 |
+|---|---|---|---|
+| describe / correlation / regression / reliability / factor | `TRUE` | `numeric` | `.AsNumericDf` — 全列を数値化 |
+| anova | `TRUE` | `mixed` | `.AsMixedDf` — 文字列列を保持 (要因がカテゴリ変数のため) |
+| power | `FALSE` | `none` | データフレームを作らない |
+
+この dispatch table が**メソッド定義の唯一の真実**。未対応メソッドのエラーもここで発生し、Rust 側にメソッド名のリストは存在しない。
+
+### メソッド 1 ファイルの構成
+
+慣例として 3 関数に分ける:
+
+| 関数 | 役割 |
+|---|---|
+| `.<Method>(df, ...)` | 生の統計計算 (`cor()` / `lm()` / `aov()` 等) |
+| `.<Method>Parsed(res)` | 結果を `list(headers, rows, note?)` (フロントの `AnalysisTable` 互換) へ変換 |
+| `Run<Method>(df, options)` | エントリ。引数検証 → 上記 2 つ → `list(sections, n, n_note)` |
+
+### `n_note` — 有効標本サイズの注記
+
+リストワイズ削除で行が落ちた、ペアワイズ削除で対ごとに n が違う、反復測定で n が総観測数になる — こうした「表示される n がユーザーの期待と乖離する」状況では、`Run<Method>` が `n_note` を返す。これを黙って省くのは規約上のダークパターン (`AGENTS.md`) にあたる。
+
+注記は R で生成され、Rust の `AnalysisResult.n_note` を素通りしてフロントの `nNote` として `ResultMetadata` に表示される。**新メソッドが `n_note` を返せば追加配線なしで表示される**。
+
+---
+
 ## R 層のテスト (`src-r/tests/`)
 
 ```
@@ -258,6 +396,7 @@ src-r/tests/
 ├── run_all.R                 # 一括実行エントリ (RENV_PROFILE=dev Rscript tests/run_all.R)
 ├── testthat/
 │   ├── helper-sai.R          # R/*.R の source・セル値パーサ・cli.R 実行ヘルパ
+│   ├── test-common.R         # common.R の共通ヘルパ (整形・注記生成など)
 │   ├── test-<method>.R       # Run<Method> を直接呼ぶ関数テスト (メソッドごとに1ファイル)
 │   └── test-cli.R            # cli.R を Rscript で起動する E2E (配管のみ薄く検証)
 └── fixtures/cli/             # test-cli.R 用の入力 JSON
@@ -288,6 +427,35 @@ RENV_PROFILE=dev Rscript tests/run_all.R        # 全テスト実行
 
 ---
 
+## 分析実行フロー (end-to-end)
+
+```
+Frontend                     Rust                              R
+─────────────────────────────────────────────────────────────────────────────
+AnalysisModalHost
+  runAnalysis({datasetKey, method, variables, options})
+        │ invoke('run_analysis')
+        ▼
+                     AnalysisService::run
+                       ├ datasetKey あり → cache から列を射影
+                       └ null           → 空テーブル
+                     RRunner::run ─ temp input.json ─┐
+                                                     ▼
+                                              cli.R
+                                                ├ dispatch[method] を解決
+                                                ├ kind に応じて df 変換
+                                                └ Run<Method>(df, options)
+                                                     → {sections, n, n_note}
+                     AnalysisResult ◀─ temp output.json ─┘
+        ◀ camelCase (nNote)
+ResultContext.addResult
+  └ persistHistory !== false → appendHistory() で JSONL へ追記
+```
+
+Frontend ↔ Rust は Tauri `invoke()` の JSON、Rust ↔ R は一時 JSON ファイル経由。`AnalysisResult.sections` が全メソッド共通の出力形で、表示にも将来のエクスポートにも兼用する。
+
+---
+
 ## レイヤー責務早見表
 
 ### Frontend
@@ -307,7 +475,7 @@ RENV_PROFILE=dev Rscript tests/run_all.R        # 全テスト実行
 | `services/` | ビジネスロジック・薄い配管 | メソッド固有のロジック (R に集約) |
 | `infra/` | 外部システム統合 | ビジネスロジック |
 | `models.rs` | 共通型 | 他レイヤーへの依存 |
-| `bootstrap.rs` | DI 配線 | ビジネスロジック |
+| `bootstrap.rs` | 生成と結線 (Composition Root) | ビジネスロジック |
 
 ---
 
@@ -320,7 +488,8 @@ RENV_PROFILE=dev Rscript tests/run_all.R        # 全テスト実行
    - `tests/testthat/test-<method>.R` を追加 (base R との一致 + `n_note` の検証)
 2. **Frontend** (`src/`)
    - `shared/types/index.ts` の `Method` union に追加
-   - `analysis/methods/<method>/` に `modal.tsx` / `index.tsx` を追加 (`result.tsx` はカスタム表示が必要な場合のみ追加)
+   - `analysis/methods/<method>/modal.tsx` — 入力 UI。`shared/ui/` のプリミティブ (`RadioField` / `SelectField` / `FieldFrame` / `GoldenSplit` / `ModalActions` 等) で組む。options を持つなら選択肢ラベルで「設定」行を整形する `format<Method>Options()` もここに置く (内部値をユーザーに見せない)
+   - `analysis/methods/<method>/index.tsx` — `MethodModule` を組み立てて export。`result.tsx` はカスタム表示が必要な場合のみ追加し、省略時は `SectionsView` がフォールバック描画する
    - `analysis/methods/index.ts` の `ANALYSIS_METHODS` に登録
 3. **Rust** (`src-tauri/`)
    - **原則として変更不要**。Rust は配管に徹し、未対応メソッドのエラーは R から返る
