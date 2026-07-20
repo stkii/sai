@@ -6,10 +6,20 @@ interface Props extends Omit<BoxProps, 'children'> {
   children: ReactNode;
 }
 
+/** モーダル内の入力グループを枠で囲む共通フレーム。 */
 export function FieldFrame({ label, children, ...rest }: Props) {
   return (
-    <Box borderWidth="1px" borderRadius="md" borderColor="gray.200" px={3} py={2} {...rest}>
-      <Text fontSize="xs" mb={2} color="gray.600" fontWeight="medium">
+    <Box
+      role="group"
+      aria-label={label}
+      borderWidth="1px"
+      borderRadius="md"
+      borderColor="border"
+      px={3}
+      py={2}
+      {...rest}
+    >
+      <Text fontSize="xs" mb={2} color="fg.muted" fontWeight="medium">
         {label}
       </Text>
       {children}
