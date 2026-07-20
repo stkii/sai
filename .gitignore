@@ -2,6 +2,9 @@
 dist/
 *.tsbuildinfo
 
+# Claude
+.claude/
+
 # Dependencies
 node_modules/
 
@@ -22,3 +25,6 @@ pnpm-debug.log*
 .DS_Store
 .Rproj.user
 .positai
+
+# Skills
+.agents
