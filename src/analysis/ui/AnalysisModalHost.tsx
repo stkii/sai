@@ -1,4 +1,4 @@
-import { Box, Dialog, Portal, Text } from '@chakra-ui/react';
+import { Dialog, Portal, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useDataset } from '../../data/state/DatasetContext';
 import { useResult } from '../../result/state/ResultContext';
@@ -53,7 +53,7 @@ export function AnalysisModalHost({ method, onClose }: Props) {
             </Dialog.Header>
             <Dialog.Body>
               {mod ? (
-                <Box>
+                <>
                   {mod.renderModal({
                     headers: summary?.headers ?? [],
                     busy,
@@ -61,11 +61,11 @@ export function AnalysisModalHost({ method, onClose }: Props) {
                     onExecute: handleExecute,
                   })}
                   {error && (
-                    <Text mt={2} fontSize="xs" color="red.500">
+                    <Text mt={2} fontSize="xs" color="fg.error" role="alert">
                       {error}
                     </Text>
                   )}
-                </Box>
+                </>
               ) : null}
             </Dialog.Body>
           </Dialog.Content>

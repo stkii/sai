@@ -1,8 +1,10 @@
-import { Button, Checkbox, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
+import { Flex, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { CheckField, type Choice, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
@@ -16,7 +18,7 @@ interface DescribeOptions {
   };
 }
 
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+const SORT_OPTIONS: Choice<SortMode>[] = [
   { value: 'default', label: '変数リスト順' },
   { value: 'mean_desc', label: '平均値による降順' },
   { value: 'mean_asc', label: '平均値による昇順' },
@@ -57,62 +59,22 @@ export function DescribeModal({ headers, busy, onCancel, onExecute }: ModalProps
         }
         secondary={
           <VStack align="stretch" gap={3}>
-            <FieldFrame label="表示順">
-              <RadioGroup.Root
-                size="sm"
-                value={sort}
-                onValueChange={(d) => setSort(d.value as SortMode)}
-              >
-                <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                  {SORT_OPTIONS.map((opt) => (
-                    <RadioGroup.Item key={opt.value} value={opt.value}>
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                  ))}
-                </Flex>
-              </RadioGroup.Root>
-            </FieldFrame>
+            <RadioField label="表示順" options={SORT_OPTIONS} value={sort} onChange={setSort} />
             <FieldFrame label="追加の代表値">
               <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                <Checkbox.Root
-                  size="sm"
-                  checked={skewness}
-                  onCheckedChange={(d) => setSkewness(d.checked === true)}
-                >
-                  <Checkbox.HiddenInput />
-                  <Checkbox.Control />
-                  <Checkbox.Label fontSize="sm">歪度</Checkbox.Label>
-                </Checkbox.Root>
-                <Checkbox.Root
-                  size="sm"
-                  checked={kurtosis}
-                  onCheckedChange={(d) => setKurtosis(d.checked === true)}
-                >
-                  <Checkbox.HiddenInput />
-                  <Checkbox.Control />
-                  <Checkbox.Label fontSize="sm">尖度</Checkbox.Label>
-                </Checkbox.Root>
+                <CheckField label="歪度" checked={skewness} onChange={setSkewness} />
+                <CheckField label="尖度" checked={kurtosis} onChange={setKurtosis} />
               </Flex>
             </FieldFrame>
           </VStack>
         }
       />
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={handleSubmit}
-          loading={busy}
-          disabled={selected.length === 0}
-        >
-          実行
-        </Button>
-      </HStack>
+      <ModalActions
+        busy={busy}
+        disabled={selected.length === 0}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }

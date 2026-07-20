@@ -1,8 +1,10 @@
-import { Button, Flex, HStack, NativeSelect, RadioGroup, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { type Choice, RadioField, SelectField, toChoices } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
@@ -17,7 +19,7 @@ type AnovaOptions = {
   subject?: string;
 };
 
-const DESIGN_OPTIONS: { value: Design; label: string }[] = [
+const DESIGN_OPTIONS: Choice<Design>[] = [
   { value: 'between', label: '被験者間' },
   { value: 'within', label: '反復測定' },
 ];
@@ -61,76 +63,37 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps) {
         }
         secondary={
           <VStack align="stretch" gap={3}>
-            <FieldFrame label="デザイン">
-              <RadioGroup.Root
-                size="sm"
-                value={design}
-                onValueChange={(d) => setDesign(d.value as Design)}
-              >
-                <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                  {DESIGN_OPTIONS.map((opt) => (
-                    <RadioGroup.Item key={opt.value} value={opt.value}>
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                  ))}
-                </Flex>
-              </RadioGroup.Root>
-            </FieldFrame>
-            <FieldFrame label="従属変数 (数値)">
-              <NativeSelect.Root size="sm">
-                <NativeSelect.Field
-                  value={dependent}
-                  onChange={(e) => setDependent(e.currentTarget.value)}
-                >
-                  <option value="">-- 選択 --</option>
-                  {headers.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
-            </FieldFrame>
+            <RadioField
+              label="デザイン"
+              options={DESIGN_OPTIONS}
+              value={design}
+              onChange={setDesign}
+            />
+            <SelectField
+              label="従属変数 (数値)"
+              options={toChoices(headers)}
+              value={dependent}
+              onChange={setDependent}
+              placeholder="-- 選択 --"
+            />
             {design === 'within' && (
-              <FieldFrame label="被験者ID列">
-                <NativeSelect.Root size="sm">
-                  <NativeSelect.Field
-                    value={subject}
-                    onChange={(e) => setSubject(e.currentTarget.value)}
-                  >
-                    <option value="">-- 選択 --</option>
-                    {headers
-                      .filter((h) => h !== dependent && !factors.includes(h))
-                      .map((h) => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </FieldFrame>
+              <SelectField
+                label="被験者ID列"
+                options={toChoices(headers.filter((h) => h !== dependent && !factors.includes(h)))}
+                value={subject}
+                onChange={setSubject}
+                placeholder="-- 選択 --"
+              />
             )}
           </VStack>
         }
       />
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={handleSubmit}
-          loading={busy}
-          disabled={!dependent || factors.length === 0 || (design === 'within' && !subject)}
-        >
-          実行
-        </Button>
-      </HStack>
+      <ModalActions
+        busy={busy}
+        disabled={!dependent || factors.length === 0 || (design === 'within' && !subject)}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }

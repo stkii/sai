@@ -1,8 +1,10 @@
-import { Button, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { type Choice, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
@@ -12,12 +14,11 @@ interface ReliabilityOptions {
   coefficient: ReliabilityCoefficient;
 }
 
-const COEFFICIENT_OPTIONS: { value: ReliabilityCoefficient; label: string; disabled?: boolean }[] =
-  [
-    { value: 'alpha', label: 'Cronbachのα' },
-    // ω係数は R 層が未実装のため選択不可 (導入時に disabled を外す)
-    { value: 'omega', label: 'McDonaldのω (未対応)', disabled: true },
-  ];
+const COEFFICIENT_OPTIONS: Choice<ReliabilityCoefficient>[] = [
+  { value: 'alpha', label: 'Cronbachのα' },
+  // ω係数は R 層が未実装のため選択不可 (導入時に disabled を外す)
+  { value: 'omega', label: 'McDonaldのω (未対応)', disabled: true },
+];
 
 export function formatReliabilityOptions(options: AnalysisOptions): string | null {
   const o = options as Partial<ReliabilityOptions>;
@@ -42,39 +43,20 @@ export function ReliabilityModal({ headers, busy, onCancel, onExecute }: ModalPr
           </FieldFrame>
         }
         secondary={
-          <FieldFrame label="係数の種類">
-            <RadioGroup.Root
-              size="sm"
-              value={coefficient}
-              onValueChange={(d) => setCoefficient(d.value as ReliabilityCoefficient)}
-            >
-              <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                {COEFFICIENT_OPTIONS.map((opt) => (
-                  <RadioGroup.Item key={opt.value} value={opt.value} disabled={opt.disabled}>
-                    <RadioGroup.ItemHiddenInput />
-                    <RadioGroup.ItemIndicator />
-                    <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                  </RadioGroup.Item>
-                ))}
-              </Flex>
-            </RadioGroup.Root>
-          </FieldFrame>
+          <RadioField
+            label="係数の種類"
+            options={COEFFICIENT_OPTIONS}
+            value={coefficient}
+            onChange={setCoefficient}
+          />
         }
       />
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={handleSubmit}
-          loading={busy}
-          disabled={selected.length < 2}
-        >
-          実行
-        </Button>
-      </HStack>
+      <ModalActions
+        busy={busy}
+        disabled={selected.length < 2}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }

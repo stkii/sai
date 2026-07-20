@@ -1,8 +1,10 @@
-import { Button, Flex, HStack, RadioGroup, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { type Choice, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
@@ -14,13 +16,13 @@ interface CorrelationOptions {
   na: NaMode;
 }
 
-const METHOD_OPTIONS: { value: CorrMethod; label: string }[] = [
+const METHOD_OPTIONS: Choice<CorrMethod>[] = [
   { value: 'pearson', label: 'Pearson 積率相関' },
   { value: 'spearman', label: 'Spearman 順位相関' },
   { value: 'kendall', label: 'Kendall の τ' },
 ];
 
-const NA_OPTIONS: { value: NaMode; label: string }[] = [
+const NA_OPTIONS: Choice<NaMode>[] = [
   { value: 'complete.obs', label: 'リストワイズ削除' },
   { value: 'pairwise.complete.obs', label: 'ペアワイズ削除' },
 ];
@@ -53,57 +55,22 @@ export function CorrelationModal({ headers, busy, onCancel, onExecute }: ModalPr
         }
         secondary={
           <VStack align="stretch" gap={3}>
-            <FieldFrame label="相関係数の種類">
-              <RadioGroup.Root
-                size="sm"
-                value={method}
-                onValueChange={(d) => setMethod(d.value as CorrMethod)}
-              >
-                <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                  {METHOD_OPTIONS.map((opt) => (
-                    <RadioGroup.Item key={opt.value} value={opt.value}>
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                  ))}
-                </Flex>
-              </RadioGroup.Root>
-            </FieldFrame>
-            <FieldFrame label="欠測値の扱い">
-              <RadioGroup.Root
-                size="sm"
-                value={na}
-                onValueChange={(d) => setNa(d.value as NaMode)}
-              >
-                <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                  {NA_OPTIONS.map((opt) => (
-                    <RadioGroup.Item key={opt.value} value={opt.value}>
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                  ))}
-                </Flex>
-              </RadioGroup.Root>
-            </FieldFrame>
+            <RadioField
+              label="相関係数の種類"
+              options={METHOD_OPTIONS}
+              value={method}
+              onChange={setMethod}
+            />
+            <RadioField label="欠測値の扱い" options={NA_OPTIONS} value={na} onChange={setNa} />
           </VStack>
         }
       />
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={handleSubmit}
-          loading={busy}
-          disabled={selected.length < 2}
-        >
-          実行
-        </Button>
-      </HStack>
+      <ModalActions
+        busy={busy}
+        disabled={selected.length < 2}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }

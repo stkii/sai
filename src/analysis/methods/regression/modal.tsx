@@ -1,18 +1,11 @@
-import {
-  Box,
-  Button,
-  Checkbox,
-  HStack,
-  IconButton,
-  NativeSelect,
-  Text,
-  VStack,
-} from '@chakra-ui/react';
+import { Box, Button, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import { LuX } from 'react-icons/lu';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { CheckField, SelectField, SelectInput, toChoices } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
@@ -91,78 +84,48 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
           </FieldFrame>
         }
         secondary={
-          <FieldFrame label="目的変数">
-            <NativeSelect.Root size="sm">
-              <NativeSelect.Field
-                value={dependent}
-                onChange={(e) => {
-                  const v = e.currentTarget.value;
-                  setDependent(v);
-                  updatePredictors(predictors.filter((p) => p !== v));
-                }}
-              >
-                <option value="">-- 選択 --</option>
-                {headers.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-          </FieldFrame>
+          <SelectField
+            label="目的変数"
+            options={toChoices(headers)}
+            value={dependent}
+            placeholder="-- 選択 --"
+            onChange={(v) => {
+              setDependent(v);
+              updatePredictors(predictors.filter((p) => p !== v));
+            }}
+          />
         }
       />
       <FieldFrame label="交互作用">
         <VStack align="stretch" gap={3}>
-          <Checkbox.Root
-            size="sm"
+          <CheckField
+            label="全ての2次の交互作用を投入する"
             checked={allInteractions}
-            onCheckedChange={(d) => setAllInteractions(d.checked === true)}
-          >
-            <Checkbox.HiddenInput />
-            <Checkbox.Control />
-            <Checkbox.Label fontSize="sm">全ての2次の交互作用を投入する</Checkbox.Label>
-          </Checkbox.Root>
+            onChange={setAllInteractions}
+          />
           {!allInteractions && (
             <VStack align="stretch" gap={2}>
               <HStack gap={2} align="center">
                 <Box flex={1} minW={0}>
-                  <NativeSelect.Root size="sm" disabled={!canAddInteraction}>
-                    <NativeSelect.Field
-                      value={pairA}
-                      onChange={(e) => setPairA(e.currentTarget.value)}
-                    >
-                      <option value="">-- 変数A --</option>
-                      {predictors.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </NativeSelect.Field>
-                    <NativeSelect.Indicator />
-                  </NativeSelect.Root>
+                  <SelectInput
+                    options={toChoices(predictors)}
+                    value={pairA}
+                    onChange={setPairA}
+                    placeholder="-- 変数A --"
+                    disabled={!canAddInteraction}
+                  />
                 </Box>
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="fg.muted">
                   ×
                 </Text>
                 <Box flex={1} minW={0}>
-                  <NativeSelect.Root size="sm" disabled={!canAddInteraction}>
-                    <NativeSelect.Field
-                      value={pairB}
-                      onChange={(e) => setPairB(e.currentTarget.value)}
-                    >
-                      <option value="">-- 変数B --</option>
-                      {predictors
-                        .filter((p) => p !== pairA)
-                        .map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                    </NativeSelect.Field>
-                    <NativeSelect.Indicator />
-                  </NativeSelect.Root>
+                  <SelectInput
+                    options={toChoices(predictors.filter((p) => p !== pairA))}
+                    value={pairB}
+                    onChange={setPairB}
+                    placeholder="-- 変数B --"
+                    disabled={!canAddInteraction}
+                  />
                 </Box>
                 <Button
                   size="sm"
@@ -174,7 +137,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
                 </Button>
               </HStack>
               {!canAddInteraction && (
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="fg.subtle">
                   独立変数を 2 つ以上選択してください
                 </Text>
               )}
@@ -188,7 +151,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
                       py={1}
                       borderWidth="1px"
                       borderRadius="md"
-                      bg="gray.50"
+                      bg="bg.subtle"
                     >
                       <Text fontSize="sm">
                         {a} × {b}
@@ -196,7 +159,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
                       <IconButton
                         size="xs"
                         variant="ghost"
-                        aria-label="削除"
+                        aria-label={`交互作用 ${a} × ${b} を削除`}
                         onClick={() => removeInteraction(i)}
                       >
                         <LuX />
@@ -209,20 +172,12 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
           )}
         </VStack>
       </FieldFrame>
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={handleSubmit}
-          loading={busy}
-          disabled={!dependent || predictors.length === 0}
-        >
-          実行
-        </Button>
-      </HStack>
+      <ModalActions
+        busy={busy}
+        disabled={!dependent || predictors.length === 0}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }

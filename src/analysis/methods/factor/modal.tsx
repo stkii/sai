@@ -1,17 +1,16 @@
-import {
-  Button,
-  Checkbox,
-  Flex,
-  HStack,
-  NativeSelect,
-  NumberInput,
-  RadioGroup,
-  VStack,
-} from '@chakra-ui/react';
+import { NumberInput, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import {
+  CheckField,
+  type Choice,
+  RadioChoices,
+  RadioField,
+  SelectField,
+} from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
@@ -29,23 +28,23 @@ interface FactorOptions {
   sortByFactor: boolean;
 }
 
-const MODE_OPTIONS: { value: NfactorsMode; label: string }[] = [
+const MODE_OPTIONS: Choice<NfactorsMode>[] = [
   { value: 'guttman', label: '固有値に基づく' },
   { value: 'fixed', label: '任意の固定数' },
 ];
 
-const NA_OPTIONS: { value: NaMode; label: string }[] = [
+const NA_OPTIONS: Choice<NaMode>[] = [
   { value: 'complete.obs', label: 'リストワイズ削除' },
   { value: 'pairwise.complete.obs', label: 'ペアワイズ削除' },
 ];
 
-const ROTATION_OPTIONS: { value: Rotation; label: string }[] = [
+const ROTATION_OPTIONS: Choice<Rotation>[] = [
   { value: 'none', label: '回転なし' },
   { value: 'varimax', label: 'バリマックス (直交)' },
   { value: 'promax', label: 'プロマックス (斜交)' },
 ];
 
-const METHOD_OPTIONS: { value: Method; label: string }[] = [
+const METHOD_OPTIONS: Choice<Method>[] = [
   { value: 'PAF', label: '主因子法 (PAF)' },
   { value: 'ML', label: '最尤法 (ML)' },
   { value: 'ULS', label: '最小二乗法 (ULS)' },
@@ -98,38 +97,15 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) 
         }
         secondary={
           <VStack align="stretch" gap={3}>
-            <FieldFrame label="抽出法">
-              <NativeSelect.Root size="sm">
-                <NativeSelect.Field
-                  value={method}
-                  onChange={(e) => setMethod(e.currentTarget.value as Method)}
-                >
-                  {METHOD_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
-            </FieldFrame>
+            <SelectField
+              label="抽出法"
+              options={METHOD_OPTIONS}
+              value={method}
+              onChange={(v) => setMethod(v as Method)}
+            />
             <FieldFrame label="因子数">
               <VStack align="stretch" gap={2}>
-                <RadioGroup.Root
-                  size="sm"
-                  value={mode}
-                  onValueChange={(d) => setMode(d.value as NfactorsMode)}
-                >
-                  <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                    {MODE_OPTIONS.map((opt) => (
-                      <RadioGroup.Item key={opt.value} value={opt.value}>
-                        <RadioGroup.ItemHiddenInput />
-                        <RadioGroup.ItemIndicator />
-                        <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                      </RadioGroup.Item>
-                    ))}
-                  </Flex>
-                </RadioGroup.Root>
+                <RadioChoices options={MODE_OPTIONS} value={mode} onChange={setMode} />
                 <NumberInput.Root
                   size="sm"
                   min={1}
@@ -147,72 +123,33 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) 
                     <NumberInput.IncrementTrigger />
                     <NumberInput.DecrementTrigger />
                   </NumberInput.Control>
-                  <NumberInput.Input />
+                  <NumberInput.Input aria-label="因子数" />
                 </NumberInput.Root>
               </VStack>
             </FieldFrame>
-            <FieldFrame label="回転">
-              <RadioGroup.Root
-                size="sm"
-                value={rotation}
-                onValueChange={(d) => setRotation(d.value as Rotation)}
-              >
-                <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                  {ROTATION_OPTIONS.map((opt) => (
-                    <RadioGroup.Item key={opt.value} value={opt.value}>
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                  ))}
-                </Flex>
-              </RadioGroup.Root>
-            </FieldFrame>
-            <FieldFrame label="欠測値の扱い">
-              <RadioGroup.Root
-                size="sm"
-                value={na}
-                onValueChange={(d) => setNa(d.value as NaMode)}
-              >
-                <Flex wrap="wrap" rowGap={2} columnGap={4}>
-                  {NA_OPTIONS.map((opt) => (
-                    <RadioGroup.Item key={opt.value} value={opt.value}>
-                      <RadioGroup.ItemHiddenInput />
-                      <RadioGroup.ItemIndicator />
-                      <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
-                    </RadioGroup.Item>
-                  ))}
-                </Flex>
-              </RadioGroup.Root>
-            </FieldFrame>
+            <RadioField
+              label="回転"
+              options={ROTATION_OPTIONS}
+              value={rotation}
+              onChange={setRotation}
+            />
+            <RadioField label="欠測値の扱い" options={NA_OPTIONS} value={na} onChange={setNa} />
             <FieldFrame label="表示">
-              <Checkbox.Root
-                size="sm"
+              <CheckField
+                label="因子ごとにソート"
                 checked={sortByFactor}
-                onCheckedChange={(d) => setSortByFactor(d.checked === true)}
-              >
-                <Checkbox.HiddenInput />
-                <Checkbox.Control />
-                <Checkbox.Label fontSize="sm">因子ごとにソート</Checkbox.Label>
-              </Checkbox.Root>
+                onChange={setSortByFactor}
+              />
             </FieldFrame>
           </VStack>
         }
       />
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button
-          size="sm"
-          colorPalette="blue"
-          onClick={handleSubmit}
-          loading={busy}
-          disabled={selected.length < 3 || (mode === 'fixed' && nfactors < 1)}
-        >
-          実行
-        </Button>
-      </HStack>
+      <ModalActions
+        busy={busy}
+        disabled={selected.length < 3 || (mode === 'fixed' && nfactors < 1)}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }
