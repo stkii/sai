@@ -1,6 +1,10 @@
-import { Box, Button, HStack, Input, NativeSelect, Text, VStack } from '@chakra-ui/react';
+import { SimpleGrid, Text, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import type { AnalysisOptions } from '../../../shared/types';
+import { FieldFrame } from '../../../shared/ui/FieldFrame';
+import { type Choice, NumberField, RadioField } from '../../../shared/ui/fields';
+import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
+import { ModalActions } from '../../../shared/ui/ModalActions';
 import { labelOf, type ModalProps } from '../contracts';
 
 type TestType = 't' | 'anova' | 'prop';
@@ -39,13 +43,13 @@ type PropOptions = CommonOptions & {
 
 type PowerOptions = TTestOptions | AnovaOptions | PropOptions;
 
-const TEST_TYPE_OPTIONS: { value: TestType; label: string }[] = [
+const TEST_TYPE_OPTIONS: Choice<TestType>[] = [
   { value: 't', label: 't検定' },
   { value: 'anova', label: '一元配置分散分析' },
   { value: 'prop', label: '比率の差' },
 ];
 
-const TTEST_TYPE_OPTIONS: { value: TTestOptions['ttest_type']; label: string }[] = [
+const TTEST_TYPE_OPTIONS: Choice<TTestOptions['ttest_type']>[] = [
   { value: 'one.sample', label: '1標本' },
   { value: 'two.sample', label: '2標本 (独立)' },
   { value: 'paired', label: '対応あり' },
@@ -81,36 +85,6 @@ export function formatPowerOptions(options: AnalysisOptions): string | null {
   if (o.p1 !== undefined) parts.push(`比率1: ${o.p1}`);
   if (o.p2 !== undefined) parts.push(`比率2: ${o.p2}`);
   return parts.length > 0 ? parts.join(' / ') : null;
-}
-
-function NumField({
-  label,
-  value,
-  onChange,
-  step = 'any',
-}: {
-  label: string;
-  value: number | undefined;
-  onChange: (v: number | undefined) => void;
-  step?: string;
-}) {
-  return (
-    <Box>
-      <Text fontSize="xs" mb={1} color="gray.700">
-        {label}
-      </Text>
-      <Input
-        size="sm"
-        type="number"
-        step={step}
-        value={value ?? ''}
-        onChange={(e) => {
-          const raw = e.currentTarget.value;
-          onChange(raw === '' ? undefined : Number(raw));
-        }}
-      />
-    </Box>
-  );
 }
 
 export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
@@ -169,79 +143,74 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
   }
 
   return (
-    <VStack align="stretch" gap={3}>
-      <Text fontSize="sm" color="gray.600">
-        いずれか1つの値を空欄にして残りを埋めてください。空欄の値が解として算出されます。
-      </Text>
-      <Box>
-        <Text fontSize="xs" mb={1} color="gray.700">
-          検定の種類
-        </Text>
-        <NativeSelect.Root size="sm">
-          <NativeSelect.Field
-            value={testType}
-            onChange={(e) => setTestType(e.currentTarget.value as TestType)}
-          >
-            {TEST_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
-      </Box>
-      <NumField label="有意水準 α" value={sigLevel} onChange={(v) => setSigLevel(v ?? 0.05)} />
-      <NumField label="検出力 (1−β)" value={power} onChange={setPower} />
-      <NumField label="サンプルサイズ n" value={n} onChange={setN} />
-
-      {testType === 't' && (
-        <>
-          <NumField label="効果量 (delta)" value={effectSize} onChange={setEffectSize} />
-          <Box>
-            <Text fontSize="xs" mb={1} color="gray.700">
-              t検定の種類
-            </Text>
-            <NativeSelect.Root size="sm">
-              <NativeSelect.Field
+    <VStack align="stretch" gap={4}>
+      <GoldenSplit
+        primary={
+          <FieldFrame label="検定パラメータ">
+            <VStack align="stretch" gap={3}>
+              <Text fontSize="xs" color="fg.muted">
+                いずれか1つの値を空欄にして残りを埋めてください。空欄の値が解として算出されます。
+              </Text>
+              <SimpleGrid columns={2} gap={3}>
+                <NumberField
+                  label="有意水準 α"
+                  value={sigLevel}
+                  onChange={(v) => setSigLevel(v ?? 0.05)}
+                />
+                <NumberField label="検出力 (1−β)" value={power} onChange={setPower} />
+                <NumberField label="サンプルサイズ n" value={n} onChange={setN} />
+                {testType === 't' && (
+                  <NumberField
+                    label="効果量 (delta)"
+                    value={effectSize}
+                    onChange={setEffectSize}
+                  />
+                )}
+                {testType === 'anova' && (
+                  <>
+                    <NumberField label="群数 groups" value={groups} onChange={setGroups} />
+                    <NumberField
+                      label="群間分散 between.var"
+                      value={betweenVar}
+                      onChange={setBetweenVar}
+                    />
+                    <NumberField
+                      label="群内分散 within.var"
+                      value={withinVar}
+                      onChange={setWithinVar}
+                    />
+                  </>
+                )}
+                {testType === 'prop' && (
+                  <>
+                    <NumberField label="比率1 p1" value={p1} onChange={setP1} />
+                    <NumberField label="比率2 p2" value={p2} onChange={setP2} />
+                  </>
+                )}
+              </SimpleGrid>
+            </VStack>
+          </FieldFrame>
+        }
+        secondary={
+          <VStack align="stretch" gap={3}>
+            <RadioField
+              label="検定の種類"
+              options={TEST_TYPE_OPTIONS}
+              value={testType}
+              onChange={setTestType}
+            />
+            {testType === 't' && (
+              <RadioField
+                label="t検定の種類"
+                options={TTEST_TYPE_OPTIONS}
                 value={ttestType}
-                onChange={(e) => setTtestType(e.currentTarget.value as TTestOptions['ttest_type'])}
-              >
-                {TTEST_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-          </Box>
-        </>
-      )}
-
-      {testType === 'anova' && (
-        <>
-          <NumField label="群数 groups" value={groups} onChange={setGroups} />
-          <NumField label="群間分散 between.var" value={betweenVar} onChange={setBetweenVar} />
-          <NumField label="群内分散 within.var" value={withinVar} onChange={setWithinVar} />
-        </>
-      )}
-
-      {testType === 'prop' && (
-        <>
-          <NumField label="比率1 p1" value={p1} onChange={setP1} />
-          <NumField label="比率2 p2" value={p2} onChange={setP2} />
-        </>
-      )}
-
-      <HStack justify="flex-end" gap={2}>
-        <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-          キャンセル
-        </Button>
-        <Button size="sm" colorPalette="blue" onClick={handleSubmit} loading={busy}>
-          実行
-        </Button>
-      </HStack>
+                onChange={setTtestType}
+              />
+            )}
+          </VStack>
+        }
+      />
+      <ModalActions busy={busy} onCancel={onCancel} onSubmit={handleSubmit} />
     </VStack>
   );
 }
