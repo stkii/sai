@@ -1,6 +1,6 @@
 import { Box, Button, Center, HStack, IconButton, Stack, Text, VStack } from '@chakra-ui/react';
 import { confirm } from '@tauri-apps/plugin-dialog';
-import { useState } from 'react';
+import { LuX } from 'react-icons/lu';
 import { findMethod } from '../../analysis/methods';
 import { formatTimestampShort } from '../../shared/format';
 import { type ResultEntry, useResult } from '../state/ResultContext';
@@ -16,11 +16,13 @@ function HistoryItem({
   onSelect: () => void;
   onRemove: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   const mod = findMethod(entry.method);
   const label = mod?.definition.label ?? entry.method;
   return (
     <Box
+      // 削除ボタンの表示は CSS の group hover に任せる
+      className="group"
+      colorPalette="blue"
       onClick={onSelect}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -28,46 +30,47 @@ function HistoryItem({
           onSelect();
         }
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       role="button"
       tabIndex={0}
+      aria-pressed={selected}
       borderWidth="1px"
       borderRadius="md"
-      borderColor={selected ? 'blue.400' : 'gray.200'}
-      bg={selected ? 'blue.50' : 'white'}
+      borderColor={selected ? 'colorPalette.emphasized' : 'border'}
+      bg={selected ? 'colorPalette.subtle' : 'bg.panel'}
       px={3}
       py={2}
       cursor="pointer"
       position="relative"
-      _hover={{ bg: selected ? 'blue.50' : 'gray.50' }}
+      _hover={{ bg: selected ? 'colorPalette.subtle' : 'bg.subtle' }}
     >
       <HStack justify="space-between" align="baseline">
         <Text fontSize="sm" fontWeight="bold">
           {label}
         </Text>
         <HStack gap={1} align="center">
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color="fg.muted">
             {formatTimestampShort(entry.createdAt)}
           </Text>
           <IconButton
-            aria-label="この履歴を削除"
+            aria-label={`${label}の履歴を削除`}
             size="2xs"
             variant="ghost"
-            color="gray.500"
-            visibility={hovered ? 'visible' : 'hidden'}
+            color="fg.muted"
+            opacity={0}
+            _groupHover={{ opacity: 1 }}
+            _focusVisible={{ opacity: 1 }}
+            _hover={{ color: 'fg.error', bg: 'bg.error' }}
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
             }}
-            _hover={{ color: 'red.500', bg: 'red.50' }}
           >
-            ×
+            <LuX />
           </IconButton>
         </HStack>
       </HStack>
       {entry.variables.length > 0 && (
-        <Text fontSize="xs" color="gray.600" mt={1}>
+        <Text fontSize="xs" color="fg.muted" mt={1}>
           {entry.variables.join(', ')}
         </Text>
       )}
@@ -88,13 +91,11 @@ export function HistoryPane() {
 
   if (results.length === 0) {
     return (
-      <Box height="100%" px={4} py={3}>
-        <Center height="100%">
-          <Text fontSize="sm" color="gray.400">
-            過去の分析履歴はここに表示されます
-          </Text>
-        </Center>
-      </Box>
+      <Center height="100%" px={4} py={3}>
+        <Text fontSize="sm" color="fg.subtle">
+          過去の分析履歴はここに表示されます
+        </Text>
+      </Center>
     );
   }
 
@@ -103,7 +104,7 @@ export function HistoryPane() {
   return (
     <VStack align="stretch" gap={2} px={3} py={2} height="100%">
       <HStack justify="space-between">
-        <Text fontSize="xs" color="gray.600">
+        <Text fontSize="xs" color="fg.muted">
           {results.length} 件
         </Text>
         <Button size="xs" variant="ghost" onClick={handleClearAll}>

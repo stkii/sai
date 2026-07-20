@@ -19,13 +19,13 @@ export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
       as="header"
       height="56px"
       borderBottomWidth="1px"
-      borderColor="gray.200"
-      bg="white"
+      borderColor="border"
+      bg="bg.panel"
       px={4}
     >
       <HStack height="100%" justify="space-between">
         <HStack gap={3}>
-          <Text fontWeight="bold" fontSize="lg">
+          <Text as="h1" fontWeight="bold" fontSize="lg">
             SAI
           </Text>
           <DatasetButton />
@@ -36,6 +36,7 @@ export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
             size="sm"
             variant={isAIOpen ? 'solid' : 'outline'}
             colorPalette="purple"
+            aria-pressed={isAIOpen}
             onClick={onToggleAI}
           >
             🤖 AI

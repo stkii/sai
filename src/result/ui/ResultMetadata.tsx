@@ -1,4 +1,4 @@
-import { Box, HStack, Text } from '@chakra-ui/react';
+import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { findMethod } from '../../analysis/methods';
 import { formatTimestamp } from '../../shared/format';
 import type { AnalysisOptions } from '../../shared/types';
@@ -41,35 +41,38 @@ export function ResultMetadata({ entry }: { entry: ResultEntry }) {
     ? mod.formatOptions(entry.options)
     : formatOptions(entry.options);
   return (
-    <Box borderWidth="1px" borderRadius="md" p={3} bg="gray.50">
+    <Box borderWidth="1px" borderRadius="md" borderColor="border" p={3} bg="bg.subtle">
       <HStack gap={4} wrap="wrap" align="baseline">
-        <Text fontSize="sm" fontWeight="bold">
+        <Text as="h2" fontSize="sm" fontWeight="bold">
           {label}
         </Text>
-        <Text fontSize="xs" color="gray.600">
+        <Text fontSize="xs" color="fg.muted">
           {formatTimestamp(entry.createdAt)}
         </Text>
       </HStack>
-      {entry.variables.length > 0 && (
-        <Text fontSize="xs" color="gray.700" mt={1}>
-          変数: {entry.variables.join(', ')}
-        </Text>
-      )}
-      {optionsText && (
-        <Text fontSize="xs" color="gray.700" mt={1}>
-          設定: {optionsText}
-        </Text>
-      )}
-      {entry.result.n !== undefined && (
-        <Text fontSize="xs" color="gray.700" mt={1}>
-          有効サンプルサイズ: n = {entry.result.n}
-        </Text>
-      )}
-      {entry.result.nNote && (
-        <Text fontSize="xs" color="orange.600" mt={1}>
-          {entry.result.nNote}
-        </Text>
-      )}
+      <VStack align="stretch" gap={1} mt={1}>
+        {entry.variables.length > 0 && (
+          <Text fontSize="xs" color="fg.muted">
+            変数: {entry.variables.join(', ')}
+          </Text>
+        )}
+        {optionsText && (
+          <Text fontSize="xs" color="fg.muted">
+            設定: {optionsText}
+          </Text>
+        )}
+        {entry.result.n !== undefined && (
+          <Text fontSize="xs" color="fg.muted">
+            有効サンプルサイズ: n = {entry.result.n}
+          </Text>
+        )}
+        {/* n がユーザーの期待とずれる場合の注記。誤読を防ぐため色を変える */}
+        {entry.result.nNote && (
+          <Text fontSize="xs" color="fg.warning">
+            {entry.result.nNote}
+          </Text>
+        )}
+      </VStack>
     </Box>
   );
 }

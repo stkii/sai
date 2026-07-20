@@ -8,13 +8,11 @@ export function ResultPane() {
   const { current } = useResult();
   if (!current) {
     return (
-      <Box height="100%" px={4} py={3}>
-        <Center height="100%">
-          <Text fontSize="sm" color="gray.400">
-            分析結果はここに表示されます
-          </Text>
-        </Center>
-      </Box>
+      <Center height="100%" px={4} py={3}>
+        <Text fontSize="sm" color="fg.subtle">
+          分析結果はここに表示されます
+        </Text>
+      </Center>
     );
   }
   const mod = findMethod(current.method);
@@ -25,7 +23,7 @@ export function ResultPane() {
         {mod ? (
           (mod.renderResult ?? ((r) => <SectionsView result={r} />))(current.result)
         ) : (
-          <Text fontSize="sm" color="red.500">
+          <Text fontSize="sm" color="fg.error">
             未対応のメソッド: {current.method}
           </Text>
         )}

@@ -58,10 +58,19 @@ function renderCellContent(s: string): ReactNode {
   return content;
 }
 
+/** 見出しセルとデータセルで共通の寸法・体裁。1 マスの形を黄金比に保つ */
+const CELL_BASE = {
+  fontSize: 'sm',
+  whiteSpace: 'nowrap',
+  minW: TABLE.cellMinW,
+  h: TABLE.rowHeight,
+  verticalAlign: 'middle',
+} as const;
+
 export function SectionsView({ result }: { result: AnalysisResult }) {
   if (result.sections.length === 0) {
     return (
-      <Text fontSize="sm" color="gray.500">
+      <Text fontSize="sm" color="fg.muted">
         結果が空です
       </Text>
     );
@@ -77,6 +86,7 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
             <Heading size="sm">{section.title}</Heading>
             <Box
               borderWidth="1px"
+              borderColor="border"
               borderRadius="md"
               overflow="auto"
               width="100%"
@@ -84,21 +94,18 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
             >
               <Table.Root size="sm" variant="line" width="100%">
                 <Table.Header>
-                  <Table.Row bg="gray.50">
+                  <Table.Row bg="bg.subtle">
                     {section.table.headers.map((h, j) => (
+                      // 1 列目は変数名。横スクロールしても消えないよう左に固定する
                       <Table.ColumnHeader
                         key={h}
-                        fontSize="sm"
-                        whiteSpace="nowrap"
+                        {...CELL_BASE}
                         fontWeight="bold"
-                        minW={TABLE.cellMinW}
-                        h={TABLE.rowHeight}
                         textAlign="center"
-                        verticalAlign="middle"
                         fontFamily={numericCols[j] ? 'mono' : undefined}
                         position={j === 0 ? 'sticky' : undefined}
                         left={j === 0 ? 0 : undefined}
-                        bg={j === 0 ? 'gray.50' : undefined}
+                        bg={j === 0 ? 'bg.subtle' : undefined}
                         zIndex={j === 0 ? 1 : undefined}
                       >
                         {h}
@@ -114,16 +121,12 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
                         <Table.Cell
                           // biome-ignore lint/suspicious/noArrayIndexKey: column index stable
                           key={`c-${idx}-${i}-${j}`}
-                          fontSize="sm"
-                          whiteSpace="nowrap"
-                          minW={TABLE.cellMinW}
-                          h={TABLE.rowHeight}
+                          {...CELL_BASE}
                           textAlign="right"
-                          verticalAlign="middle"
                           fontFamily={numericCols[j] ? 'mono' : undefined}
                           position={j === 0 ? 'sticky' : undefined}
                           left={j === 0 ? 0 : undefined}
-                          bg={j === 0 ? 'white' : undefined}
+                          bg={j === 0 ? 'bg.panel' : undefined}
                         >
                           {renderCellContent(cell)}
                         </Table.Cell>
@@ -134,7 +137,7 @@ export function SectionsView({ result }: { result: AnalysisResult }) {
               </Table.Root>
             </Box>
             {section.table.note && (
-              <Text fontSize="xs" color="gray.600">
+              <Text fontSize="xs" color="fg.muted">
                 {section.table.note}
               </Text>
             )}

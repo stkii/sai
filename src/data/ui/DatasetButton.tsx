@@ -80,7 +80,7 @@ export function DatasetButton() {
                     </Button>
                   ))}
                   {error && (
-                    <Text fontSize="xs" color="red.500">
+                    <Text fontSize="xs" color="fg.error">
                       {error}
                     </Text>
                   )}
@@ -92,7 +92,7 @@ export function DatasetButton() {
       </Dialog.Root>
 
       {!sheetDialogOpen && error && (
-        <Text fontSize="xs" color="red.500">
+        <Text fontSize="xs" color="fg.error">
           {error}
         </Text>
       )}
