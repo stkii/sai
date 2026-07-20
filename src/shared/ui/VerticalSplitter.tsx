@@ -1,7 +1,21 @@
 import { Box } from '@chakra-ui/react';
 import { useEffect, useRef } from 'react';
 
-export function VerticalSplitter({ onResize }: { onResize: (clientX: number) => void }) {
+/** 矢印キー 1 回あたりの移動量 (px) */
+const NUDGE_STEP = 16;
+
+interface Props {
+  /** ドラッグ中のポインタ位置 (clientX) */
+  onResize: (clientX: number) => void;
+  /** 矢印キーによる相対移動量 (px) */
+  onNudge: (delta: number) => void;
+  /** 現在の左ペイン幅と可動域。支援技術に現在値を伝えるために使う */
+  value: number;
+  min: number;
+  max: number;
+}
+
+export function VerticalSplitter({ onResize, onNudge, value, min, max }: Props) {
   const dragging = useRef(false);
 
   useEffect(() => {
@@ -30,17 +44,34 @@ export function VerticalSplitter({ onResize }: { onResize: (clientX: number) => 
     document.body.style.userSelect = 'none';
   }
 
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      onNudge(-NUDGE_STEP);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      onNudge(NUDGE_STEP);
+    }
+  }
+
   return (
     <Box
       role="separator"
       aria-orientation="vertical"
+      aria-label="データペインの幅"
+      aria-valuenow={value}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      tabIndex={0}
       width="4px"
       flexShrink={0}
       cursor="col-resize"
-      bg="gray.100"
+      bg="bg.muted"
       _hover={{ bg: 'blue.300' }}
       _active={{ bg: 'blue.400' }}
+      _focusVisible={{ bg: 'blue.400', outline: 'none' }}
       onMouseDown={onDown}
+      onKeyDown={onKeyDown}
     />
   );
 }

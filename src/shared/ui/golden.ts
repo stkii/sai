@@ -18,12 +18,16 @@ export const GOLDEN_SPLIT = { major: PHI, minor: 1 } as const;
  * フィボナッチ数列に基づくペイン幅 (px)。
  * 隣接項の比 (233 → 377 → 610) はいずれも φ に収束する「黄金の刻み」で、
  * min / default / max の各段がそのまま黄金比のステップになる。
+ *
+ * headerHeight は左ペイン見出しと中央ペイン Tabs.List の共通高さ。
+ * TABLE.rowHeight と同値で、セル 1 マス (65 ≈ 40 × φ) と同じ縦グリッドに乗る。
  */
 export const PANE = {
   dataMin: 233,
   dataDefault: 377,
   dataMax: 610,
   ai: 377,
+  headerHeight: 40,
 } as const;
 
 /**

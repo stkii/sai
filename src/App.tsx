@@ -13,6 +13,11 @@ import { PANE } from './shared/ui/golden';
 import { VerticalSplitter } from './shared/ui/VerticalSplitter';
 
 const AI_PANE_WIDTH = `${PANE.ai}px`;
+const PANE_HEADER_HEIGHT = `${PANE.headerHeight}px`;
+
+function clampPaneWidth(width: number): number {
+  return Math.max(PANE.dataMin, Math.min(PANE.dataMax, width));
+}
 
 export function App() {
   const ai = useAIChatStore();
@@ -28,12 +33,15 @@ export function App() {
 
   const handleResize = useCallback((clientX: number) => {
     const left = containerRef.current?.getBoundingClientRect().left ?? 0;
-    const next = clientX - left;
-    setDataWidth(Math.max(PANE.dataMin, Math.min(PANE.dataMax, next)));
+    setDataWidth(clampPaneWidth(clientX - left));
+  }, []);
+
+  const handleNudge = useCallback((delta: number) => {
+    setDataWidth((prev) => clampPaneWidth(prev + delta));
   }, []);
 
   return (
-    <Flex direction="column" height="100vh" width="100vw" bg="white">
+    <Flex direction="column" height="100vh" width="100vw" bg="bg">
       <Header
         isAIOpen={ai.isOpen}
         onToggleAI={ai.toggle}
@@ -46,8 +54,14 @@ export function App() {
           <DataPane />
         </Box>
 
-        {/* スプリッタ: ホバーで左右リサイズ */}
-        <VerticalSplitter onResize={handleResize} />
+        {/* スプリッタ: ドラッグ / 矢印キーで左右リサイズ */}
+        <VerticalSplitter
+          onResize={handleResize}
+          onNudge={handleNudge}
+          value={dataWidth}
+          min={PANE.dataMin}
+          max={PANE.dataMax}
+        />
 
         {/* 中央ペイン: 結果 / 履歴タブ */}
         <Box flex={1} minWidth={0}>
@@ -58,8 +72,8 @@ export function App() {
             display="flex"
             flexDirection="column"
           >
-            {/* 高さは左ペインの「データ」見出し (40px) と揃え、下線を一直線にする */}
-            <Tabs.List px={2} h="40px">
+            {/* 高さは左ペインの「データ」見出しと揃え、下線を一直線にする */}
+            <Tabs.List px={2} h={PANE_HEADER_HEIGHT}>
               <Tabs.Trigger value="result">結果</Tabs.Trigger>
               <Tabs.Trigger value="history">履歴</Tabs.Trigger>
             </Tabs.List>
