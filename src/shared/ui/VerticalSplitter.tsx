@@ -63,13 +63,19 @@ export function VerticalSplitter({ onResize, onNudge, value, min, max }: Props) 
       aria-valuemin={min}
       aria-valuemax={max}
       tabIndex={0}
+      colorPalette="blue"
       width="4px"
       flexShrink={0}
       cursor="col-resize"
       bg="bg.muted"
-      _hover={{ bg: 'blue.300' }}
-      _active={{ bg: 'blue.400' }}
-      _focusVisible={{ bg: 'blue.400', outline: 'none' }}
+      _hover={{ bg: 'colorPalette.emphasized' }}
+      _active={{ bg: 'colorPalette.solid' }}
+      _focusVisible={{
+        bg: 'colorPalette.solid',
+        outline: '2px solid',
+        outlineColor: 'colorPalette.focusRing',
+        outlineOffset: '1px',
+      }}
       onMouseDown={onDown}
       onKeyDown={onKeyDown}
     />

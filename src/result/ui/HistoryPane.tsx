@@ -1,4 +1,14 @@
-import { Box, Button, Center, HStack, IconButton, Stack, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Center,
+  chakra,
+  HStack,
+  IconButton,
+  Stack,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import { confirm } from '@tauri-apps/plugin-dialog';
 import { LuX } from 'react-icons/lu';
 import { findMethod } from '../../analysis/methods';
@@ -23,30 +33,37 @@ function HistoryItem({
       // 削除ボタンの表示は CSS の group hover に任せる
       className="group"
       colorPalette="blue"
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
       borderWidth="1px"
       borderRadius="md"
       borderColor={selected ? 'colorPalette.emphasized' : 'border'}
       bg={selected ? 'colorPalette.subtle' : 'bg.panel'}
       px={3}
       py={2}
-      cursor="pointer"
       position="relative"
       _hover={{ bg: selected ? 'colorPalette.subtle' : 'bg.subtle' }}
     >
       <HStack justify="space-between" align="baseline">
-        <Text fontSize="sm" fontWeight="bold">
+        {/* ::after をカード全面に広げてクリック領域にする (ボタンのネストを避ける) */}
+        <chakra.button
+          type="button"
+          onClick={onSelect}
+          aria-current={selected ? 'true' : undefined}
+          fontSize="sm"
+          fontWeight="bold"
+          textAlign="left"
+          cursor="pointer"
+          _after={{ content: '""', position: 'absolute', inset: 0, borderRadius: 'md' }}
+          _focusVisible={{
+            outline: 'none',
+            _after: {
+              outline: '2px solid',
+              outlineColor: 'colorPalette.focusRing',
+              outlineOffset: '1px',
+            },
+          }}
+        >
           {label}
-        </Text>
+        </chakra.button>
         <HStack gap={1} align="center">
           <Text fontSize="xs" color="fg.muted">
             {formatTimestampShort(entry.createdAt)}
@@ -56,14 +73,13 @@ function HistoryItem({
             size="2xs"
             variant="ghost"
             color="fg.muted"
+            position="relative"
+            zIndex={1}
             opacity={0}
             _groupHover={{ opacity: 1 }}
             _focusVisible={{ opacity: 1 }}
             _hover={{ color: 'fg.error', bg: 'bg.error' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
+            onClick={onRemove}
           >
             <LuX />
           </IconButton>

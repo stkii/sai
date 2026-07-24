@@ -139,7 +139,7 @@ interface NumberFieldProps {
   step?: string;
 }
 
-/** 空欄を undefined として扱う数値入力。 */
+/** 空欄を undefined として扱う数値入力。NumberInput は制御値 (number) との往復で "0." など小数の途中入力が消えるため、素の input[type=number] を使う。 */
 export function NumberField({ label, value, onChange, step = 'any' }: NumberFieldProps) {
   return (
     <LabeledField label={label}>

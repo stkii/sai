@@ -1,4 +1,4 @@
-import { Box, Button, HStack, Text } from '@chakra-ui/react';
+import { Box, Button, Heading, HStack } from '@chakra-ui/react';
 import { MethodSelector } from './analysis/ui/MethodSelector';
 import { useDataset } from './data/state/DatasetContext';
 import { DatasetButton } from './data/ui/DatasetButton';
@@ -25,9 +25,9 @@ export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
     >
       <HStack height="100%" justify="space-between">
         <HStack gap={3}>
-          <Text as="h1" fontWeight="bold" fontSize="lg">
+          <Heading as="h1" size="lg" fontWeight="bold">
             SAI
-          </Text>
+          </Heading>
           <DatasetButton />
           <MethodSelector hasDataset={hasDataset} onSelect={onSelectMethod} />
         </HStack>
@@ -39,7 +39,7 @@ export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
             aria-pressed={isAIOpen}
             onClick={onToggleAI}
           >
-            🤖 AI
+            <span aria-hidden="true">🤖 </span>AI
           </Button>
           <Button size="sm" variant="ghost" disabled>
             設定

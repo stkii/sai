@@ -1,4 +1,4 @@
-import { Box, HStack, Text, VStack } from '@chakra-ui/react';
+import { Box, Heading, HStack, Text, VStack } from '@chakra-ui/react';
 import { findMethod } from '../../analysis/methods';
 import { formatTimestamp } from '../../shared/format';
 import type { AnalysisOptions } from '../../shared/types';
@@ -43,9 +43,9 @@ export function ResultMetadata({ entry }: { entry: ResultEntry }) {
   return (
     <Box borderWidth="1px" borderRadius="md" borderColor="border" p={3} bg="bg.subtle">
       <HStack gap={4} wrap="wrap" align="baseline">
-        <Text as="h2" fontSize="sm" fontWeight="bold">
+        <Heading as="h2" size="sm" fontWeight="bold">
           {label}
-        </Text>
+        </Heading>
         <Text fontSize="xs" color="fg.muted">
           {formatTimestamp(entry.createdAt)}
         </Text>

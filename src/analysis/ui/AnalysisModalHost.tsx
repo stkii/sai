@@ -1,4 +1,4 @@
-import { Dialog, Portal, Text } from '@chakra-ui/react';
+import { CloseButton, Dialog, Portal, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useDataset } from '../../data/state/DatasetContext';
 import { useResult } from '../../result/state/ResultContext';
@@ -51,6 +51,9 @@ export function AnalysisModalHost({ method, onClose }: Props) {
             <Dialog.Header>
               <Dialog.Title>{mod?.definition.label}</Dialog.Title>
             </Dialog.Header>
+            <Dialog.CloseTrigger asChild>
+              <CloseButton size="sm" disabled={busy} />
+            </Dialog.CloseTrigger>
             <Dialog.Body>
               {mod ? (
                 <>

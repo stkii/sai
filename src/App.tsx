@@ -10,6 +10,7 @@ import { HistoryPane } from './result/ui/HistoryPane';
 import { ResultPane } from './result/ui/ResultPane';
 import type { Method } from './shared/types';
 import { PANE } from './shared/ui/golden';
+import { Toaster } from './shared/ui/toaster';
 import { VerticalSplitter } from './shared/ui/VerticalSplitter';
 
 const AI_PANE_WIDTH = `${PANE.ai}px`;
@@ -87,11 +88,13 @@ export function App() {
         </Box>
 
         {/* 右ペイン: AI チャット (オンデマンド・スライドイン) */}
+        {/* inert で閉時のフォーカス・支援技術からの到達を遮断する (width 0 だけでは残る) */}
         <Box
           width={ai.isOpen ? AI_PANE_WIDTH : '0'}
           flexShrink={0}
           overflow="hidden"
           transition="width 0.2s ease"
+          inert={!ai.isOpen}
         >
           <Box width={AI_PANE_WIDTH} height="100%">
             <ChatPane onClose={ai.close} />
@@ -100,6 +103,7 @@ export function App() {
       </Flex>
 
       <AnalysisModalHost method={activeMethod} onClose={() => setActiveMethod(null)} />
+      <Toaster />
     </Flex>
   );
 }

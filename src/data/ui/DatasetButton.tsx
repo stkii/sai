@@ -1,5 +1,6 @@
-import { Button, Dialog, Portal, Stack, Text } from '@chakra-ui/react';
+import { Button, CloseButton, Dialog, Portal, Stack, Text } from '@chakra-ui/react';
 import { useState } from 'react';
+import { toaster } from '../../shared/ui/toaster';
 import { type LoadResult, loadFile, pickFile } from '../loadFile';
 import { useDataset } from '../state/DatasetContext';
 
@@ -19,7 +20,6 @@ export function DatasetButton() {
   }
 
   async function handlePick() {
-    setError(null);
     setBusy(true);
     try {
       const path = await pickFile();
@@ -27,7 +27,13 @@ export function DatasetButton() {
       const result = await loadFile(path);
       handleResult(result);
     } catch (e) {
-      setError(String(e));
+      // ダイアログ外のエラーはヘッダにインライン表示せずトーストで通知する
+      toaster.create({
+        type: 'error',
+        title: 'データセットを開けませんでした',
+        description: String(e),
+        meta: { closable: true },
+      });
     } finally {
       setBusy(false);
     }
@@ -57,7 +63,12 @@ export function DatasetButton() {
 
       <Dialog.Root
         open={sheetDialogOpen}
-        onOpenChange={(d) => !d.open && !busy && setPending(null)}
+        onOpenChange={(d) => {
+          if (!d.open && !busy) {
+            setPending(null);
+            setError(null);
+          }
+        }}
       >
         <Portal>
           <Dialog.Backdrop />
@@ -66,6 +77,9 @@ export function DatasetButton() {
               <Dialog.Header>
                 <Dialog.Title>シートを選択</Dialog.Title>
               </Dialog.Header>
+              <Dialog.CloseTrigger asChild>
+                <CloseButton size="sm" disabled={busy} />
+              </Dialog.CloseTrigger>
               <Dialog.Body>
                 <Stack gap={2}>
                   {pending?.sheets.map((s) => (
@@ -80,7 +94,7 @@ export function DatasetButton() {
                     </Button>
                   ))}
                   {error && (
-                    <Text fontSize="xs" color="fg.error">
+                    <Text fontSize="xs" color="fg.error" role="alert">
                       {error}
                     </Text>
                   )}
@@ -90,12 +104,6 @@ export function DatasetButton() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
-
-      {!sheetDialogOpen && error && (
-        <Text fontSize="xs" color="fg.error">
-          {error}
-        </Text>
-      )}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { Box, Center, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
+import { Box, Center, Heading, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { LuX } from 'react-icons/lu';
 
 interface Props {
@@ -10,9 +10,9 @@ export function ChatPane({ onClose }: Props) {
     <Box height="100%" bg="bg.panel" borderLeftWidth="1px" borderColor="border">
       <VStack height="100%" align="stretch" gap={0}>
         <HStack px={3} py={2} borderBottomWidth="1px" borderColor="border" justify="space-between">
-          <Text as="h2" fontSize="sm" fontWeight="semibold">
-            🤖 AI チャット
-          </Text>
+          <Heading as="h2" size="sm" fontWeight="semibold">
+            <span aria-hidden="true">🤖 </span>AI チャット
+          </Heading>
           <IconButton aria-label="AI チャットを閉じる" size="xs" variant="ghost" onClick={onClose}>
             <LuX />
           </IconButton>

@@ -1,4 +1,4 @@
-import { Box, Center, HStack, Text, VStack } from '@chakra-ui/react';
+import { Box, Center, Heading, HStack, Text, VStack } from '@chakra-ui/react';
 import { PANE } from '../../shared/ui/golden';
 import { useDataset } from '../state/DatasetContext';
 import { DataPreview } from './DataPreview';
@@ -17,9 +17,9 @@ export function DataPane() {
           borderColor="border"
           bg="bg.panel"
         >
-          <Text as="h2" fontSize="sm" fontWeight="semibold">
+          <Heading as="h2" size="sm" fontWeight="semibold">
             データ
-          </Text>
+          </Heading>
         </HStack>
         {summary ? (
           <DataPreview summary={summary} />
