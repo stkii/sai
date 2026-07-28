@@ -16,9 +16,13 @@ interface ReliabilityOptions {
 
 const COEFFICIENT_OPTIONS: Choice<ReliabilityCoefficient>[] = [
   { value: 'alpha', label: 'Cronbachのα' },
-  // ω係数は R 層が未実装のため選択不可 (導入時に disabled を外す)
-  { value: 'omega', label: 'McDonaldのω (未対応)', disabled: true },
+  { value: 'omega', label: 'McDonaldのω' },
 ];
+
+/** ω は単一因子モデルの識別に3項目を要する (α は2項目から算出できる)。 */
+function minItemsFor(coefficient: ReliabilityCoefficient): number {
+  return coefficient === 'omega' ? 3 : 2;
+}
 
 export function formatReliabilityOptions(options: AnalysisOptions): string | null {
   const o = options as Partial<ReliabilityOptions>;
@@ -28,9 +32,10 @@ export function formatReliabilityOptions(options: AnalysisOptions): string | nul
 export function ReliabilityModal({ headers, busy, onCancel, onExecute }: ModalProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [coefficient, setCoefficient] = useState<ReliabilityCoefficient>('alpha');
+  const minItems = minItemsFor(coefficient);
 
   function handleSubmit() {
-    if (selected.length < 2) return;
+    if (selected.length < minItems) return;
     onExecute(selected, { coefficient } satisfies ReliabilityOptions);
   }
 
@@ -38,7 +43,7 @@ export function ReliabilityModal({ headers, busy, onCancel, onExecute }: ModalPr
     <VStack align="stretch" gap={4}>
       <GoldenSplit
         primary={
-          <FieldFrame label="尺度を構成する項目 (2つ以上)">
+          <FieldFrame label={`尺度を構成する項目 (${minItems}つ以上)`}>
             <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
           </FieldFrame>
         }
@@ -53,7 +58,7 @@ export function ReliabilityModal({ headers, busy, onCancel, onExecute }: ModalPr
       />
       <ModalActions
         busy={busy}
-        disabled={selected.length < 2}
+        disabled={selected.length < minItems}
         onCancel={onCancel}
         onSubmit={handleSubmit}
       />
