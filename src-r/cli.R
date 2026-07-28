@@ -9,7 +9,7 @@
 # 自動インストールは行わない (renv の lockfile と実環境を silent に乖離させ
 # ないため)。各メソッド側では個別の requireNamespace チェックを持たず、
 # 利用は `pkg::fn()` の namespaced 呼び出しで統一する。
-REQUIRED_PACKAGES <- c("jsonlite", "EFAtools")
+REQUIRED_PACKAGES <- c("jsonlite", "EFAtools", "psych")
 
 suppressPackageStartupMessages({
   missing <- REQUIRED_PACKAGES[!vapply(REQUIRED_PACKAGES, requireNamespace, logical(1), quietly = TRUE)]
