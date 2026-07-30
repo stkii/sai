@@ -145,6 +145,24 @@ test_that("値が一定の項目は psych の英語エラーではなく明示�
   expect_error(RunReliability(df, list(coefficient = "omega")), "値が一定の項目")
 })
 
+test_that("負相関の項目を黙って逆転せず、削除時ω が当該項目を名指しする", {
+  df <- make_congeneric_data()
+  clean <- sai_cell_num(
+    RunReliability(df, list(coefficient = "omega"))$sections[[1]]$table$rows[[1]][[2]]
+  )
+
+  # i3 の逆転処理を忘れた状態。psych の既定 flip = TRUE はこれを自動逆転し、
+  # 逆転処理済みのデータと同一の ω を返して利用者の誤りを不可視化する。
+  df$i3 <- -df$i3
+  res <- RunReliability(df, list(coefficient = "omega"))
+  omega <- sai_cell_num(res$sections[[1]]$table$rows[[1]][[2]])
+  expect_lt(omega, clean)
+
+  # 全体を上回る削除時ω は i3 のみ = 外すべき項目として名指しされる
+  deleted <- vapply(res$sections[[2]]$table$rows, function(r) sai_cell_num(r[[2]]), numeric(1))
+  expect_equal(colnames(df)[deleted > omega], "i3")
+})
+
 test_that("係数の指定でラベルと n_note が切り替わる", {
   df <- make_congeneric_data()
   df$i1[1] <- NA

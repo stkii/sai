@@ -12,8 +12,9 @@
 .OmegaTotal <- function(df) {
   # nfactors = 1 の単一因子 (congeneric) モデル。psych の既定 3 は項目数が少ないと
   # 破綻する (k = 2 でエラー、k = 3-4 で ω_h がほぼ 0) ため使わない。
+  # flip = FALSE: 負荷が負の項目を psych に自動逆転させない (.Reliability の check.keys と対)。
   suppressWarnings(suppressMessages(
-    psych::omega(df, nfactors = 1, plot = FALSE)
+    psych::omega(df, nfactors = 1, plot = FALSE, flip = FALSE)
   ))$omega.tot
 }
 
