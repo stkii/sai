@@ -9,7 +9,7 @@ SAI のゼロベース設計。GUI 統計分析ツールに必要十分な構造
 ## 設計の出発点
 
 ### ユーザー機能
-1. ファイル読込 (CSV/XLSX/XLS)
+1. ファイル読込 (CSV/XLSX/XLS/SAV)
 2. クリック操作のみで分析実行 (記述統計・相関・回帰・因子・信頼性・分散分析・検出力分析)
 3. 分析結果の表示
 4. 過去の分析履歴の参照
@@ -264,7 +264,7 @@ src-tauri/src/
 │
 ├── infra/                        # 外部システム統合
 │   ├── r/                        # R サブプロセス (runner.rs)
-│   ├── reader/                   # ファイル読込 (csv.rs, excel.rs)
+│   ├── reader/                   # ファイル読込 (csv.rs, excel.rs, spss.rs)
 │   ├── cache/                    # データセットキャッシュ (in-memory)
 │   └── store/                    # 永続ストア
 │       └── history_store.rs      # JSONL append-only
@@ -316,8 +316,9 @@ flowchart TD
 ### Backend 設計の補足
 
 #### データセット読込の検証
-- 対応形式 (CSV/XLSX/XLS) の判定は `services/dataset.rs` の `FileKind` が**唯一の真実**。フロントは拡張子を解釈せず、`get_sheets` が空リストを返すか否かでシート選択の要否を判断する
+- 対応形式 (CSV/XLSX/XLS/SAV) の判定は `services/dataset.rs` の `FileKind` が**唯一の真実**。フロントは拡張子を解釈せず、`get_sheets` が空リストを返すか否かでシート選択の要否を判断する
 - Excel は `open_workbook_auto` でファイル内容から形式を判別する (.xlsx / .xls の両対応)
+- SPSS (.sav) は Rust では読まず、`infra/reader/spss.rs` の `SavReader` が R (`read_sav.R` → `haven::read_spss`) に委譲する。R サブプロセスの配管 (`run_rscript`) は分析用の `RRunner` と共有
 - 列名の空・重複は読み込み時に fail-fast で拒否する。列の射影が名前の先頭一致で行われるため、重複を許すと選択した列と異なる列が silent に分析される (ダークパターン禁止規約)
 
 #### R 実行のタイムアウト
@@ -347,7 +348,8 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
 
 ```
 src-r/
-├── cli.R                     # Rust から Rscript で起動されるエントリ
+├── cli.R                     # Rust から Rscript で起動される分析エントリ
+├── read_sav.R                # SPSS (.sav) → ParsedTable 互換 JSON の読込エントリ
 ├── R/
 │   ├── common.R              # 共通ヘルパ (JSON I/O・df 変換・数値整形・n_note 生成)
 │   ├── describe.R
@@ -362,7 +364,13 @@ src-r/
 └── tests/                    # 後述
 ```
 
-外部パッケージは `jsonlite` (JSON I/O) と `EFAtools` (因子分析) のみ。検出力分析は base R の `stats::power.t.test` / `power.anova.test` / `power.prop.test` を使い、追加依存を持たない。
+外部パッケージは `jsonlite` (JSON I/O)・`EFAtools` (因子分析)・`psych` (記述統計・信頼性)・`haven` (SPSS 読込)。検出力分析は base R の `stats::power.t.test` / `power.anova.test` / `power.prop.test` を使い、追加依存を持たない。
+
+### read_sav.R の責務
+
+1. `input.json` (`{ path }`) を読み、`haven::read_spss()` で .sav を読み込む
+2. 値ラベル (例: 1=男, 2=女) は剥がして**基底のコード値を保持**する。ラベル文字列へ置換すると数値系の分析対象から外れ、SPSS 上の結果と乖離するため。ユーザー欠損値は read_spss の既定で NA になる
+3. 全セルを文字列化 (数値は丸め・指数表記なし、NA は空文字) し、`{ headers, rows }` を `output.json` へ書く。行は名前なし配列で Rust の `ParsedTable` と互換
 
 ### cli.R の責務
 
@@ -406,7 +414,8 @@ src-r/tests/
 │   ├── helper-sai.R          # R/*.R の source・セル値パーサ・cli.R 実行ヘルパ
 │   ├── test-common.R         # common.R の共通ヘルパ (整形・注記生成など)
 │   ├── test-<method>.R       # Run<Method> を直接呼ぶ関数テスト (メソッドごとに1ファイル)
-│   └── test-cli.R            # cli.R を Rscript で起動する E2E (配管のみ薄く検証)
+│   ├── test-cli.R            # cli.R を Rscript で起動する E2E (配管のみ薄く検証)
+│   └── test-read-sav.R       # read_sav.R を Rscript で起動する E2E (.sav → JSON 変換規約)
 └── fixtures/cli/             # test-cli.R 用の入力 JSON
 ```
 

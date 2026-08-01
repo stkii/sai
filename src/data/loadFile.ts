@@ -9,7 +9,7 @@ export type LoadResult =
 export async function pickFile(): Promise<string | null> {
   const selected = await open({
     multiple: false,
-    filters: [{ name: 'Data files', extensions: ['csv', 'xlsx', 'xls'] }],
+    filters: [{ name: 'Data files', extensions: ['csv', 'xlsx', 'xls', 'sav'] }],
   });
   if (selected === null) return null;
   return typeof selected === 'string' ? selected : null;

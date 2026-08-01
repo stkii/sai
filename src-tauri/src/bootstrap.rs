@@ -4,8 +4,9 @@ use std::sync::Arc;
 use crate::infra::cache::dataset_cache::DatasetCache;
 use crate::infra::r::runner::{
     RRunner,
-    default_cli_path,
+    default_script_path,
 };
+use crate::infra::reader::spss::SavReader;
 use crate::infra::store::history_store::HistoryStore;
 use crate::services::analysis::AnalysisService;
 use crate::services::dataset::DatasetService;
@@ -21,8 +22,9 @@ impl AppState {
     pub fn new(history_path: PathBuf) -> Self {
         let cache = Arc::new(DatasetCache::new());
         let history_store = Arc::new(HistoryStore::new(history_path));
-        Self { dataset: DatasetService::new(cache.clone()),
-               analysis: AnalysisService::new(cache, RRunner::new(default_cli_path())),
+        Self { dataset: DatasetService::new(cache.clone(),
+                                            SavReader::new(default_script_path("read_sav.R"))),
+               analysis: AnalysisService::new(cache, RRunner::new(default_script_path("cli.R"))),
                history: HistoryService::new(history_store) }
     }
 }

@@ -5,6 +5,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::infra::cache::dataset_cache::DatasetCache;
+use crate::infra::reader::spss::SavReader;
 use crate::infra::reader::{
     csv as csv_reader,
     excel as excel_reader,
@@ -19,6 +20,7 @@ use crate::models::{
 enum FileKind {
     Csv,
     Excel,
+    Sav,
 }
 
 impl FileKind {
@@ -29,6 +31,7 @@ impl FileKind {
         match ext.as_deref() {
             Some("csv") => Ok(Self::Csv),
             Some("xlsx") | Some("xls") => Ok(Self::Excel),
+            Some("sav") => Ok(Self::Sav),
             other => Err(format!("未対応のファイル形式: {other:?}")),
         }
     }
@@ -36,19 +39,22 @@ impl FileKind {
 
 pub struct DatasetService {
     cache: Arc<DatasetCache>,
+    sav_reader: SavReader,
 }
 
 impl DatasetService {
-    pub fn new(cache: Arc<DatasetCache>) -> Self {
-        Self { cache }
+    pub fn new(cache: Arc<DatasetCache>,
+               sav_reader: SavReader)
+               -> Self {
+        Self { cache, sav_reader }
     }
 
     pub fn get_sheets(&self,
                       path: &Path)
                       -> Result<Vec<String>, String> {
         match FileKind::from_path(path)? {
-            // CSV にシート概念はない。空リストが「シート選択不要」の合図
-            FileKind::Csv => Ok(Vec::new()),
+            // CSV / SAV にシート概念はない。空リストが「シート選択不要」の合図
+            FileKind::Csv | FileKind::Sav => Ok(Vec::new()),
             FileKind::Excel => excel_reader::get_sheet_names(path),
         }
     }
@@ -79,6 +85,7 @@ impl DatasetService {
                 let sheet_name = sheet.ok_or_else(|| "Excel ファイルにはシート名が必要です".to_string())?;
                 excel_reader::read_excel(path, &sheet_name)
             },
+            FileKind::Sav => self.sav_reader.read(path),
         }
     }
 }
