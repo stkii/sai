@@ -12,29 +12,41 @@ interface Props {
 }
 
 export function AnalysisModalHost({ method, onClose }: Props) {
-  const { summary } = useDataset();
+  const { dataset } = useDataset();
   const { addResult } = useResult();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 実行エラーを次に開いたモーダルへ持ち越さないよう、閉じる時に必ず消す
+  function handleClose() {
+    setError(null);
+    onClose();
+  }
+
   const mod = method ? findMethod(method) : undefined;
   const requiresDataset = mod?.definition.requiresDataset !== false;
-  const open = Boolean(method && mod && (!requiresDataset || summary));
+  const open = Boolean(method && mod && (!requiresDataset || dataset));
 
   async function handleExecute(variables: string[], options: Record<string, unknown>) {
     if (!method || !mod) return;
-    if (requiresDataset && !summary) return;
+    if (requiresDataset && !dataset) return;
     setBusy(true);
     setError(null);
     try {
       const result = await runAnalysis({
-        datasetKey: requiresDataset && summary ? summary.key : null,
+        datasetKey: requiresDataset && dataset ? dataset.key : null,
         method,
         variables,
         options,
       });
-      addResult({ method, variables, options, result });
-      onClose();
+      addResult({
+        method,
+        variables,
+        options,
+        result,
+        persist: mod.definition.persistHistory !== false,
+      });
+      handleClose();
     } catch (e) {
       setError(String(e));
     } finally {
@@ -43,7 +55,7 @@ export function AnalysisModalHost({ method, onClose }: Props) {
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(d) => !d.open && !busy && onClose()}>
+    <Dialog.Root open={open} onOpenChange={(d) => !d.open && !busy && handleClose()}>
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -58,9 +70,9 @@ export function AnalysisModalHost({ method, onClose }: Props) {
               {mod ? (
                 <>
                   {mod.renderModal({
-                    headers: summary?.headers ?? [],
+                    headers: dataset?.headers ?? [],
                     busy,
-                    onCancel: onClose,
+                    onCancel: handleClose,
                     onExecute: handleExecute,
                   })}
                   {error && (

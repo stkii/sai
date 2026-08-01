@@ -1,9 +1,9 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { getSheets, loadDataset } from '../shared/ipc/dataset';
-import type { DatasetSummary } from '../shared/types';
+import type { LoadedDataset } from '../shared/types';
 
 export type LoadResult =
-  | { kind: 'loaded'; summary: DatasetSummary }
+  | { kind: 'loaded'; dataset: LoadedDataset }
   | { kind: 'sheet-required'; path: string; sheets: string[] };
 
 export async function pickFile(): Promise<string | null> {
@@ -16,22 +16,17 @@ export async function pickFile(): Promise<string | null> {
 }
 
 export async function loadFile(path: string, sheet?: string): Promise<LoadResult> {
-  const ext = path.split('.').pop()?.toLowerCase();
-
-  if (ext === 'csv') {
-    const summary = await loadDataset(path);
-    return { kind: 'loaded', summary };
-  }
-
   if (sheet) {
-    const summary = await loadDataset(path, sheet);
-    return { kind: 'loaded', summary };
+    return { kind: 'loaded', dataset: await loadDataset(path, sheet) };
   }
 
+  // どの形式にシート選択が要るかは Rust 側だけが知る。ここでは拡張子を解釈しない
   const sheets = await getSheets(path);
+  if (sheets.length === 0) {
+    return { kind: 'loaded', dataset: await loadDataset(path) };
+  }
   if (sheets.length === 1) {
-    const summary = await loadDataset(path, sheets[0]);
-    return { kind: 'loaded', summary };
+    return { kind: 'loaded', dataset: await loadDataset(path, sheets[0]) };
   }
   return { kind: 'sheet-required', path, sheets };
 }

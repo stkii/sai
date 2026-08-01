@@ -29,7 +29,8 @@ export interface AnalysisResult {
   nNote?: string;
 }
 
-export interface DatasetSummary {
+/** 読み込み済みデータセットの全体。プレビュー表示のため全行を含む。 */
+export interface LoadedDataset {
   key: string;
   headers: string[];
   rows: string[][];

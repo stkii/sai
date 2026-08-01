@@ -1,13 +1,13 @@
 import { Text, VStack } from '@chakra-ui/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { type CSSProperties, memo, useCallback, useRef } from 'react';
-import type { DatasetSummary } from '../../shared/types';
+import type { LoadedDataset } from '../../shared/types';
 
 // スタイルは Chakra props ではなくモジュール定数の inline style で持つ。
 // 仮想スクロール中にセルごとの emotion スタイル生成を走らせないため。
 
 interface Props {
-  summary: DatasetSummary;
+  dataset: LoadedDataset;
 }
 
 const ROW_HEIGHT = 37;
@@ -133,18 +133,18 @@ const Row = memo(function Row({ rowNumber, row, top, height, totalWidth }: RowPr
   );
 });
 
-export function DataPreview({ summary }: Props) {
+export function DataPreview({ dataset }: Props) {
   const parentRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => parentRef.current, []);
 
   const rowVirtualizer = useVirtualizer({
-    count: summary.rows.length,
+    count: dataset.rows.length,
     getScrollElement,
     estimateSize: () => ROW_HEIGHT,
     overscan: 8,
   });
 
-  const colCount = summary.headers.length;
+  const colCount = dataset.headers.length;
   const totalWidth = ROW_NUM_WIDTH + colCount * COL_WIDTH;
   const totalHeight = rowVirtualizer.getTotalSize();
   const virtualItems = rowVirtualizer.getVirtualItems();
@@ -152,7 +152,7 @@ export function DataPreview({ summary }: Props) {
   return (
     <VStack align="stretch" gap={2} px={3} py={2} flex={1} overflow="hidden" minHeight={0}>
       <Text fontSize="xs" color="fg.muted">
-        {summary.rows.length.toLocaleString()} 行 × {colCount} 列
+        {dataset.rows.length.toLocaleString()} 行 × {colCount} 列
       </Text>
       <div
         ref={parentRef}
@@ -167,7 +167,7 @@ export function DataPreview({ summary }: Props) {
       >
         <table
           aria-label="データセットのプレビュー"
-          aria-rowcount={summary.rows.length + 1}
+          aria-rowcount={dataset.rows.length + 1}
           aria-colcount={colCount + 1}
           style={{
             width: `${totalWidth}px`,
@@ -181,7 +181,7 @@ export function DataPreview({ summary }: Props) {
               <th scope="col" style={cornerCellStyle}>
                 #
               </th>
-              {summary.headers.map((h) => (
+              {dataset.headers.map((h) => (
                 <th scope="col" key={h} style={headerCellStyle}>
                   {h}
                 </th>
@@ -193,7 +193,7 @@ export function DataPreview({ summary }: Props) {
               <Row
                 key={virtualRow.key}
                 rowNumber={virtualRow.index + 1}
-                row={summary.rows[virtualRow.index]}
+                row={dataset.rows[virtualRow.index]}
                 top={virtualRow.start}
                 height={virtualRow.size}
                 totalWidth={totalWidth}
