@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use tauri::State;
 
 use crate::bootstrap::AppState;
-use crate::models::DatasetSummary;
+use crate::models::LoadedDataset;
 
 #[tauri::command]
 pub fn get_sheets(path: String,
@@ -16,6 +16,6 @@ pub fn get_sheets(path: String,
 pub fn load_dataset(path: String,
                     sheet: Option<String>,
                     state: State<'_, AppState>)
-                    -> Result<DatasetSummary, String> {
+                    -> Result<LoadedDataset, String> {
     state.dataset.load(&PathBuf::from(path), sheet)
 }
