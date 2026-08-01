@@ -149,7 +149,8 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
           <FieldFrame label="検定パラメータ">
             <VStack align="stretch" gap={3}>
               <Text fontSize="xs" color="fg.muted">
-                いずれか1つの値を空欄にして残りを埋めてください。空欄の値が解として算出されます。
+                有意水準 α は常に指定します (空欄にすると既定値 0.05 に戻ります)。α
+                以外の項目のうち、求めたい値1つだけを空欄にしてください。空欄の値が解として算出されます。
               </Text>
               <SimpleGrid columns={2} gap={3}>
                 <NumberField
