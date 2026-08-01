@@ -11,9 +11,6 @@ pub fn run_analysis(dataset_key: Option<String>,
                     options: Option<Value>,
                     state: State<'_, AppState>)
                     -> Result<AnalysisResult, String> {
-    state.analysis.run(&state.cache,
-                       dataset_key.as_deref(),
-                       &method,
-                       &variables,
-                       options.unwrap_or(Value::Null))
+    state.analysis
+         .run(dataset_key.as_deref(), &method, &variables, options)
 }

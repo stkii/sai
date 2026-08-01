@@ -1,10 +1,15 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
 use crate::models::ParsedTable;
 
+// 値を Arc で持ち、get はポインタのクローンだけを返す。
+// 分析のたびに全行を深いコピーしないため。
 pub struct DatasetCache {
-    inner: Mutex<HashMap<String, ParsedTable>>,
+    inner: Mutex<HashMap<String, Arc<ParsedTable>>>,
 }
 
 impl DatasetCache {
@@ -15,12 +20,12 @@ impl DatasetCache {
     pub fn insert(&self,
                   key: String,
                   table: ParsedTable) {
-        self.inner.lock().unwrap().insert(key, table);
+        self.inner.lock().unwrap().insert(key, Arc::new(table));
     }
 
     pub fn get(&self,
                key: &str)
-               -> Option<ParsedTable> {
+               -> Option<Arc<ParsedTable>> {
         self.inner.lock().unwrap().get(key).cloned()
     }
 
