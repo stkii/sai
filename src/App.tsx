@@ -1,6 +1,6 @@
 import { Box, Flex, Tabs } from '@chakra-ui/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAIChatStore } from './ai/state/useAIChatStore';
+import { useAIPaneState } from './ai/state/useAIPaneState';
 import { ChatPane } from './ai/ui/ChatPane';
 import { AnalysisModalHost } from './analysis/ui/AnalysisModalHost';
 import { DataPane } from './data/ui/DataPane';
@@ -21,7 +21,7 @@ function clampPaneWidth(width: number): number {
 }
 
 export function App() {
-  const ai = useAIChatStore();
+  const ai = useAIPaneState();
   const { currentId } = useResult();
   const [activeMethod, setActiveMethod] = useState<Method | null>(null);
   const [activeTab, setActiveTab] = useState<'result' | 'history'>('result');
