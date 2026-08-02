@@ -1,17 +1,18 @@
 import { Text, VStack } from '@chakra-ui/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { type CSSProperties, memo, useCallback, useRef } from 'react';
-import type { DatasetSummary } from '../../shared/types';
+import type { LoadedDataset } from '../../shared/types';
 
 // スタイルは Chakra props ではなくモジュール定数の inline style で持つ。
 // 仮想スクロール中にセルごとの emotion スタイル生成を走らせないため。
 
 interface Props {
-  summary: DatasetSummary;
+  dataset: LoadedDataset;
 }
 
 const ROW_HEIGHT = 37;
-const COL_WIDTH = 60;
+/** データ列の下限幅。余った横幅は全列に均等配分され、下回るときは横スクロールに切り替わる。 */
+const COL_MIN_WIDTH = 60;
 const ROW_NUM_WIDTH = 48;
 
 /** inline style から参照するテーマトークン。第 2 引数は未定義時のフォールバック。 */
@@ -39,7 +40,7 @@ const headerStyle: CSSProperties = {
 const cornerCellStyle: CSSProperties = {
   position: 'sticky',
   left: 0,
-  width: `${ROW_NUM_WIDTH}px`,
+  flex: `0 0 ${ROW_NUM_WIDTH}px`,
   padding: '4px 8px',
   fontSize: '12px',
   fontWeight: 600,
@@ -53,7 +54,7 @@ const cornerCellStyle: CSSProperties = {
 };
 
 const headerCellStyle: CSSProperties = {
-  width: `${COL_WIDTH}px`,
+  flex: `1 0 ${COL_MIN_WIDTH}px`,
   padding: '4px 8px',
   fontSize: '12px',
   fontWeight: 600,
@@ -68,7 +69,7 @@ const headerCellStyle: CSSProperties = {
 const rowNumCellStyle: CSSProperties = {
   position: 'sticky',
   left: 0,
-  width: `${ROW_NUM_WIDTH}px`,
+  flex: `0 0 ${ROW_NUM_WIDTH}px`,
   padding: '4px 8px',
   fontSize: '12px',
   fontWeight: 500,
@@ -84,7 +85,7 @@ const rowNumCellStyle: CSSProperties = {
 };
 
 const cellStyle: CSSProperties = {
-  width: `${COL_WIDTH}px`,
+  flex: `1 0 ${COL_MIN_WIDTH}px`,
   padding: '4px 8px',
   fontSize: '12px',
   textAlign: 'right',
@@ -101,10 +102,9 @@ interface RowProps {
   row: string[];
   top: number;
   height: number;
-  totalWidth: number;
 }
 
-const Row = memo(function Row({ rowNumber, row, top, height, totalWidth }: RowProps) {
+const Row = memo(function Row({ rowNumber, row, top, height }: RowProps) {
   return (
     <tr
       // 見出し行が 1 行目なので、データ行は 2 始まり
@@ -113,7 +113,7 @@ const Row = memo(function Row({ rowNumber, row, top, height, totalWidth }: RowPr
         position: 'absolute',
         top: 0,
         left: 0,
-        width: `${totalWidth}px`,
+        width: '100%',
         height: `${height}px`,
         transform: `translateY(${top}px)`,
         display: 'flex',
@@ -133,26 +133,26 @@ const Row = memo(function Row({ rowNumber, row, top, height, totalWidth }: RowPr
   );
 });
 
-export function DataPreview({ summary }: Props) {
+export function DataPreview({ dataset }: Props) {
   const parentRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => parentRef.current, []);
 
   const rowVirtualizer = useVirtualizer({
-    count: summary.rows.length,
+    count: dataset.rows.length,
     getScrollElement,
     estimateSize: () => ROW_HEIGHT,
     overscan: 8,
   });
 
-  const colCount = summary.headers.length;
-  const totalWidth = ROW_NUM_WIDTH + colCount * COL_WIDTH;
+  const colCount = dataset.headers.length;
+  const minTableWidth = ROW_NUM_WIDTH + colCount * COL_MIN_WIDTH;
   const totalHeight = rowVirtualizer.getTotalSize();
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   return (
     <VStack align="stretch" gap={2} px={3} py={2} flex={1} overflow="hidden" minHeight={0}>
       <Text fontSize="xs" color="fg.muted">
-        {summary.rows.length.toLocaleString()} 行 × {colCount} 列
+        {dataset.rows.length.toLocaleString()} 行 × {colCount} 列
       </Text>
       <div
         ref={parentRef}
@@ -167,10 +167,11 @@ export function DataPreview({ summary }: Props) {
       >
         <table
           aria-label="データセットのプレビュー"
-          aria-rowcount={summary.rows.length + 1}
+          aria-rowcount={dataset.rows.length + 1}
           aria-colcount={colCount + 1}
           style={{
-            width: `${totalWidth}px`,
+            width: '100%',
+            minWidth: `${minTableWidth}px`,
             position: 'relative',
             display: 'block',
             borderCollapse: 'collapse',
@@ -181,7 +182,7 @@ export function DataPreview({ summary }: Props) {
               <th scope="col" style={cornerCellStyle}>
                 #
               </th>
-              {summary.headers.map((h) => (
+              {dataset.headers.map((h) => (
                 <th scope="col" key={h} style={headerCellStyle}>
                   {h}
                 </th>
@@ -193,10 +194,9 @@ export function DataPreview({ summary }: Props) {
               <Row
                 key={virtualRow.key}
                 rowNumber={virtualRow.index + 1}
-                row={summary.rows[virtualRow.index]}
+                row={dataset.rows[virtualRow.index]}
                 top={virtualRow.start}
                 height={virtualRow.size}
-                totalWidth={totalWidth}
               />
             ))}
           </tbody>

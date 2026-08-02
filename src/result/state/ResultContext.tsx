@@ -7,7 +7,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { findMethod } from '../../analysis/methods';
 import { appendHistory, clearHistory, loadHistory, removeHistory } from '../../shared/ipc';
 import type { AnalysisOptions, AnalysisResult, HistoryRecord, Method } from '../../shared/types';
 
@@ -18,6 +17,8 @@ interface AddInput {
   variables: string[];
   options: AnalysisOptions;
   result: AnalysisResult;
+  /** false なら履歴 JSONL へ保存しない (呼び出し元が MethodDefinition から算出する) */
+  persist: boolean;
 }
 
 interface ContextValue {
@@ -44,14 +45,15 @@ export function ResultProvider({ children }: { children: ReactNode }) {
 
   const addResult = useCallback((input: AddInput) => {
     const id = crypto.randomUUID();
+    const { persist, ...record } = input;
     const entry: ResultEntry = {
       id,
-      ...input,
+      ...record,
       createdAt: Date.now(),
     };
     setResults((prev) => [...prev, entry]);
     setCurrentId(id);
-    if (findMethod(input.method)?.definition.persistHistory !== false) {
+    if (persist) {
       appendHistory(entry).catch((e) => console.warn('履歴の保存に失敗:', e));
     }
     return id;

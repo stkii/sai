@@ -5,14 +5,14 @@ import { type LoadResult, loadFile, pickFile } from '../loadFile';
 import { useDataset } from '../state/DatasetContext';
 
 export function DatasetButton() {
-  const { summary, setSummary } = useDataset();
+  const { dataset, setDataset } = useDataset();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ path: string; sheets: string[] } | null>(null);
 
   function handleResult(result: LoadResult) {
     if (result.kind === 'loaded') {
-      setSummary(result.summary);
+      setDataset(result.dataset);
       setPending(null);
     } else {
       setPending({ path: result.path, sheets: result.sheets });
@@ -58,7 +58,7 @@ export function DatasetButton() {
   return (
     <>
       <Button size="sm" variant="ghost" onClick={handlePick} loading={busy && !sheetDialogOpen}>
-        {summary ? 'データセット変更' : 'データセットを開く'}
+        {dataset ? 'データセット変更' : 'データセットを開く'}
       </Button>
 
       <Dialog.Root

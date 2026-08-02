@@ -9,9 +9,10 @@ pub struct ParsedTable {
     pub rows: Vec<Vec<String>>,
 }
 
+/// 読み込み済みデータセットの全体。プレビュー表示のため全行をフロントへ送る。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DatasetSummary {
+pub struct LoadedDataset {
     pub key: String,
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,

@@ -11,8 +11,8 @@ interface Props {
 }
 
 export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
-  const { summary } = useDataset();
-  const hasDataset = Boolean(summary);
+  const { dataset } = useDataset();
+  const hasDataset = Boolean(dataset);
 
   return (
     <Box

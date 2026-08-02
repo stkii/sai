@@ -1,47 +1,30 @@
-.Skewness <- function(x) {
-  n <- length(x)
-  if (n < 3) return(NA_real_)
-  s <- sd(x)
-  if (is.na(s) || s == 0) return(NA_real_)
-  m <- mean(x)
-  (n / ((n - 1) * (n - 2))) * sum(((x - m) / s)^3)
-}
-
-.Kurtosis <- function(x) {
-  n <- length(x)
-  if (n < 4) return(NA_real_)
-  s <- sd(x)
-  if (is.na(s) || s == 0) return(NA_real_)
-  m <- mean(x)
-  ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * sum(((x - m) / s)^4) -
-    (3 * (n - 1)^2) / ((n - 2) * (n - 3))
-}
-
+# type = 2 は SPSS/SAS と同じ歪度 (G1)・尖度 (G2)。psych の既定は type = 3 で値が変わる。
+# 0行/全欠測では psych が列名を改名するため、名前は colnames(df) から取り位置で引く。
 .Describe <- function(df, include_skewness = FALSE, include_kurtosis = FALSE) {
+  d <- suppressWarnings(suppressMessages(psych::describe(df, type = 2)))
+  vars <- colnames(df)
   stats <- list()
-  for (col in colnames(df)) {
-    x <- df[[col]]
-    x <- x[!is.na(x)]
-    n <- length(x)
-    if (n == 0) {
-      entry <- list(
-        n = 0, mean = NA_real_, sd = NA_real_,
+  for (i in seq_along(vars)) {
+    n <- as.integer(d$n[i])
+    stats[[vars[i]]] <- if (n == 0) {
+      # 全欠測列で psych は min = Inf / max = -Inf を返すため NA に揃える
+      list(
+        n = 0L, mean = NA_real_, sd = NA_real_,
         min = NA_real_, max = NA_real_, median = NA_real_,
         skewness = NA_real_, kurtosis = NA_real_
       )
     } else {
-      entry <- list(
+      list(
         n = n,
-        mean = mean(x),
-        sd = if (n >= 2) sd(x) else NA_real_,
-        min = min(x),
-        max = max(x),
-        median = median(x),
-        skewness = if (include_skewness) .Skewness(x) else NA_real_,
-        kurtosis = if (include_kurtosis) .Kurtosis(x) else NA_real_
+        mean = d$mean[i],
+        sd = d$sd[i],
+        min = d$min[i],
+        max = d$max[i],
+        median = d$median[i],
+        skewness = if (include_skewness) d$skew[i] else NA_real_,
+        kurtosis = if (include_kurtosis) d$kurtosis[i] else NA_real_
       )
     }
-    stats[[col]] <- entry
   }
   stats
 }

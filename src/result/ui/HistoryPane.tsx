@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Button,
   Center,
@@ -28,6 +29,7 @@ function HistoryItem({
 }) {
   const mod = findMethod(entry.method);
   const label = mod?.definition.label ?? entry.method;
+  const persisted = mod?.definition.persistHistory !== false;
   return (
     <Box
       // 削除ボタンの表示は CSS の group hover に任せる
@@ -65,6 +67,12 @@ function HistoryItem({
           {label}
         </chakra.button>
         <HStack gap={1} align="center">
+          {/* 永続化されない結果 (検出力分析 等) はアプリ再起動で消えることを明示する */}
+          {!persisted && (
+            <Badge size="xs" variant="surface" colorPalette="orange">
+              セッション限り
+            </Badge>
+          )}
           <Text fontSize="xs" color="fg.muted">
             {formatTimestampShort(entry.createdAt)}
           </Text>

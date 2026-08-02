@@ -4,7 +4,7 @@ import { useDataset } from '../state/DatasetContext';
 import { DataPreview } from './DataPreview';
 
 export function DataPane() {
-  const { summary } = useDataset();
+  const { dataset } = useDataset();
 
   return (
     <Box height="100%" bg="bg.subtle" borderRightWidth="1px" borderColor="border">
@@ -21,8 +21,8 @@ export function DataPane() {
             データ
           </Heading>
         </HStack>
-        {summary ? (
-          <DataPreview summary={summary} />
+        {dataset ? (
+          <DataPreview dataset={dataset} />
         ) : (
           <Center flex={1} px={4}>
             <Text fontSize="sm" color="fg.subtle" textAlign="center">
