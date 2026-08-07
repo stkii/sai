@@ -82,3 +82,22 @@ test_that("入力不足はエラー", {
     "被験者ID"
   )
 })
+
+test_that("被験者ID列が射影されていない場合はドメインのエラーになる", {
+  # Rust の project_columns が subject を射影し損ねた状態 (variables への入れ忘れ)。
+  # R の生エラー ("undefined columns selected") ではなく原因の分かる文言を返す
+  df <- make_within_data()[, c("cond", "y")]
+  expect_error(
+    RunAnova(df, list(dependent = "y", factors = list("cond"), design = "within", subject = "subj")),
+    "被験者ID列 'subj' がデータにありません"
+  )
+})
+
+test_that("従属変数の数値化に失敗した値は注記で通知される", {
+  df <- make_between_data()
+  df$y <- as.character(df$y)
+  df$y[c(1, 2)] <- c("欠測", "N/A")
+  res <- RunAnova(df, list(dependent = "y", factors = list("g"), design = "between"))
+  expect_equal(res$n, 28)
+  expect_match(res$n_note, "数値に変換できない値は欠測として扱いました: y \\(2件\\)")
+})

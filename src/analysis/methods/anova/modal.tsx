@@ -1,6 +1,5 @@
 import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { type Choice, RadioField, SelectField, toChoices } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
@@ -10,9 +9,7 @@ import { labelOf, type ModalProps } from '../contracts';
 
 type Design = 'between' | 'within';
 
-// onExecute の AnalysisOptions (Record<string, unknown>) に直接代入できるよう
-// interface ではなく type で定義する (interface は implicit index signature を持たない)
-type AnovaOptions = {
+export type AnovaOptions = {
   dependent: string;
   factors: string[];
   design: Design;
@@ -24,8 +21,13 @@ const DESIGN_OPTIONS: Choice<Design>[] = [
   { value: 'within', label: '反復測定' },
 ];
 
-export function formatAnovaOptions(options: AnalysisOptions): string | null {
-  const o = options as Partial<AnovaOptions>;
+// R へ射影する列。options が参照する列 (反復測定の subject) を漏らさないよう
+// 1 箇所で導出する。射影されない列は R 側に存在せずエラーになる。
+function anovaColumns(o: AnovaOptions): string[] {
+  return [o.dependent, ...o.factors, ...(o.subject ? [o.subject] : [])];
+}
+
+export function formatAnovaOptions(o: Partial<AnovaOptions>): string | null {
   const parts: string[] = [];
   if (o.design) parts.push(`デザイン: ${labelOf(DESIGN_OPTIONS, o.design)}`);
   if (o.dependent) parts.push(`従属変数: ${o.dependent}`);
@@ -34,7 +36,7 @@ export function formatAnovaOptions(options: AnalysisOptions): string | null {
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<AnovaOptions>) {
   const [dependent, setDependent] = useState<string>('');
   const [factors, setFactors] = useState<string[]>([]);
   const [design, setDesign] = useState<Design>('between');
@@ -45,7 +47,7 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps) {
     if (design === 'within' && !subject) return;
     const options: AnovaOptions = { dependent, factors, design };
     if (design === 'within') options.subject = subject;
-    onExecute([dependent, ...factors], options);
+    onExecute(anovaColumns(options), options);
   }
 
   return (

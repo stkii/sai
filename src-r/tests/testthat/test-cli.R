@@ -32,6 +32,48 @@ test_that("回帰の交互作用オプションが cli 経由でも機能する"
   expect_true("x1 × x2" %in% terms)
 })
 
+test_that("数値に変換できない値は n_note で通知される", {
+  r <- sai_run_cli(input = list(
+    method = "describe",
+    headers = list("x"),
+    rows = list(list("1"), list("abc"), list("3")),
+    options = list(sort = "default")
+  ))
+  expect_equal(r$status, 0L)
+  expect_match(r$result$n_note, "数値に変換できない値は欠測として扱いました: x \\(1件\\)")
+})
+
+test_that("数値化の失敗が原因でメソッドが落ちた場合、エラーに真因が添えられる", {
+  # 文字列列を相関に投げると全行が欠測になり「有効な観測が不足」とだけ出るため、
+  # 数値化に失敗した事実を添えて原因の誤診を防ぐ
+  r <- sai_run_cli(input = list(
+    method = "correlation",
+    headers = list("x", "g"),
+    rows = list(list("1", "男"), list("2", "女"), list("3", "男"), list("4", "女")),
+    options = list(method = "pearson", na = "complete.obs")
+  ))
+  expect_false(r$status == 0L)
+  expect_match(r$log, "有効な観測が不足")
+  expect_match(r$log, "数値に変換できない値は欠測として扱いました: g \\(4件\\)")
+})
+
+test_that("反復測定で被験者ID列が射影されていない場合は原因の分かるエラーになる", {
+  r <- sai_run_cli(input = list(
+    method = "anova",
+    headers = list("cond", "y"),
+    rows = list(
+      list("pre", "10"), list("post", "12"),
+      list("pre", "11"), list("post", "13")
+    ),
+    options = list(
+      dependent = "y", factors = list("cond"),
+      design = "within", subject = "subj"
+    )
+  ))
+  expect_false(r$status == 0L)
+  expect_match(r$log, "被験者ID列 'subj' がデータにありません")
+})
+
 test_that("未対応メソッドは非ゼロ終了し、エラーメッセージを返す", {
   r <- sai_run_cli(fixture = "unsupported_method.json")
   expect_false(r$status == 0L)
