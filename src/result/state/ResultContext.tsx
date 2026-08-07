@@ -9,8 +9,20 @@ import {
 } from 'react';
 import { appendHistory, clearHistory, loadHistory, removeHistory } from '../../shared/ipc';
 import type { AnalysisOptions, AnalysisResult, HistoryRecord, Method } from '../../shared/types';
+import { toaster } from '../../shared/ui/toaster';
 
 export type ResultEntry = HistoryRecord;
+
+// 履歴はユーザーにとって分析の記録そのもの。永続化の失敗を黙って捨てると
+// 画面の表示とディスクの内容が食い違うため、必ず結果 (再起動後どうなるか) を伝える。
+function notifyHistoryFailure(title: string, consequence: string, e: unknown) {
+  toaster.create({
+    type: 'error',
+    title,
+    description: `${consequence} ${String(e)}`,
+    meta: { closable: true },
+  });
+}
 
 interface AddInput {
   method: Method;
@@ -40,7 +52,9 @@ export function ResultProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadHistory()
       .then((records) => setResults(records))
-      .catch((e) => console.warn('履歴の読込に失敗:', e));
+      .catch((e) =>
+        notifyHistoryFailure('履歴を読み込めませんでした', '保存済みの履歴は表示されません。', e)
+      );
   }, []);
 
   const addResult = useCallback((input: AddInput) => {
@@ -54,7 +68,13 @@ export function ResultProvider({ children }: { children: ReactNode }) {
     setResults((prev) => [...prev, entry]);
     setCurrentId(id);
     if (persist) {
-      appendHistory(entry).catch((e) => console.warn('履歴の保存に失敗:', e));
+      appendHistory(entry).catch((e) =>
+        notifyHistoryFailure(
+          '履歴に保存できませんでした',
+          'この結果はアプリを再起動すると失われます。',
+          e
+        )
+      );
     }
     return id;
   }, []);
@@ -63,12 +83,24 @@ export function ResultProvider({ children }: { children: ReactNode }) {
   const clearResults = useCallback(() => {
     setResults([]);
     setCurrentId(null);
-    clearHistory().catch((e) => console.warn('履歴の削除に失敗:', e));
+    clearHistory().catch((e) =>
+      notifyHistoryFailure(
+        '履歴を削除できませんでした',
+        '保存済みの履歴はアプリを再起動すると再表示されます。',
+        e
+      )
+    );
   }, []);
   const removeResult = useCallback((id: string) => {
     setResults((prev) => prev.filter((r) => r.id !== id));
     setCurrentId((prev) => (prev === id ? null : prev));
-    removeHistory(id).catch((e) => console.warn('履歴の削除に失敗:', e));
+    removeHistory(id).catch((e) =>
+      notifyHistoryFailure(
+        '履歴から削除できませんでした',
+        'この結果はアプリを再起動すると再表示されます。',
+        e
+      )
+    );
   }, []);
 
   const current = useMemo(
