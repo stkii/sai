@@ -1,8 +1,8 @@
-import type { MethodModule } from '../contracts';
-import { DescribeModal, formatDescribeOptions } from './modal';
+import { defineMethod } from '../contracts';
+import { DescribeModal, type DescribeOptions, formatDescribeOptions } from './modal';
 
-export const describeModule: MethodModule<'describe'> = {
+export const describeModule = defineMethod<'describe', DescribeOptions>({
   definition: { key: 'describe', label: '記述統計' },
   renderModal: (props) => <DescribeModal {...props} />,
   formatOptions: formatDescribeOptions,
-};
+});

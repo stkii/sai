@@ -1,6 +1,5 @@
 import { Flex, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { CheckField, type Choice, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
@@ -10,13 +9,13 @@ import { labelOf, type ModalProps } from '../contracts';
 
 type SortMode = 'default' | 'mean_desc' | 'mean_asc';
 
-interface DescribeOptions {
+export type DescribeOptions = {
   sort: SortMode;
   extras: {
     skewness: boolean;
     kurtosis: boolean;
   };
-}
+};
 
 const SORT_OPTIONS: Choice<SortMode>[] = [
   { value: 'default', label: '変数リスト順' },
@@ -24,8 +23,7 @@ const SORT_OPTIONS: Choice<SortMode>[] = [
   { value: 'mean_asc', label: '平均値による昇順' },
 ];
 
-export function formatDescribeOptions(options: AnalysisOptions): string | null {
-  const o = options as Partial<DescribeOptions>;
+export function formatDescribeOptions(o: Partial<DescribeOptions>): string | null {
   const parts: string[] = [];
   if (o.sort) parts.push(`表示順: ${labelOf(SORT_OPTIONS, o.sort)}`);
   const extras: string[] = [];
@@ -35,7 +33,12 @@ export function formatDescribeOptions(options: AnalysisOptions): string | null {
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-export function DescribeModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function DescribeModal({
+  headers,
+  busy,
+  onCancel,
+  onExecute,
+}: ModalProps<DescribeOptions>) {
   const [selected, setSelected] = useState<string[]>([]);
   const [sort, setSort] = useState<SortMode>('default');
   const [skewness, setSkewness] = useState(false);
@@ -43,10 +46,7 @@ export function DescribeModal({ headers, busy, onCancel, onExecute }: ModalProps
 
   function handleSubmit() {
     if (selected.length === 0) return;
-    onExecute(selected, {
-      sort,
-      extras: { skewness, kurtosis },
-    } satisfies DescribeOptions);
+    onExecute(selected, { sort, extras: { skewness, kurtosis } });
   }
 
   return (

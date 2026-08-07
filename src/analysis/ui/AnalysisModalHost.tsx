@@ -1,10 +1,8 @@
 import { CloseButton, Dialog, Portal, Text } from '@chakra-ui/react';
-import { useState } from 'react';
 import { useDataset } from '../../data/state/DatasetContext';
-import { useResult } from '../../result/state/ResultContext';
-import { runAnalysis } from '../../shared/ipc/analysis';
-import type { Method } from '../../shared/types';
+import type { AnalysisOptions, Method } from '../../shared/types';
 import { findMethod } from '../methods';
+import { useRunAnalysis } from '../useRunAnalysis';
 
 interface Props {
   method: Method | null;
@@ -13,13 +11,11 @@ interface Props {
 
 export function AnalysisModalHost({ method, onClose }: Props) {
   const { dataset } = useDataset();
-  const { addResult } = useResult();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { busy, error, run, clearError } = useRunAnalysis();
 
   // 実行エラーを次に開いたモーダルへ持ち越さないよう、閉じる時に必ず消す
   function handleClose() {
-    setError(null);
+    clearError();
     onClose();
   }
 
@@ -27,31 +23,9 @@ export function AnalysisModalHost({ method, onClose }: Props) {
   const requiresDataset = mod?.definition.requiresDataset !== false;
   const open = Boolean(method && mod && (!requiresDataset || dataset));
 
-  async function handleExecute(variables: string[], options: Record<string, unknown>) {
-    if (!method || !mod) return;
-    if (requiresDataset && !dataset) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await runAnalysis({
-        datasetKey: requiresDataset && dataset ? dataset.key : null,
-        method,
-        variables,
-        options,
-      });
-      addResult({
-        method,
-        variables,
-        options,
-        result,
-        persist: mod.definition.persistHistory !== false,
-      });
-      handleClose();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
-    }
+  async function handleExecute(variables: string[], options: AnalysisOptions) {
+    if (!method) return;
+    if (await run({ method, variables, options })) handleClose();
   }
 
   return (

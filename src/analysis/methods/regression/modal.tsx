@@ -1,7 +1,6 @@
 import { Box, Button, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import { LuX } from 'react-icons/lu';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { CheckField, SelectField, SelectInput, toChoices } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
@@ -9,14 +8,13 @@ import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
-interface RegressionOptions {
+export type RegressionOptions = {
   dependent: string;
   allInteractions: boolean;
   interactions: [string, string][];
-}
+};
 
-export function formatRegressionOptions(options: AnalysisOptions): string | null {
-  const o = options as Partial<RegressionOptions>;
+export function formatRegressionOptions(o: Partial<RegressionOptions>): string | null {
   const parts: string[] = [];
   if (o.dependent) parts.push(`目的変数: ${o.dependent}`);
   if (o.allInteractions) {
@@ -27,7 +25,12 @@ export function formatRegressionOptions(options: AnalysisOptions): string | null
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function RegressionModal({
+  headers,
+  busy,
+  onCancel,
+  onExecute,
+}: ModalProps<RegressionOptions>) {
   const [dependent, setDependent] = useState<string>('');
   const [predictors, setPredictors] = useState<string[]>([]);
   const [allInteractions, setAllInteractions] = useState(false);
@@ -46,11 +49,7 @@ export function RegressionModal({ headers, busy, onCancel, onExecute }: ModalPro
   function handleSubmit() {
     if (!dependent || predictors.length === 0) return;
     const variables = [dependent, ...predictors.filter((p) => p !== dependent)];
-    onExecute(variables, {
-      dependent,
-      allInteractions,
-      interactions,
-    } satisfies RegressionOptions);
+    onExecute(variables, { dependent, allInteractions, interactions });
   }
 
   function addInteraction() {

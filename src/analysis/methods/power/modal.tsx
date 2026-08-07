@@ -1,6 +1,5 @@
 import { SimpleGrid, Text, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { type Choice, NumberField, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
@@ -9,8 +8,6 @@ import { labelOf, type ModalProps } from '../contracts';
 
 type TestType = 't' | 'anova' | 'prop';
 
-// onExecute の AnalysisOptions (Record<string, unknown>) に直接代入できるよう
-// interface ではなく type で定義する (interface は implicit index signature を持たない)
 type CommonOptions = {
   test_type: TestType;
   sig_level: number;
@@ -41,7 +38,7 @@ type PropOptions = CommonOptions & {
   power?: number;
 };
 
-type PowerOptions = TTestOptions | AnovaOptions | PropOptions;
+export type PowerOptions = TTestOptions | AnovaOptions | PropOptions;
 
 const TEST_TYPE_OPTIONS: Choice<TestType>[] = [
   { value: 't', label: 't検定' },
@@ -70,8 +67,7 @@ interface PowerOptionsFlat {
   p2?: number;
 }
 
-export function formatPowerOptions(options: AnalysisOptions): string | null {
-  const o = options as PowerOptionsFlat;
+export function formatPowerOptions(o: PowerOptionsFlat): string | null {
   const parts: string[] = [];
   if (o.test_type) parts.push(`検定の種類: ${labelOf(TEST_TYPE_OPTIONS, o.test_type)}`);
   if (o.sig_level !== undefined) parts.push(`有意水準 α: ${o.sig_level}`);
@@ -87,7 +83,7 @@ export function formatPowerOptions(options: AnalysisOptions): string | null {
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-export function PowerModal({ busy, onCancel, onExecute }: ModalProps) {
+export function PowerModal({ busy, onCancel, onExecute }: ModalProps<PowerOptions>) {
   const [testType, setTestType] = useState<TestType>('t');
   const [sigLevel, setSigLevel] = useState<number>(0.05);
 

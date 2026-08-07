@@ -1,6 +1,5 @@
 import { NumberInput, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import {
   CheckField,
@@ -19,14 +18,14 @@ type NfactorsMode = 'guttman' | 'fixed';
 type Method = 'PAF' | 'ML' | 'ULS';
 type NaMode = 'complete.obs' | 'pairwise.complete.obs';
 
-interface FactorOptions {
+export type FactorOptions = {
   method: Method;
   nfactorsMode: NfactorsMode;
   nfactors: number;
   rotation: Rotation;
   na: NaMode;
   sortByFactor: boolean;
-}
+};
 
 const MODE_OPTIONS: Choice<NfactorsMode>[] = [
   { value: 'guttman', label: '固有値に基づく' },
@@ -50,8 +49,7 @@ const METHOD_OPTIONS: Choice<Method>[] = [
   { value: 'ULS', label: '最小二乗法 (ULS)' },
 ];
 
-export function formatFactorOptions(options: AnalysisOptions): string | null {
-  const o = options as Partial<FactorOptions>;
+export function formatFactorOptions(o: Partial<FactorOptions>): string | null {
   const parts: string[] = [];
   if (o.method) parts.push(`抽出法: ${labelOf(METHOD_OPTIONS, o.method)}`);
   if (o.nfactorsMode === 'fixed') {
@@ -65,7 +63,7 @@ export function formatFactorOptions(options: AnalysisOptions): string | null {
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps<FactorOptions>) {
   const [selected, setSelected] = useState<string[]>([]);
   const [method, setMethod] = useState<Method>('PAF');
   const [mode, setMode] = useState<NfactorsMode>('guttman');
@@ -84,7 +82,7 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps) 
       rotation,
       na,
       sortByFactor,
-    } satisfies FactorOptions);
+    });
   }
 
   return (

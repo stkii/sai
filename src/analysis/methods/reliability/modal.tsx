@@ -1,6 +1,5 @@
 import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { type Choice, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
@@ -10,9 +9,9 @@ import { labelOf, type ModalProps } from '../contracts';
 
 type ReliabilityCoefficient = 'alpha' | 'omega';
 
-interface ReliabilityOptions {
+export type ReliabilityOptions = {
   coefficient: ReliabilityCoefficient;
-}
+};
 
 const COEFFICIENT_OPTIONS: Choice<ReliabilityCoefficient>[] = [
   { value: 'alpha', label: 'Cronbachのα' },
@@ -24,19 +23,23 @@ function minItemsFor(coefficient: ReliabilityCoefficient): number {
   return coefficient === 'omega' ? 3 : 2;
 }
 
-export function formatReliabilityOptions(options: AnalysisOptions): string | null {
-  const o = options as Partial<ReliabilityOptions>;
+export function formatReliabilityOptions(o: Partial<ReliabilityOptions>): string | null {
   return o.coefficient ? `係数の種類: ${labelOf(COEFFICIENT_OPTIONS, o.coefficient)}` : null;
 }
 
-export function ReliabilityModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function ReliabilityModal({
+  headers,
+  busy,
+  onCancel,
+  onExecute,
+}: ModalProps<ReliabilityOptions>) {
   const [selected, setSelected] = useState<string[]>([]);
   const [coefficient, setCoefficient] = useState<ReliabilityCoefficient>('alpha');
   const minItems = minItemsFor(coefficient);
 
   function handleSubmit() {
     if (selected.length < minItems) return;
-    onExecute(selected, { coefficient } satisfies ReliabilityOptions);
+    onExecute(selected, { coefficient });
   }
 
   return (
