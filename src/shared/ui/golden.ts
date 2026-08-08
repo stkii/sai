@@ -26,7 +26,6 @@ export const PANE = {
   dataMin: 233,
   dataDefault: 377,
   dataMax: 610,
-  ai: 377,
   headerHeight: 40,
 } as const;
 

@@ -5,12 +5,10 @@ import { DatasetButton } from './data/ui/DatasetButton';
 import type { Method } from './shared/types';
 
 interface Props {
-  isAIOpen: boolean;
-  onToggleAI: () => void;
   onSelectMethod: (method: Method) => void;
 }
 
-export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
+export function Header({ onSelectMethod }: Props) {
   const { dataset } = useDataset();
   const hasDataset = Boolean(dataset);
 
@@ -32,15 +30,6 @@ export function Header({ isAIOpen, onToggleAI, onSelectMethod }: Props) {
           <MethodSelector hasDataset={hasDataset} onSelect={onSelectMethod} />
         </HStack>
         <HStack gap={2}>
-          <Button
-            size="sm"
-            variant={isAIOpen ? 'solid' : 'outline'}
-            colorPalette="purple"
-            aria-pressed={isAIOpen}
-            onClick={onToggleAI}
-          >
-            <span aria-hidden="true">🤖 </span>AI
-          </Button>
           <Button size="sm" variant="ghost" disabled>
             設定
           </Button>
