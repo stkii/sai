@@ -1,4 +1,4 @@
-import { Box, Button, Heading, HStack } from '@chakra-ui/react';
+import { Box, HStack } from '@chakra-ui/react';
 import { MethodSelector } from './analysis/ui/MethodSelector';
 import { useDataset } from './data/state/DatasetContext';
 import { DatasetButton } from './data/ui/DatasetButton';
@@ -21,19 +21,9 @@ export function Header({ onSelectMethod }: Props) {
       bg="bg.panel"
       px={4}
     >
-      <HStack height="100%" justify="space-between">
-        <HStack gap={3}>
-          <Heading as="h1" size="lg" fontWeight="bold">
-            SAI
-          </Heading>
-          <DatasetButton />
-          <MethodSelector hasDataset={hasDataset} onSelect={onSelectMethod} />
-        </HStack>
-        <HStack gap={2}>
-          <Button size="sm" variant="ghost" disabled>
-            設定
-          </Button>
-        </HStack>
+      <HStack height="100%" gap={3}>
+        <DatasetButton />
+        <MethodSelector hasDataset={hasDataset} onSelect={onSelectMethod} />
       </HStack>
     </Box>
   );
