@@ -33,6 +33,12 @@ Do not implement fallbacks or logic that change a user's analysis results in a w
 
 Example: If `corr_use` is invalid, silently defaulting to `"all.obs"` alters the analysis without user awareness and is prohibited.
 
+## Statistical Output Policy
+
+Analysis results must match SPSS. When an R package's default differs from SPSS, choose the option that reproduces SPSS output (for example, `psych::describe(type = 2)` for skewness/kurtosis, `EFAtools::EFA(type = "SPSS")`), and cover the resulting values with tests in `src-r/tests/testthat/`.
+
+This is a project-wide default, so do not annotate individual call sites with "to match SPSS" comments. When a comment is warranted, state the statistical reason itself (which estimator or formula, and how it differs from the package default) rather than the software being matched.
+
 ## Project-Specific Review Notes
 
 - Power analysis results are intentionally not persisted in the analysis log. Treat this as the current product specification, not a defect, unless the user explicitly asks to change that behavior.

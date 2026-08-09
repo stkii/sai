@@ -1,6 +1,5 @@
 import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
-import type { AnalysisOptions } from '../../../shared/types';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { type Choice, RadioField } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
@@ -11,10 +10,10 @@ import { labelOf, type ModalProps } from '../contracts';
 type CorrMethod = 'pearson' | 'spearman' | 'kendall';
 type NaMode = 'complete.obs' | 'pairwise.complete.obs';
 
-interface CorrelationOptions {
+export type CorrelationOptions = {
   method: CorrMethod;
   na: NaMode;
-}
+};
 
 const METHOD_OPTIONS: Choice<CorrMethod>[] = [
   { value: 'pearson', label: 'Pearson 積率相関' },
@@ -27,22 +26,26 @@ const NA_OPTIONS: Choice<NaMode>[] = [
   { value: 'pairwise.complete.obs', label: 'ペアワイズ削除' },
 ];
 
-export function formatCorrelationOptions(options: AnalysisOptions): string | null {
-  const o = options as Partial<CorrelationOptions>;
+export function formatCorrelationOptions(o: Partial<CorrelationOptions>): string | null {
   const parts: string[] = [];
   if (o.method) parts.push(`相関係数の種類: ${labelOf(METHOD_OPTIONS, o.method)}`);
   if (o.na) parts.push(`欠測値の扱い: ${labelOf(NA_OPTIONS, o.na)}`);
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
-export function CorrelationModal({ headers, busy, onCancel, onExecute }: ModalProps) {
+export function CorrelationModal({
+  headers,
+  busy,
+  onCancel,
+  onExecute,
+}: ModalProps<CorrelationOptions>) {
   const [selected, setSelected] = useState<string[]>([]);
   const [method, setMethod] = useState<CorrMethod>('pearson');
   const [na, setNa] = useState<NaMode>('complete.obs');
 
   function handleSubmit() {
     if (selected.length < 2) return;
-    onExecute(selected, { method, na } satisfies CorrelationOptions);
+    onExecute(selected, { method, na });
   }
 
   return (

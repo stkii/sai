@@ -1,8 +1,8 @@
-import type { MethodModule } from '../contracts';
-import { CorrelationModal, formatCorrelationOptions } from './modal';
+import { defineMethod } from '../contracts';
+import { CorrelationModal, type CorrelationOptions, formatCorrelationOptions } from './modal';
 
-export const correlationModule: MethodModule<'correlation'> = {
-  definition: { key: 'correlation', label: '相関分析' },
+export const correlationModule = defineMethod<'correlation', CorrelationOptions>({
+  definition: { key: 'correlation', label: '相関' },
   renderModal: (props) => <CorrelationModal {...props} />,
   formatOptions: formatCorrelationOptions,
-};
+});

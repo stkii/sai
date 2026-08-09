@@ -35,3 +35,43 @@ test_that(".Stars は NA / NULL / 空ベクトルで空文字を返す", {
   expect_identical(.Stars(NULL), "")
   expect_identical(.Stars(numeric(0)), "")
 })
+
+test_that(".CoerceNumeric は変換できない値だけを失敗として数える", {
+  r <- .CoerceNumeric(c("1", "2.5", "-", "", NA, "abc"))
+  expect_equal(r$values, c(1, 2.5, NA, NA, NA, NA))
+  # 空欄と NA は元から欠測なので失敗に数えない ("-" と "abc" の2件のみ)
+  expect_identical(r$failed, 2L)
+})
+
+test_that(".CoercionNote は失敗がある変数だけを列挙する", {
+  expect_null(.CoercionNote(c(x = 0L, y = 0L)))
+  expect_null(.CoercionNote(NULL))
+  expect_match(.CoercionNote(c(x = 2L, y = 0L)), "^数値に変換できない値は欠測として扱いました: x \\(2件\\)$")
+})
+
+test_that(".MergeNotes は NULL を捨てて句点で連結する", {
+  expect_null(.MergeNotes(NULL, NULL))
+  expect_identical(.MergeNotes("A", NULL, "B"), "A。B")
+  expect_identical(.MergeNotes(NULL, "A"), "A")
+})
+
+test_that(".AsNumericDf は数値化しつつ失敗件数を attribute に載せる", {
+  rows <- list(list("1", "a"), list("2", "3"), list("", "4"))
+  df <- .AsNumericDf(rows, c("v1", "v2"))
+  expect_identical(colnames(df), c("v1", "v2"))
+  expect_equal(df$v1, c(1, 2, NA))
+  expect_equal(df$v2, c(NA, 3, 4))
+  expect_identical(attr(df, "coerced_counts"), c(v1 = 0L, v2 = 1L))
+})
+
+test_that(".AsNumericDf は空行・記号を含むヘッダでも列名を保つ", {
+  df <- .AsNumericDf(list(), c("身長 (cm)", "体重"))
+  expect_identical(colnames(df), c("身長 (cm)", "体重"))
+  expect_identical(nrow(df), 0L)
+})
+
+test_that(".AsMixedDf は文字列列を保持し、欠けたセルを NA にする", {
+  df <- .AsMixedDf(list(list("a", "1"), list("b")), c("g", "y"))
+  expect_identical(df$g, c("a", "b"))
+  expect_identical(df$y, c("1", NA))
+})

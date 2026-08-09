@@ -1,7 +1,5 @@
 import { Box, Flex, Tabs } from '@chakra-ui/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAIPaneState } from './ai/state/useAIPaneState';
-import { ChatPane } from './ai/ui/ChatPane';
 import { AnalysisModalHost } from './analysis/ui/AnalysisModalHost';
 import { DataPane } from './data/ui/DataPane';
 import { Header } from './Header';
@@ -13,7 +11,6 @@ import { PANE } from './shared/ui/golden';
 import { Toaster } from './shared/ui/toaster';
 import { VerticalSplitter } from './shared/ui/VerticalSplitter';
 
-const AI_PANE_WIDTH = `${PANE.ai}px`;
 const PANE_HEADER_HEIGHT = `${PANE.headerHeight}px`;
 
 function clampPaneWidth(width: number): number {
@@ -21,7 +18,6 @@ function clampPaneWidth(width: number): number {
 }
 
 export function App() {
-  const ai = useAIPaneState();
   const { currentId } = useResult();
   const [activeMethod, setActiveMethod] = useState<Method | null>(null);
   const [activeTab, setActiveTab] = useState<'result' | 'history'>('result');
@@ -43,11 +39,7 @@ export function App() {
 
   return (
     <Flex direction="column" height="100vh" width="100vw" bg="bg">
-      <Header
-        isAIOpen={ai.isOpen}
-        onToggleAI={ai.toggle}
-        onSelectMethod={(m) => setActiveMethod(m)}
-      />
+      <Header onSelectMethod={(m) => setActiveMethod(m)} />
 
       <Flex flex={1} overflow="hidden" ref={containerRef}>
         {/* 左ペイン: データ (常時表示) */}
@@ -85,20 +77,6 @@ export function App() {
               <HistoryPane />
             </Tabs.Content>
           </Tabs.Root>
-        </Box>
-
-        {/* 右ペイン: AI チャット (オンデマンド・スライドイン) */}
-        {/* inert で閉時のフォーカス・支援技術からの到達を遮断する (width 0 だけでは残る) */}
-        <Box
-          width={ai.isOpen ? AI_PANE_WIDTH : '0'}
-          flexShrink={0}
-          overflow="hidden"
-          transition="width 0.2s ease"
-          inert={!ai.isOpen}
-        >
-          <Box width={AI_PANE_WIDTH} height="100%">
-            <ChatPane onClose={ai.close} />
-          </Box>
         </Box>
       </Flex>
 

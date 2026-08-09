@@ -132,6 +132,27 @@ function LabeledField({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+interface TextFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}
+
+/** 自由入力の1行テキスト。 */
+export function TextField({ label, value, onChange, placeholder }: TextFieldProps) {
+  return (
+    <LabeledField label={label}>
+      <Input
+        size="sm"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.currentTarget.value)}
+      />
+    </LabeledField>
+  );
+}
+
 interface NumberFieldProps {
   label: string;
   value: number | undefined;

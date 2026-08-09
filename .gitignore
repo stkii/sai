@@ -10,6 +10,7 @@ node_modules/
 
 # Developing
 .dev/
+src-r/data/
 
 # Docs
 docs/llms-txt/

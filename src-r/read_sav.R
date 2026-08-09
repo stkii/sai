@@ -36,8 +36,7 @@ if (is.null(sav_path) || !nzchar(sav_path)) {
 }
 
 # 値ラベル (例: 1=男, 2=女) は剥がして基底のコード値を保持する。
-# ラベル文字列へ置換すると数値系の分析 (記述統計・相関 等) の対象から
-# 外れてしまい、SPSS 上の分析結果と乖離するため。
+# ラベル文字列へ置換すると数値系の分析 (記述統計・相関 等) の対象から外れてしまうため。
 # ユーザー欠損値は read_spss の既定 (user_na = FALSE) で NA になる。
 .SavColToChr <- function(col) {
   col <- haven::zap_labels(col)
