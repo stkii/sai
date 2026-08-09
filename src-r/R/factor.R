@@ -8,6 +8,25 @@
   as.integer(n)
 }
 
+# SPSS の「初期の固有値」。抽出法・回転の影響を受けない相関行列そのものの固有値で、
+# 因子数の判断根拠になる。相関行列の対角は 1 なので固有値の総和は変数の数に等しく、
+# 寄与率は固有値 / 変数の数で求まる。
+.EigenTable <- function(cor_mat) {
+  eigs <- eigen(cor_mat, symmetric = TRUE, only.values = TRUE)$values
+  prop <- eigs / ncol(cor_mat)
+  cum <- cumsum(prop)
+  rows <- lapply(seq_along(eigs), function(i) {
+    list(as.character(i), .FmtNum(eigs[i]), .FmtNum(prop[i]), .FmtNum(cum[i]))
+  })
+  table <- list(headers = c("成分", "固有値", "寄与率", "累積寄与率"), rows = rows)
+  # 負の固有値はペアワイズ相関行列が正定値でないときに出る。丸めて隠すと
+  # 累積寄与率が 1 を超える理由が伝わらないため、そのまま出して注記する。
+  if (any(eigs < 0)) {
+    table$note <- "相関行列が正定値ではないため、負の固有値が含まれます"
+  }
+  table
+}
+
 .SortByFactor <- function(load_matrix, threshold = 0.40) {
   ab <- abs(load_matrix)
   primary <- max.col(ab)
@@ -142,6 +161,10 @@ RunFactor <- function(df, options) {
   pattern_title <- if (is_oblique) "パターン行列" else "因子行列"
 
   sections <- list()
+  sections[[length(sections) + 1]] <- list(
+    title = "初期の固有値",
+    table = .EigenTable(cor_mat)
+  )
   sections[[length(sections) + 1]] <- list(
     title = pattern_title,
     table = .LoadingTable(loadings, vars, factor_labels)

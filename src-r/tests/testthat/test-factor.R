@@ -12,11 +12,16 @@ base_options <- list(
   sortByFactor = FALSE
 )
 
+factor_section <- function(res, title) {
+  for (s in res$sections) if (s$title == title) return(s)
+  stop(sprintf("セクションが見つかりません: %s", title))
+}
+
 test_that("既知の2因子構造を復元する (listwise)", {
   df <- sai_factor_data()
   res <- run_factor_quietly(df, base_options)
 
-  tbl <- res$sections[[1]]$table
+  tbl <- factor_section(res, "因子行列")$table
   expect_equal(unlist(tbl$headers), c("変数", "F1", "F2"))
 
   load <- t(vapply(
@@ -39,7 +44,7 @@ test_that("guttman モードは固有値>1 の因子数を選ぶ", {
   opts <- modifyList(base_options, list(nfactorsMode = "guttman"))
   res <- run_factor_quietly(df, opts)
   # 解決された因子数は負荷量テーブルの因子列 (F1, F2, ...) で確認する
-  expect_equal(unlist(res$sections[[1]]$table$headers), c("変数", "F1", "F2"))
+  expect_equal(unlist(factor_section(res, "因子行列")$table$headers), c("変数", "F1", "F2"))
 })
 
 test_that("pairwise: 全行が n に保持され、注記が付く", {
@@ -98,11 +103,6 @@ factor_phi_matrix <- function(table) {
   m
 }
 
-factor_section <- function(res, title) {
-  for (s in res$sections) if (s$title == title) return(s)
-  stop(sprintf("セクションが見つかりません: %s", title))
-}
-
 test_that("因子間相関は上三角のみ表示される (対角は —, 下三角は空欄)", {
   df <- sai_factor_data()
   opts <- modifyList(base_options, list(rotation = "promax"))
@@ -111,6 +111,34 @@ test_that("因子間相関は上三角のみ表示される (対角は —, 下�
   expect_identical(rows[[1]][[2]], "—") # 対角 (F1×F1)
   expect_identical(rows[[2]][[2]], "") # 下三角 (F2×F1)
   expect_true(nzchar(rows[[1]][[3]])) # 上三角 (F1×F2) には係数が入る
+})
+
+test_that("初期の固有値は相関行列の固有値を負荷量テーブルより前に出す", {
+  df <- sai_factor_data()
+  res <- run_factor_quietly(df, base_options)
+
+  titles <- vapply(res$sections, function(s) s$title, character(1))
+  expect_identical(titles[[1]], "初期の固有値")
+
+  tbl <- factor_section(res, "初期の固有値")$table
+  expect_equal(unlist(tbl$headers), c("成分", "固有値", "寄与率", "累積寄与率"))
+  expect_equal(length(tbl$rows), ncol(df)) # 因子数ではなく変数の数だけ並ぶ
+
+  col <- function(j) vapply(tbl$rows, function(r) sai_cell_num(r[[j]]), numeric(1))
+  expected <- eigen(cor(df), symmetric = TRUE, only.values = TRUE)$values
+  expect_equal(col(2), expected, tolerance = 1e-3)
+  expect_equal(col(3), expected / ncol(df), tolerance = 1e-3)
+  expect_equal(col(4), cumsum(expected / ncol(df)), tolerance = 1e-3)
+  expect_equal(col(4)[ncol(df)], 1, tolerance = 1e-3)
+})
+
+test_that("初期の固有値は回転の指定に影響されない", {
+  df <- sai_factor_data()
+  eig_of <- function(rotation) {
+    res <- run_factor_quietly(df, modifyList(base_options, list(rotation = rotation)))
+    vapply(factor_section(res, "初期の固有値")$table$rows, function(r) sai_cell_num(r[[2]]), numeric(1))
+  }
+  expect_equal(eig_of("promax"), eig_of("none"), tolerance = 1e-6)
 })
 
 test_that("因子寄与 (varimax) は負荷量平方和・寄与率・累積寄与率を出す", {
