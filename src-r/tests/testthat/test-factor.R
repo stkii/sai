@@ -178,7 +178,7 @@ test_that("因子寄与 (promax) は因子間相関を考慮し、寄与率を�
   res <- run_factor_quietly(df, opts)
   tbl <- factor_section(res, "因子寄与")$table
 
-  # SPSS と同じく、斜交回転では負荷量平方和のみ + 加算不可の注記
+  # 斜交回転では負荷量平方和のみ + 加算不可の注記
   expect_equal(sai_col1(tbl), "負荷量平方和")
   expect_match(tbl$note, "加算")
 

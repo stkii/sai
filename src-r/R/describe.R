@@ -1,4 +1,4 @@
-# type = 2 は SPSS/SAS と同じ歪度 (G1)・尖度 (G2)。psych の既定は type = 3 で値が変わる。
+# type = 2 は歪度 G1・尖度 G2。psych の既定は type = 3 で値が変わる。
 # 0行/全欠測では psych が列名を改名するため、名前は colnames(df) から取り位置で引く。
 .Describe <- function(df, include_skewness = FALSE, include_kurtosis = FALSE) {
   d <- suppressWarnings(suppressMessages(psych::describe(df, type = 2)))
