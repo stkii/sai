@@ -10,7 +10,7 @@ import {
 } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
 import { ModalActions } from '../../../shared/ui/ModalActions';
-import { VariablePicker } from '../../ui/VariablePicker';
+import { VariablePicker } from '../../../shared/ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
 
 type Rotation = 'none' | 'varimax' | 'promax';
