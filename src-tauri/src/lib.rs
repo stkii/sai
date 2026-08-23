@@ -24,6 +24,7 @@ pub fn run() {
                              })
                              .invoke_handler(tauri::generate_handler![commands::dataset::get_sheets,
                                                                       commands::dataset::load_dataset,
+                                                                      commands::dataset::create_variable,
                                                                       commands::analysis::run_analysis,
                                                                       commands::history::load_history,
                                                                       commands::history::append_history,

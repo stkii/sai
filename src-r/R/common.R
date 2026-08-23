@@ -76,6 +76,18 @@
   df
 }
 
+# 数値をデータテーブルのセル文字列へ戻す (.CoerceNumeric の逆操作)。
+# 分析時に as.numeric で復元されるため、丸め (既定 7 桁) や指数表記で元の値を
+# 損なわないようにする。NA は空文字にする (空文字は再読込時に NA へ戻る)。
+# 表示用の .FmtNum とは目的が異なるので混同しない。
+.NumToChr <- function(x) {
+  out <- vapply(x, function(v) {
+    if (is.na(v)) NA_character_ else format(v, digits = 15, scientific = FALSE, trim = TRUE)
+  }, character(1))
+  out[is.na(out)] <- ""
+  unname(out)
+}
+
 .FmtNum <- function(x) {
   if (is.null(x) || length(x) == 0) return("NA")
   if (is.na(x)) return("NA")

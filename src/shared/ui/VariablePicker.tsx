@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { useMemo, useState } from 'react';
 import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
-import { PICKER_HEIGHT } from '../../shared/ui/golden';
+import { PICKER_HEIGHT } from './golden';
 
 interface Item {
   label: string;

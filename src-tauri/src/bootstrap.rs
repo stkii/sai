@@ -6,6 +6,7 @@ use crate::infra::r::runner::{
     RRunner,
     default_script_path,
 };
+use crate::infra::r::transformer::Transformer;
 use crate::infra::reader::spss::SavReader;
 use crate::infra::store::history_store::HistoryStore;
 use crate::services::analysis::AnalysisService;
@@ -23,7 +24,8 @@ impl AppState {
         let cache = Arc::new(DatasetCache::new());
         let history_store = Arc::new(HistoryStore::new(history_path));
         Self { dataset: DatasetService::new(cache.clone(),
-                                            SavReader::new(default_script_path("read_sav.R"))),
+                                            SavReader::new(default_script_path("read_sav.R")),
+                                            Transformer::new(default_script_path("transform.R"))),
                analysis: AnalysisService::new(cache, RRunner::new(default_script_path("cli.R"))),
                history: HistoryService::new(history_store) }
     }

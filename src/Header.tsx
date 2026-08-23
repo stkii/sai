@@ -2,6 +2,7 @@ import { Box, HStack } from '@chakra-ui/react';
 import { MethodSelector } from './analysis/ui/MethodSelector';
 import { useDataset } from './data/state/DatasetContext';
 import { DatasetButton } from './data/ui/DatasetButton';
+import { VariableBuilderMenu } from './data/ui/VariableBuilderMenu';
 import type { Method } from './shared/types';
 
 interface Props {
@@ -24,6 +25,7 @@ export function Header({ onSelectMethod }: Props) {
       <HStack height="100%" gap={3}>
         <DatasetButton />
         <MethodSelector hasDataset={hasDataset} onSelect={onSelectMethod} />
+        <VariableBuilderMenu />
       </HStack>
     </Box>
   );

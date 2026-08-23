@@ -5,7 +5,7 @@ import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import { CheckField, SelectField, SelectInput, toChoices } from '../../../shared/ui/fields';
 import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
 import { ModalActions } from '../../../shared/ui/ModalActions';
-import { VariablePicker } from '../../ui/VariablePicker';
+import { VariablePicker } from '../../../shared/ui/VariablePicker';
 import type { ModalProps } from '../contracts';
 
 export type RegressionOptions = {

@@ -43,11 +43,7 @@ if (is.null(sav_path) || !nzchar(sav_path)) {
   out <- if (inherits(col, "Date") || inherits(col, "POSIXt")) {
     format(col)
   } else if (is.numeric(col)) {
-    # 文字列化した値は分析時に as.numeric で復元されるため、
-    # 丸め (既定 7 桁) や指数表記で元の値を損なわないようにする
-    vapply(col, function(v) {
-      if (is.na(v)) NA_character_ else format(v, digits = 15, scientific = FALSE, trim = TRUE)
-    }, character(1))
+    .NumToChr(col)
   } else {
     as.character(col)
   }
