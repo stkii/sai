@@ -36,6 +36,24 @@ export interface LoadedDataset {
   rows: string[][];
 }
 
+/**
+ * 変数作成の指定。現在は逆転項目のみ。
+ * names は sources と同じ並びの新しい列名。接尾辞から組み立てるか直接入力するかは
+ * モーダル側の選択で、Rust へは確定した名前だけを渡す。
+ */
+export interface VariableSpec {
+  sources: string[];
+  names: string[];
+  scaleMin: number;
+  scaleMax: number;
+}
+
+/** 変数作成の結果。note は数値化に失敗した値の通知。 */
+export interface CreateVariableResult {
+  dataset: LoadedDataset;
+  note?: string;
+}
+
 export interface HistoryRecord {
   id: string;
   method: Method;
