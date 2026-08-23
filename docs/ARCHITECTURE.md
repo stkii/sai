@@ -28,6 +28,7 @@ SAI のゼロベース設計。GUI 統計分析ツールに必要十分な構造
 2. クリック操作のみで分析実行 (記述統計・相関・回帰・因子・信頼性・分散分析・検出力分析)
 3. 分析結果の表示
 4. 過去の分析履歴の参照
+5. 派生列の作成 (逆転項目)
 
 ### 制約
 
@@ -87,10 +88,10 @@ CUPID (Composable / Unix philosophy / Predictable / Idiomatic / Domain-based) �
 
 | ペイン | 表示 | 内容 |
 |---|---|---|
-| 左 | 常時 | 現在のデータセットのプレビュー表。行数が多いため仮想スクロール (`@tanstack/react-virtual`) を用いる。**変数の選択はここではなく分析モーダル側 (`VariablePicker`) で行う** |
+| 左 | 常時 | 現在のデータセットのプレビュー表。行数が多いため仮想スクロール (`@tanstack/react-virtual`) を用いる。**変数の選択はここではなくモーダル側 (`shared/ui/VariablePicker`) で行う** |
 | 中央 | 常時 | 結果 / 履歴のタブ切替。新しい結果が追加されると自動で「結果」タブへ切り替わる |
 
-- **ヘッダー**: データセット読込 / 切替・分析メニュー
+- **ヘッダー**: データセット読込 / 切替・分析メニュー・変数作成
 - **スプリッタ**: 左ペイン幅をドラッグまたは矢印キーで変更する。可動域は `PANE.dataMin`〜`dataMax`
 
 ---
@@ -105,13 +106,15 @@ src/
 ├── App.tsx                       # 2 ペインレイアウトシェル
 ├── Header.tsx                    # ヘッダー (複数機能を組み合わせる)
 │
-├── data/                         # 左ペイン: データ表示
-│   ├── ui/                       # DataPane, DataPreview, DatasetButton
+├── data/                         # 左ペイン: データ表示 + データ操作
+│   ├── ui/                       # DataPane, DataPreview, DatasetButton,
+│   │                             #  VariableBuilderMenu, VariableBuilderHost
+│   ├── variables/                # 変数作成の種別 (contracts.ts + 種別ごとの 1 ファイル)
 │   ├── state/                    # DatasetContext
 │   └── loadFile.ts               # ファイル読込ロジック
 │
 ├── analysis/                     # 分析実行 (modal + 実行フロー)
-│   ├── ui/                       # MethodSelector, VariablePicker, AnalysisModalHost
+│   ├── ui/                       # MethodSelector, AnalysisModalHost
 │   ├── useRunAnalysis.ts         # 実行ユースケース (IPC → 結果登録 → 履歴永続化判定)
 │   └── methods/                  # 各分析メソッド (modal.tsx + index.tsx の 2 ファイル構成。
 │                                 #  result.tsx はカスタム表示が必要な場合のみ追加)
@@ -130,10 +133,11 @@ src/
 └── shared/
     ├── ui/
     │   ├── golden.ts             # 黄金比ベースの寸法トークン (PANE, TABLE, PICKER_HEIGHT)
-    │   ├── fields.tsx            # モーダル入力プリミティブ (Radio / Check / Select / Number)
+    │   ├── fields.tsx            # モーダル入力プリミティブ (Radio / Check / Select / Number / Text)
     │   ├── FieldFrame.tsx        # 入力グループの枠
     │   ├── GoldenSplit.tsx       # モーダル 2 カラムの黄金分割
     │   ├── ModalActions.tsx      # モーダル共通フッター (キャンセル / 実行)
+    │   ├── VariablePicker.tsx    # 2 リスト間で変数を出し入れする選択 UI
     │   ├── SectionsView.tsx      # AnalysisResult の既定表示
     │   ├── toaster.tsx           # ダイアログ外の非同期エラー通知 (共有インスタンス)
     │   └── VerticalSplitter.tsx  # ペイン幅リサイズ
@@ -215,7 +219,7 @@ flowchart TB
 
 - **shared 内部**
   `ipc/*` と `SectionsView` (`ui/`) が `types/` を参照するため `IPC --> T` / `UI --> T` が立つ。
-  `ui/` の内部にも `fields.tsx → FieldFrame` / `SectionsView → golden.ts` の参照がある。
+  `ui/` の内部にも `fields.tsx → FieldFrame` / `SectionsView → golden.ts` / `VariablePicker → golden.ts` の参照がある。
   `types/` `format.ts` `golden.ts` は他へ依存しない葉ノード。
 
 - **機能間の点線 3 本**
@@ -233,18 +237,21 @@ flowchart TB
 | Header の例外 | `Header.tsx` は App と同レベル。複数機能を組み合わせる責務上、機能フォルダを直接参照してよい |
 | `variables` の意味 | **R へ射影する列の集合**。`options` が列名を参照する場合 (ANOVA の `subject` 等) も必ず含める。含めない列は Rust の `project_columns` で落ち、R 側に存在しない |
 | メソッドモジュール | `MethodModule` は直接リテラルで作らず `defineMethod<Key, Options>()` で構築する。modal と `formatOptions` の options 型がここで結ばれる |
+| 変数モジュール | `data/variables/` のレジストリ (`VARIABLE_KINDS`) が種別を列挙する。分析と同じくメニュー (`VariableBuilderMenu`) とダイアログ (`VariableBuilderHost`) は種別を知らない |
 
 ### UI 共通基盤 (`shared/ui/`)
 
-分析モーダルは 7 つある。素の Chakra v3 compound component をそのまま書くと同じ定型が複製されるため、共通プリミティブを 1 枚挟んで各 `modal.tsx` を宣言的に保つ。
+モーダルは分析 7 つと変数作成 2 つがある。素の Chakra v3 compound component をそのまま書くと同じ定型が複製されるため、共通プリミティブを 1 枚挟んで各 `modal.tsx` を宣言的に保つ。
 
 | 種別 | 使うもの | 方針 |
 |---|---|---|
 | 単一選択 | `RadioField` / `RadioChoices` | 選択肢が少数のときはラジオ。枠内に他の入力を同居させる場合のみ枠なしの `RadioChoices` |
 | 複数選択 | `CheckField` | 独立した on/off |
 | 選択肢が多い | `SelectField` / `SelectInput` | 変数名リストなど。`toChoices(headers)` で変換する |
+| 変数の選択 | `VariablePicker` | 候補と選択済みの 2 リスト間で出し入れする。分析・変数作成の双方が使う |
 | 数値 | `NumberField` | 空欄を `undefined` として扱う |
-| 枠・レイアウト | `FieldFrame` / `GoldenSplit` / `ModalActions` | 各フィールドを枠で囲い、2 カラムは φ : 1 で分割、フッターは共通 |
+| 自由入力 | `TextField` | 接尾辞など短い文字列 |
+| 枠・レイアウト | `FieldFrame` / `GoldenSplit` / `ModalActions` | 各フィールドを枠で囲い、2 カラムは φ : 1 で分割、フッターは共通 (`submitLabel` で実行ボタンの文言を差し替える) |
 
 寸法は `golden.ts` に集約する。ペイン幅 (233 / 377 / 610)、テーブル最大幅 (987)、セルの縦横比などをフィボナッチ数列・黄金比で刻み、マジックナンバーを各所へ散らさない。
 
@@ -278,17 +285,17 @@ src-tauri/src/
 ├── bootstrap.rs                  # AppState — 生成と結線 (Composition Root)
 │
 ├── commands/                     # Tauri コマンド (薄い変換層)
-│   ├── dataset.rs                # get_sheets, load_dataset
+│   ├── dataset.rs                # get_sheets, load_dataset, create_variable
 │   ├── analysis.rs               # run_analysis
 │   └── history.rs                # load_history, append_history, clear_history, remove_history
 │
 ├── services/                     # ビジネスロジック
-│   ├── dataset.rs                # ファイル → データセット + キャッシュ
+│   ├── dataset.rs                # ファイル → データセット + キャッシュ + 派生列の追加
 │   ├── analysis.rs               # R 実行 (薄い配管)
 │   └── history.rs                # 履歴 store のラッパ
 │
 ├── infra/                        # 外部システム統合
-│   ├── r/                        # R サブプロセス (runner.rs)
+│   ├── r/                        # R サブプロセス (runner.rs, transformer.rs)
 │   ├── reader/                   # ファイル読込 (csv.rs, excel.rs, spss.rs)
 │   ├── cache/                    # データセットキャッシュ (in-memory)
 │   └── store/                    # 永続ストア
@@ -357,6 +364,18 @@ flowchart TD
 - SPSS (.sav) は Rust では読まず、`infra/reader/spss.rs` の `SavReader` が R (`read_sav.R` → `haven::read_spss`) に委譲する。R サブプロセスの配管 (`run_rscript`) は分析用の `RRunner` と共有する
 - 列名の空・重複は読み込み時に fail-fast で拒否する。列の射影が名前の先頭一致で行われるため、重複を許すと選択した列と異なる列が silent に分析される (ダークパターン禁止規約)
 
+#### 変数作成 (派生列)
+
+`create_variable` は R (`transform.R`) が計算した列を既存テーブルへ追加し、**同じ key で** キャッシュを上書きする。key が変わらないため `AnalysisService` と `project_columns` は無変更で、派生列は普通の列として射影される。
+
+R の呼び出しはキャッシュ更新の直前に置く。範囲外エラーで失敗してもキャッシュに触れないため、列が中途半端に増えた状態にならない。
+
+新しい列名は `VariableSpec.names` として確定した状態で渡る (接尾辞から組み立てるか直接入力するかはモーダルの選択)。Rust は `validate_new_headers` で既存列との衝突と新規同士の重複を拒否する。衝突時に silent なリネーム (`_R2` 等) はしない。
+
+種別は `data/variables/` のレジストリで持つ。現在 IPC (`VariableSpec`) を使うのは逆転項目のみで、任意の変数 (`custom`) はモーダルのみのプレースホルダ。
+
+派生列がどう作られたかは記録していない。履歴から分析を再実行する機能がなく現状は実害がないため、必要になった時点で `LoadedDataset` に定義を持たせる (YAGNI)。
+
 #### R 実行のタイムアウト
 
 - `RRunner` は R 子プロセスを 120 秒で kill しエラーを返す。ハングした R が UI の busy 状態を固定し続けるのを防ぐため
@@ -396,8 +415,10 @@ Rust 側にメソッド名のチェック (`is_supported`) は置かない。`cl
 src-r/
 ├── cli.R                     # Rust から Rscript で起動される分析エントリ
 ├── read_sav.R                # SPSS (.sav) → ParsedTable 互換 JSON の読込エントリ
+├── transform.R               # 派生列 (逆転項目) の計算エントリ
 ├── R/
 │   ├── common.R              # 共通ヘルパ (JSON I/O・df 変換・数値整形・n_note 生成)
+│   ├── transform.R           # 派生列の変換ロジック
 │   ├── describe.R
 │   ├── correlation.R
 │   ├── regression.R
@@ -426,6 +447,25 @@ src-r/
 1. `input.json` (`{ path }`) を読み、`haven::read_spss()` で .sav を読み込む
 2. 値ラベル (例: 1=男, 2=女) は剥がして **基底のコード値を保持** する。ラベル文字列へ置換すると数値系の分析対象から外れ、SPSS 上の結果と乖離するため。ユーザー欠損値は read_spss の既定で NA になる
 3. 全セルを文字列化 (数値は丸め・指数表記なし、NA は空文字) し、`{ headers, rows }` を `output.json` へ書く。行は名前なし配列で Rust の `ParsedTable` と互換
+
+### transform.R の責務
+
+変数作成 (派生列) の計算エントリ。分析とは出力の契約が異なり、`sections` ではなく列の値そのものを返す。
+
+1. `input.json` (`{ kind, columns, scale_min, scale_max }`) を読む。`columns` は `元の列名 → 値の配列`
+2. `kind` を検証する (現在は `reverse` のみ)
+3. `ReverseItems()` が `.CoerceNumeric` で数値化し、`scale_min + scale_max - x` で反転する
+4. `{ columns, note? }` を `output.json` へ書く。**列名は入力キーのまま返す** (新しい列名の生成と検証は Rust 側の責務)
+
+数値化を分析と同じ `.CoerceNumeric` に通すのが要点。Rust や Frontend に第二の数値パーサを置くと、「データプレビューでは値に見えるのに分析では欠測」という不一致が起きる。
+
+| 状況 | 扱い |
+|---|---|
+| 尺度範囲外の値 | **エラーで中断**し、列名と件数を報告する。反転すると範囲外の値が黙って混入するため |
+| 数値化できない値 | 欠測にして続行し、`note` で件数を通知する (分析側の `.CoercionNote` と同じ扱い) |
+| 空欄・NA | 欠測のまま。数値化の失敗には数えない |
+
+反転の基準はユーザーが入力した尺度範囲であり、観測値の min / max は使わない。5 件法で「1」が誰にも選ばれていない項目の観測最小値は 2 であり、そこから式を組むとユーザーに気づけない形で誤った反転になる (`psych` の `check.keys` / `flip` を `FALSE` に固定しているのと同じ理由)。
 
 ### cli.R の責務
 
@@ -481,7 +521,8 @@ src-r/tests/
 │   ├── test-common.R         # common.R の共通ヘルパ (整形・注記生成など)
 │   ├── test-<method>.R       # Run<Method> を直接呼ぶ関数テスト (メソッドごとに 1 ファイル)
 │   ├── test-cli.R            # cli.R を Rscript で起動する E2E (配管のみ薄く検証)
-│   └── test-read-sav.R       # read_sav.R を Rscript で起動する E2E (.sav → JSON 変換規約)
+│   ├── test-read-sav.R       # read_sav.R を Rscript で起動する E2E (.sav → JSON 変換規約)
+│   └── test-transform.R      # ReverseItems の関数テスト + transform.R の E2E
 └── fixtures/cli/             # test-cli.R 用の入力 JSON
 ```
 
@@ -600,6 +641,7 @@ Frontend ↔ Rust は Tauri `invoke()` の JSON、Rust ↔ R は一時 JSON フ�
 | 拡張 | 影響レイヤー | 構造変更の要否 |
 |---|---|---|
 | 新分析メソッド追加 | R / analysis/methods | 不要 (R + Frontend のみで完結) |
+| 新しい派生列の変換追加 (合計得点 等) | R (`transform.R`) / data/ui | 不要 (`kind` の分岐と UI の追加のみ) |
 | 結果のエクスポート (PDF/CSV) | `services/export.rs` 追加 | services 1 つ追加のみ |
 | 複数データセット同時保持 | `infra/cache/` 拡張 | cache key の拡張のみ |
 | 履歴のフィルタ・ページング | `services/history.rs` + `commands/history.rs` 拡張 | API 1 つ追加 |
