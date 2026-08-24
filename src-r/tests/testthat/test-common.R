@@ -13,6 +13,29 @@ test_that(".Stars は境界値で星を付けない (p < 閾値の厳密判定)"
   expect_identical(.Stars(0.05), "")
 })
 
+test_that(".FmtNum は有効4桁で整形し、大きな値でも指数表記にしない", {
+  expect_identical(.FmtNum(0.7746), "0.7746")
+  expect_identical(.FmtNum(1061.345), "1061")
+  expect_identical(.FmtNum(-4195.953), "-4196")
+  # 平方和の規模。旧実装では 6.008e+07 / 6.153e+09 になっていた
+  expect_identical(.FmtNum(60082325.012), "60082325")
+  expect_identical(.FmtNum(6153159280.317), "6153159280")
+  expect_identical(.FmtNum(NA), "NA")
+  expect_identical(.FmtNum(NULL), "NA")
+})
+
+test_that(".FmtNum は整数を整数のまま返す (自由度・度数の表示)", {
+  expect_identical(.FmtNum(0), "0")
+  expect_identical(.FmtNum(2), "2")
+  expect_identical(.FmtNum(57), "57")
+})
+
+test_that(".FmtNum は微小な値だけ指数表記に残す", {
+  # 固定小数点にすると 0.0000000001 となり桁が読めない
+  expect_identical(.FmtNum(1e-10), "1e-10")
+  expect_identical(.FmtNum(0.00012), "0.00012")
+})
+
 test_that(".FmtP は p 値を3桁固定で整形し、p < .001 は < 0.001 を返す", {
   expect_identical(.FmtP(0.0004), "< 0.001")
   expect_identical(.FmtP(0.001), "0.001")
