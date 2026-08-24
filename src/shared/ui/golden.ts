@@ -50,3 +50,22 @@ export const TABLE = {
   cellMinW: '65px',
   rowHeight: '40px',
 } as const;
+
+/**
+ * MDS 布置図の寸法。
+ * 布置は回転・鏡映が自由なので、両軸のスケールを揃えないと点間の距離が歪んで見える。
+ * 図そのものは正方形 (1:1) に固定し、黄金比は一辺と
+ * 余白 (40 = PANE.headerHeight) の取り方にだけ使う。
+ *
+ * 一辺は対象数で切り替える。対象が増えるほどラベルが密集するため、
+ * PANE (233 / 377 / 610) と地続きのフィボナッチ段で描画領域を広げる。
+ */
+export const MDS_PLOT = {
+  size: { small: 377, medium: 610, large: 987 },
+  /** size を small / medium に留める対象数の上限 */
+  sizeThreshold: { small: 10, medium: 25 },
+  padding: 40,
+  pointRadius: 4,
+  labelOffset: 8,
+  fontSize: 11,
+} as const;

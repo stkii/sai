@@ -1,0 +1,11 @@
+{
+  "method": "distance",
+  "headers": ["x", "y", "z"],
+  "rows": [["1", "4", "9"], ["2", "6", "7"], ["3", "5", "4"], ["4", "9", "2"]],
+  "options": {
+    "between": "variables",
+    "measure": "euclid",
+    "standardize": "none",
+    "standardizeBy": "variable"
+  }
+}

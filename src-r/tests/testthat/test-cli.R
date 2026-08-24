@@ -74,6 +74,23 @@ test_that("反復測定で被験者ID列が射影されていない場合は原�
   expect_match(r$log, "被験者ID列 'subj' がデータにありません")
 })
 
+test_that("距離を E2E で実行できる", {
+  r <- sai_run_cli(fixture = "distance_basic.json")
+  expect_equal(r$status, 0L)
+  expect_equal(length(r$result$sections), 1)
+  expect_identical(r$result$sections[[1]]$title, "距離行列")
+  expect_equal(r$result$n, 4)
+})
+
+test_that("多次元尺度構成法を E2E で実行できる (布置座標と適合度)", {
+  r <- sai_run_cli(fixture = "mds_matrix.json")
+  expect_equal(r$status, 0L)
+  expect_equal(length(r$result$sections), 2)
+  expect_identical(r$result$sections[[1]]$title, "布置座標")
+  expect_identical(r$result$sections[[2]]$title, "適合度")
+  expect_length(r$result$sections[[1]]$table$rows, 4)
+})
+
 test_that("未対応メソッドは非ゼロ終了し、エラーメッセージを返す", {
   r <- sai_run_cli(fixture = "unsupported_method.json")
   expect_false(r$status == 0L)

@@ -8,6 +8,8 @@ export type Method =
   | 'reliability'
   | 'factor'
   | 'anova'
+  | 'distance'
+  | 'mds'
   | 'power';
 
 export type AnalysisOptions = Record<string, unknown>;

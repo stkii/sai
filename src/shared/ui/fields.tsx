@@ -20,6 +20,8 @@ interface RadioChoicesProps<T extends string> {
   options: readonly Choice<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** 選択肢群ごと無効化する。他の選択によって設問自体が意味を持たない場合に使う */
+  disabled?: boolean;
 }
 
 /** 単一選択の選択肢群 (枠なし)。枠内に他の入力を同居させる場合に使う。 */
@@ -27,12 +29,18 @@ export function RadioChoices<T extends string>({
   options,
   value,
   onChange,
+  disabled,
 }: RadioChoicesProps<T>) {
   return (
-    <RadioGroup.Root size="sm" value={value} onValueChange={(d) => onChange(d.value as T)}>
+    <RadioGroup.Root
+      size="sm"
+      value={value}
+      disabled={disabled}
+      onValueChange={(d) => onChange(d.value as T)}
+    >
       <Flex wrap="wrap" rowGap={2} columnGap={4}>
         {options.map((opt) => (
-          <RadioGroup.Item key={opt.value} value={opt.value} disabled={opt.disabled}>
+          <RadioGroup.Item key={opt.value} value={opt.value} disabled={disabled || opt.disabled}>
             <RadioGroup.ItemHiddenInput />
             <RadioGroup.ItemIndicator />
             <RadioGroup.ItemText fontSize="sm">{opt.label}</RadioGroup.ItemText>
@@ -120,13 +128,15 @@ export function SelectField({ label, ...rest }: SelectInputProps & { label: stri
   );
 }
 
-/** ラベルと入力を id で紐付ける最小の Field。 */
+/** ラベルと入力を id で紐付ける最小の Field。label が空なら枠側の見出しに任せる。 */
 function LabeledField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Field.Root>
-      <Field.Label fontSize="xs" color="fg.muted">
-        {label}
-      </Field.Label>
+      {label !== '' && (
+        <Field.Label fontSize="xs" color="fg.muted">
+          {label}
+        </Field.Label>
+      )}
       {children}
     </Field.Root>
   );
@@ -158,16 +168,18 @@ interface NumberFieldProps {
   value: number | undefined;
   onChange: (value: number | undefined) => void;
   step?: string;
+  disabled?: boolean;
 }
 
 /** 空欄を undefined として扱う数値入力。NumberInput は制御値 (number) との往復で "0." など小数の途中入力が消えるため、素の input[type=number] を使う。 */
-export function NumberField({ label, value, onChange, step = 'any' }: NumberFieldProps) {
+export function NumberField({ label, value, onChange, step = 'any', disabled }: NumberFieldProps) {
   return (
     <LabeledField label={label}>
       <Input
         size="sm"
         type="number"
         step={step}
+        disabled={disabled}
         value={value ?? ''}
         onChange={(e) => {
           const raw = e.currentTarget.value;

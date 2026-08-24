@@ -9,7 +9,7 @@
 # 自動インストールは行わない (renv の lockfile と実環境を silent に乖離させ
 # ないため)。各メソッド側では個別の requireNamespace チェックを持たず、
 # 利用は `pkg::fn()` の namespaced 呼び出しで統一する。
-REQUIRED_PACKAGES <- c("jsonlite", "EFAtools", "psych")
+REQUIRED_PACKAGES <- c("jsonlite", "EFAtools", "psych", "smacof")
 
 suppressPackageStartupMessages({
   missing <- REQUIRED_PACKAGES[!vapply(REQUIRED_PACKAGES, requireNamespace, logical(1), quietly = TRUE)]
@@ -42,6 +42,9 @@ source(file.path(r_dir, "reliability.R"))
 source(file.path(r_dir, "factor.R"))
 source(file.path(r_dir, "anova.R"))
 source(file.path(r_dir, "power.R"))
+# mds.R は distance.R の .DistanceMatrix を使うため後に読む
+source(file.path(r_dir, "distance.R"))
+source(file.path(r_dir, "mds.R"))
 
 input <- .ReadInputJson(input_path)
 
@@ -57,6 +60,8 @@ dispatch <- list(
   reliability = list(requires_data = TRUE,  data_shape = "all_numeric",          run = RunReliability),
   factor      = list(requires_data = TRUE,  data_shape = "all_numeric",          run = RunFactor),
   anova       = list(requires_data = TRUE,  data_shape = "numeric_with_factors", run = RunAnova),
+  distance    = list(requires_data = TRUE,  data_shape = "all_numeric",          run = RunDistance),
+  mds         = list(requires_data = TRUE,  data_shape = "all_numeric",          run = RunMds),
   power       = list(requires_data = FALSE, data_shape = "none",                 run = RunPower)
 )
 
