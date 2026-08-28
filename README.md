@@ -73,6 +73,16 @@
       <td>✅ Available</td>
     </tr>
     <tr>
+      <td>距離</td>
+      <td>変数間またはケース間の距離・類似度行列を算出します</td>
+      <td>✅ Available</td>
+    </tr>
+    <tr>
+      <td>多次元尺度構成法</td>
+      <td>非類似度から低次元の布置を求めます</td>
+      <td>✅ Available</td>
+    </tr>
+    <tr>
       <td>...</td>
       <td>...</td>
       <td>...</td>
@@ -126,6 +136,13 @@
         <a href="https://cran.r-project.org/web/packages/psych/index.html">psych</a>
       </td>
       <td>Cronbach の alpha 係数、McDonald の omega 係数の算出</td>
+    </tr>
+    <tr>
+      <td>多次元尺度構成法</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/smacof/index.html">smacof</a>
+      </td>
+      <td>距離や類似度から布置を推定し視覚化します</td>
     </tr>
     <tr>
       <td>データ読込</td>
