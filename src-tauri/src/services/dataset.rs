@@ -23,6 +23,7 @@ use crate::models::{
 
 /// 対応ファイル形式の判定はここが唯一の真実。
 /// フロントは拡張子を解釈せず、`get_sheets` が空を返すか否かでシート選択の要否を判断する。
+#[derive(Debug)]
 enum FileKind {
     Csv,
     Excel,
@@ -38,7 +39,8 @@ impl FileKind {
             Some("csv") => Ok(Self::Csv),
             Some("xlsx") | Some("xls") => Ok(Self::Excel),
             Some("sav") => Ok(Self::Sav),
-            other => Err(format!("未対応のファイル形式: {other:?}")),
+            Some(ext) => Err(format!("未対応のファイル形式です: .{ext} (対応: .csv .xlsx .xls .sav)")),
+            None => Err("拡張子がないためファイル形式を判別できません".to_string()),
         }
     }
 }
@@ -221,13 +223,26 @@ fn validate_new_headers(existing: &[String],
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use super::{
+        FileKind,
         validate_headers,
         validate_new_headers,
     };
 
     fn headers(names: &[&str]) -> Vec<String> {
         names.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn unsupported_extension_is_reported_readably() {
+        let err = FileKind::from_path(Path::new("/tmp/data.txt")).unwrap_err();
+        assert!(err.contains(".txt"), "拡張子をそのまま示す: {err}");
+        assert!(!err.contains("Some("), "Rust のデバッグ表記を漏らさない: {err}");
+
+        let err = FileKind::from_path(Path::new("/tmp/data")).unwrap_err();
+        assert!(err.contains("拡張子がない"), "{err}");
     }
 
     #[test]

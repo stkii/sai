@@ -14,6 +14,9 @@ interface RunInput {
 /**
  * 分析の実行フロー (IPC 呼出 → 結果の登録 → 履歴の永続化判定)。
  * モーダルの見た目とは独立させ、呼び出し元は成否だけを受け取る。
+ *
+ * `run` が false を返すときは必ず `error` が立っている。理由を伴わない false を
+ * 返すと、呼び出し元はモーダルを閉じず何も表示しないため操作が無反応になる。
  */
 export function useRunAnalysis() {
   const { dataset } = useDataset();
@@ -26,9 +29,15 @@ export function useRunAnalysis() {
   const run = useCallback(
     async ({ method, variables, options }: RunInput): Promise<boolean> => {
       const mod = findMethod(method);
-      if (!mod) return false;
+      if (!mod) {
+        setError(`未対応の分析メソッドです: ${method}`);
+        return false;
+      }
       const requiresDataset = mod.definition.requiresDataset !== false;
-      if (requiresDataset && !dataset) return false;
+      if (requiresDataset && !dataset) {
+        setError('データセットが読み込まれていません');
+        return false;
+      }
 
       setBusy(true);
       setError(null);
