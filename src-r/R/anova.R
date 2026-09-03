@@ -20,13 +20,38 @@
   list(df = long, coercion_note = .CoercionNote(counts))
 }
 
+# drop1(scope = ~.) が各項の Type III 平方和を返す。誤差行を足し、summary(aov) と
+# 同じ列名・行構成へ揃えることで .AnovaParsed を between / within で共用する。
+.TypeIIITable <- function(fit) {
+  dropped <- drop1(fit, scope = ~., test = "F")
+  terms <- setdiff(rownames(dropped), "<none>")
+  degf <- c(dropped[terms, "Df"], fit$df.residual)
+  ss <- c(dropped[terms, "Sum of Sq"], sum(resid(fit)^2))
+  out <- data.frame(
+    Df = degf,
+    "Sum Sq" = ss,
+    "Mean Sq" = ss / degf,
+    "F value" = c(dropped[terms, "F value"], NA_real_),
+    "Pr(>F)" = c(dropped[terms, "Pr(>F)"], NA_real_),
+    check.names = FALSE
+  )
+  rownames(out) <- c(terms, "Residuals")
+  out
+}
+
+# 平方和は Type III (効果符号化の下で当該項の列だけを計画行列から除いたときの残差
+# 平方和の増分)。逐次分解の Type I はセル度数が不均衡だと項の投入順に依存し、
+# 同じデータでも要因を選んだ順で F 値と p 値が変わる。
 .AnovaBetween <- function(df, dependent, factors) {
   for (f in factors) df[[f]] <- as.factor(df[[f]])
   formula <- as.formula(
     sprintf("`%s` ~ %s", dependent, paste(sprintf("`%s`", factors), collapse = " * "))
   )
-  fit <- aov(formula, data = df)
-  list(fit = fit, table = summary(fit)[[1]])
+  # contr.sum は lm の引数で渡す。options(contrasts=) を書き換えると同一プロセス内の
+  # 後続の推定まで符号化が変わる
+  contrasts <- setNames(rep(list("contr.sum"), length(factors)), factors)
+  fit <- lm(formula, data = df, contrasts = contrasts)
+  list(fit = fit, table = .TypeIIITable(fit))
 }
 
 # aov の層名 ("Error: subj:cond") を研究者の語彙へ直す。R の Error は失敗ではなく
@@ -54,6 +79,17 @@
 
 .FmtAnovaP <- function(p) if (length(p) == 0 || is.na(p)) "—" else paste0(.FmtP(p), .Stars(p))
 
+# 反復測定の平方和は、各被験者が全セルをちょうど1回ずつ持つ前提で誤差項へ分解される。
+# セルが欠けても aov は値を返してしまうため、分解が成立していないことを注記で伝える。
+.RepeatedBalanceNote <- function(df, subject, factors) {
+  cells <- table(
+    as.character(df[[subject]]),
+    do.call(paste, c(unname(as.list(df[factors])), list(sep = ":")))
+  )
+  if (all(cells == 1)) return(NULL)
+  "一部の被験者で条件の観測が1つずつ揃っていないため、平方和は解釈できません"
+}
+
 .AnovaWithin <- function(df, dependent, subject, within_factors) {
   for (f in within_factors) df[[f]] <- as.factor(df[[f]])
   df[[subject]] <- as.factor(df[[subject]])
@@ -75,39 +111,33 @@
   list(fit = fit, table = rows_combined)
 }
 
+# 反復測定は Error() 分解で層が増え、項名も行名ではなく列として持つ。
+# 統計量の列は両者で共通なので、先頭のラベル列だけを design で切り替える。
 .AnovaParsed <- function(table, design) {
-  if (design == "between") {
-    headers <- c("項", "Df", "平方和", "平均平方", "F値", "p値")
-    rows <- list()
-    for (i in seq_len(nrow(table))) {
-      p <- table[i, "Pr(>F)"]
-      rows[[length(rows) + 1]] <- list(
-        .AnovaTermLabel(rownames(table)[i]),
-        .FmtNum(table[i, "Df"]),
-        .FmtNum(table[i, "Sum Sq"]),
-        .FmtNum(table[i, "Mean Sq"]),
-        .FmtAnovaF(table[i, "F value"]),
-        .FmtAnovaP(p)
-      )
+  stratified <- design == "within"
+  label_headers <- if (stratified) c("層", "項") else "項"
+
+  rows <- list()
+  for (i in seq_len(nrow(table))) {
+    labels <- if (stratified) {
+      list(as.character(table$Stratum[i]), .AnovaTermLabel(as.character(table$Term[i])))
+    } else {
+      list(.AnovaTermLabel(rownames(table)[i]))
     }
-    list(headers = headers, rows = rows, note = "*** p < .001, ** p < .01, * p < .05")
-  } else {
-    headers <- c("層", "項", "Df", "平方和", "平均平方", "F値", "p値")
-    rows <- list()
-    for (i in seq_len(nrow(table))) {
-      p <- table[i, "Pr(>F)"]
-      rows[[length(rows) + 1]] <- list(
-        as.character(table$Stratum[i]),
-        .AnovaTermLabel(as.character(table$Term[i])),
-        .FmtNum(table[i, "Df"]),
-        .FmtNum(table[i, "Sum Sq"]),
-        .FmtNum(table[i, "Mean Sq"]),
-        .FmtAnovaF(table[i, "F value"]),
-        .FmtAnovaP(p)
-      )
-    }
-    list(headers = headers, rows = rows, note = "*** p < .001, ** p < .01, * p < .05")
+    rows[[length(rows) + 1]] <- c(labels, list(
+      .FmtNum(table[i, "Df"]),
+      .FmtNum(table[i, "Sum Sq"]),
+      .FmtNum(table[i, "Mean Sq"]),
+      .FmtAnovaF(table[i, "F value"]),
+      .FmtAnovaP(table[i, "Pr(>F)"])
+    ))
   }
+
+  list(
+    headers = c(label_headers, "Df", "平方和", "平均平方", "F値", "p値"),
+    rows = rows,
+    note = "*** p < .001, ** p < .01, * p < .05"
+  )
 }
 
 RunAnova <- function(df, options) {
@@ -193,7 +223,13 @@ RunAnova <- function(df, options) {
     list(
       sections = list(list(title = "分散分析表 (反復測定)", table = parsed)),
       n = after,
-      n_note = .MergeNotes(base_note, wide_note, .ListwiseNote(before - after), coercion_note)
+      n_note = .MergeNotes(
+        base_note,
+        .RepeatedBalanceNote(df, subject, factors),
+        wide_note,
+        .ListwiseNote(before - after),
+        coercion_note
+      )
     )
   } else {
     res <- .AnovaBetween(df, dependent, factors)

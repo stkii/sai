@@ -44,6 +44,37 @@ wide_options <- function(conditions = list("T1", "T2", "T3"), ...) {
   )
 }
 
+# セル度数が不均衡な2要因デザイン。均衡していると Type I と Type III が一致するため、
+# 平方和の型を検証できるのはこの形だけ
+make_unbalanced_data <- function() {
+  data.frame(
+    A = c(rep("a1", 9), rep("a2", 6)),
+    B = c(rep("b1", 5), rep("b2", 4), rep("b1", 2), rep("b2", 4)),
+    y = c(5, 6, 7, 5, 6, 9, 10, 8, 9, 3, 4, 7, 8, 9, 7)
+  )
+}
+
+# Type III の定義から直接求める: 効果符号化の下で当該項の列だけを計画行列から抜いた
+# ときの残差平方和の増分。実装と同じ drop1 は使わず、定義式で照合する
+unbalanced_type3_ss <- function(df, term) {
+  fit <- lm(
+    y ~ A * B,
+    data = transform(df, A = as.factor(A), B = as.factor(B)),
+    contrasts = list(A = "contr.sum", B = "contr.sum")
+  )
+  x <- model.matrix(fit)
+  k <- which(attr(terms(fit), "term.labels") == term)
+  reduced <- x[, attr(x, "assign") != k, drop = FALSE]
+  sum(resid(lm.fit(reduced, df$y))^2) - sum(resid(fit)^2)
+}
+
+# 被験者間テーブルから指定した項の行を取り出す (列: 項/Df/平方和/平均平方/F値/p値)
+between_row <- function(res, term) {
+  hit <- Filter(function(r) trimws(r[[1]]) == term, res$sections[[1]]$table$rows)
+  expect_equal(length(hit), 1)
+  hit[[1]]
+}
+
 # 反復測定テーブルから指定した項の F 値を取り出す (列: 層/項/Df/平方和/平均平方/F値/p値)
 within_f <- function(res, term) {
   hit <- Filter(function(r) trimws(r[[2]]) == term, res$sections[[1]]$table$rows)
@@ -69,6 +100,58 @@ test_that("被験者間: リストワイズ削除が n と注記に反映され�
   res <- RunAnova(df, list(dependent = "y", factors = list("g"), design = "between"))
   expect_equal(res$n, 29)
   expect_match(res$n_note, "1件")
+})
+
+test_that("被験者間: 不均衡計画の平方和が Type III の定義と一致する", {
+  df <- make_unbalanced_data()
+  res <- RunAnova(df, list(dependent = "y", factors = list("A", "B"), design = "between"))
+
+  for (term in c("A", "B", "A:B")) {
+    expect_equal(
+      sai_cell_num(between_row(res, term)[[3]]),
+      unbalanced_type3_ss(df, term),
+      tolerance = 1e-3
+    )
+  }
+})
+
+test_that("被験者間: 不均衡計画では逐次分解 (Type I) と一致しない", {
+  df <- make_unbalanced_data()
+  res <- RunAnova(df, list(dependent = "y", factors = list("A", "B"), design = "between"))
+  type1 <- summary(aov(y ~ A * B, data = df))[[1]]
+  ss_type1_a <- type1[trimws(rownames(type1)) == "A", "Sum Sq"]
+
+  expect_false(isTRUE(all.equal(
+    sai_cell_num(between_row(res, "A")[[3]]), ss_type1_a,
+    tolerance = 1e-3
+  )))
+})
+
+test_that("被験者間: 不均衡でも要因を選んだ順で結果が変わらない", {
+  df <- make_unbalanced_data()
+  ab <- RunAnova(df, list(dependent = "y", factors = list("A", "B"), design = "between"))
+  ba <- RunAnova(df, list(dependent = "y", factors = list("B", "A"), design = "between"))
+
+  for (term in c("A", "B")) {
+    expect_equal(
+      sai_cell_num(between_row(ab, term)[[5]]),
+      sai_cell_num(between_row(ba, term)[[5]]),
+      tolerance = 1e-6
+    )
+  }
+})
+
+test_that("被験者間: 誤差行の自由度と平方和が残差から算出される", {
+  df <- make_unbalanced_data()
+  res <- RunAnova(df, list(dependent = "y", factors = list("A", "B"), design = "between"))
+  # 残差平方和は符号化の取り方に依存しないため、既定の対比の lm を参照にできる
+  fit <- lm(y ~ A * B, data = df)
+  row <- between_row(res, "誤差")
+
+  expect_equal(sai_cell_num(row[[2]]), fit$df.residual)
+  expect_equal(sai_cell_num(row[[3]]), sum(resid(fit)^2), tolerance = 1e-3)
+  expect_identical(row[[5]], "—")
+  expect_identical(row[[6]], "—")
 })
 
 test_that("反復測定: p 値が aov (Error 層) と一致し、注記が付く", {
@@ -106,6 +189,23 @@ test_that("反復測定: リストワイズ削除時は両方の注記が連結�
   expect_equal(res$n, 15)
   expect_match(res$n_note, "反復測定")
   expect_match(res$n_note, "リストワイズ削除により、1件")
+})
+
+test_that("反復測定: 被験者ごとに条件が揃わない場合は注記で警告する", {
+  df <- make_within_data()
+  df$y[1] <- NA
+  res <- suppressWarnings(
+    RunAnova(df, list(dependent = "y", factors = list("cond"), design = "within", subject = "subj"))
+  )
+  expect_match(res$n_note, "平方和は解釈できません")
+})
+
+test_that("反復測定: 条件が揃っていれば不均衡の警告は出ない", {
+  res <- suppressWarnings(RunAnova(
+    make_within_data(),
+    list(dependent = "y", factors = list("cond"), design = "within", subject = "subj")
+  ))
+  expect_false(grepl("平方和は解釈できません", res$n_note))
 })
 
 test_that("層は被験者間 / 被験者内 で表記され、Error: が残らない", {
