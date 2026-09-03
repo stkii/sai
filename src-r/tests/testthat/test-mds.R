@@ -154,3 +154,17 @@ test_that("無効な指定は黙って既定値にせずエラーにする", {
   expect_error(RunMds(df, list(source = "matrix", ties = "none")), "未対応の同順位の扱い")
   expect_error(RunMds(df, list(source = "matrix", ndim = 0)), "1以上")
 })
+
+test_that("布置座標の節は表示名と別に安定した id を持つ", {
+  df <- data.frame(
+    a = c(0, 1, 2, 3, 4), b = c(0, 2, 1, 4, 3),
+    c = c(4, 3, 2, 1, 0), d = c(1, 0, 3, 2, 4)
+  )
+  res <- RunMds(df, list(source = "raw", between = "variables", ndim = 2))
+  ids <- vapply(res$sections, function(s) if (is.null(s$id)) "" else s$id, character(1))
+  titles <- vapply(res$sections, function(s) s$title, character(1))
+
+  expect_true("configuration" %in% ids)
+  # 布置図が引くのは id であって表示名ではない
+  expect_identical(titles[ids == "configuration"], "布置座標")
+})

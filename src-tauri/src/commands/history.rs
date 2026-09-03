@@ -1,10 +1,13 @@
 use tauri::State;
 
 use crate::bootstrap::AppState;
-use crate::models::HistoryRecord;
+use crate::models::{
+    HistoryLoadResult,
+    HistoryRecord,
+};
 
 #[tauri::command]
-pub fn load_history(state: State<'_, AppState>) -> Result<Vec<HistoryRecord>, String> {
+pub fn load_history(state: State<'_, AppState>) -> Result<HistoryLoadResult, String> {
     state.history.load_all()
 }
 

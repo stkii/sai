@@ -21,6 +21,11 @@ export interface AnalysisTable {
 }
 
 export interface AnalysisSection {
+  /**
+   * メソッド固有の表示 (renderResult) が節を特定するための鍵。
+   * 表示名 (title) と違い変わらない。必要なメソッドだけが付けるため任意。
+   */
+  id?: string;
   title: string;
   table: AnalysisTable;
 }
@@ -54,6 +59,12 @@ export interface VariableSpec {
 export interface CreateVariableResult {
   dataset: LoadedDataset;
   note?: string;
+}
+
+/** 履歴の読込結果。skipped は壊れて読めなかった記録の件数。 */
+export interface HistoryLoadResult {
+  records: HistoryRecord[];
+  skipped: number;
 }
 
 export interface HistoryRecord {

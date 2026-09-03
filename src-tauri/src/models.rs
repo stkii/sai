@@ -30,6 +30,10 @@ pub struct AnalysisTable {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalysisSection {
+    /// メソッド固有の表示が節を特定するための鍵。表示名 (`title`) と違い変わらない。
+    /// 必要なメソッドだけが付けるため任意 (`id` を持たない履歴レコードも読める)。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub title: String,
     pub table: AnalysisTable,
 }
@@ -70,6 +74,15 @@ pub struct CreateVariableResult {
     pub dataset: LoadedDataset,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+}
+
+/// 履歴の読込結果。壊れて読めなかった行は捨てるほかないが、件数を返して
+/// 「履歴が減った」ことをユーザーへ伝えられるようにする。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryLoadResult {
+    pub records: Vec<HistoryRecord>,
+    pub skipped: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -153,8 +153,9 @@ RunMds <- function(df, options) {
 
   conf <- res$conf
   # principal = TRUE で主軸へ回転済み。行の並びは delta と同じなのでラベルをそのまま使う
+  # id は布置図 (result.tsx) が節を特定するための鍵。title は表示名なので変わりうる
   sections <- list(
-    list(title = "布置座標", table = .MdsConfigTable(conf, built$labels)),
+    list(id = "configuration", title = "布置座標", table = .MdsConfigTable(conf, built$labels)),
     list(title = "適合度", table = .MdsFitTable(res))
   )
 

@@ -51,7 +51,18 @@ export function ResultProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadHistory()
-      .then((records) => setResults(records))
+      .then(({ records, skipped }) => {
+        setResults(records);
+        // 読めなかった記録を黙って捨てると、履歴が減った理由が伝わらない
+        if (skipped > 0) {
+          toaster.create({
+            type: 'warning',
+            title: '読み込めなかった履歴があります',
+            description: `${skipped} 件の記録が壊れているため一覧から除外しました。ファイル自体は残しています。`,
+            meta: { closable: true },
+          });
+        }
+      })
       .catch((e) =>
         notifyHistoryFailure('履歴を読み込めませんでした', '保存済みの履歴は表示されません。', e)
       );

@@ -3,7 +3,15 @@ import type { AnalysisResult, AnalysisTable } from '../../../shared/types';
 import { MDS_PLOT } from '../../../shared/ui/golden';
 import { SectionsView } from '../../../shared/ui/SectionsView';
 
-const CONFIG_TITLE = '布置座標';
+const CONFIG_ID = 'configuration';
+/** id を持たない履歴レコード (id の導入前に保存されたもの) を読むための後方互換 */
+const LEGACY_CONFIG_TITLE = '布置座標';
+
+function findConfiguration(result: AnalysisResult) {
+  return result.sections.find(
+    (s) => s.id === CONFIG_ID || (s.id === undefined && s.title === LEGACY_CONFIG_TITLE)
+  );
+}
 
 interface Point {
   label: string;
@@ -133,7 +141,7 @@ function ConfigurationPlot({ points, dimCount }: { points: Point[]; dimCount: nu
 }
 
 export function MdsResult({ result }: { result: AnalysisResult }) {
-  const config = result.sections.find((s) => s.title === CONFIG_TITLE);
+  const config = findConfiguration(result);
   const points = config ? toPoints(config.table) : [];
   const dimCount = config ? config.table.headers.length - 1 : 0;
 
