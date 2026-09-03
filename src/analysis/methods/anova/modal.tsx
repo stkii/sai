@@ -80,17 +80,10 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<An
 
   function handleSubmit() {
     if (invalid) return;
-    if (isWide) {
-      onExecute(conditions, {
-        design,
-        dataLayout: 'wide',
-        conditions,
-        factorName: factorName.trim(),
-      });
-      return;
-    }
-    const options: AnovaOptions = { design, dataLayout: 'long', dependent, factors };
-    if (design === 'within') options.subject = subject;
+    const options: AnovaOptions = isWide
+      ? { design, dataLayout: 'wide', conditions, factorName: factorName.trim() }
+      : { design, dataLayout: 'long', dependent, factors };
+    if (!isWide && design === 'within') options.subject = subject;
     onExecute(anovaColumns(options), options);
   }
 

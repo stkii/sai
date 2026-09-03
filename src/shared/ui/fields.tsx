@@ -168,17 +168,26 @@ interface NumberFieldProps {
   value: number | undefined;
   onChange: (value: number | undefined) => void;
   step?: string;
+  min?: number;
   disabled?: boolean;
 }
 
 /** 空欄を undefined として扱う数値入力。NumberInput は制御値 (number) との往復で "0." など小数の途中入力が消えるため、素の input[type=number] を使う。 */
-export function NumberField({ label, value, onChange, step = 'any', disabled }: NumberFieldProps) {
+export function NumberField({
+  label,
+  value,
+  onChange,
+  step = 'any',
+  min,
+  disabled,
+}: NumberFieldProps) {
   return (
     <LabeledField label={label}>
       <Input
         size="sm"
         type="number"
         step={step}
+        min={min}
         disabled={disabled}
         value={value ?? ''}
         onChange={(e) => {
