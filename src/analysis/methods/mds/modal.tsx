@@ -12,24 +12,21 @@ import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
 import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../../shared/ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
+import {
+  BETWEEN_OPTIONS,
+  MEASURE_OPTIONS,
+  type ProximityBetween,
+  type ProximityMeasure,
+} from '../proximity';
 
 type Source = 'raw' | 'matrix';
-type Between = 'variables' | 'cases';
-type Measure =
-  | 'euclid'
-  | 'seuclid'
-  | 'chebychev'
-  | 'block'
-  | 'minkowski'
-  | 'correlation'
-  | 'cosine';
 type MdsType = 'ratio' | 'interval' | 'ordinal';
 type Ties = 'primary' | 'secondary' | 'tertiary';
 
 export type MdsOptions = {
   source: Source;
-  between: Between;
-  measure: Measure;
+  between: ProximityBetween;
+  measure: ProximityMeasure;
   minkowskiP: number;
   type: MdsType;
   ties: Ties;
@@ -39,21 +36,6 @@ export type MdsOptions = {
 const SOURCE_OPTIONS: Choice<Source>[] = [
   { value: 'raw', label: '生データ' },
   { value: 'matrix', label: '非類似度行列' },
-];
-
-const BETWEEN_OPTIONS: Choice<Between>[] = [
-  { value: 'variables', label: '変数間' },
-  { value: 'cases', label: 'ケース間' },
-];
-
-const MEASURE_OPTIONS: Choice<Measure>[] = [
-  { value: 'euclid', label: 'ユークリッド距離' },
-  { value: 'seuclid', label: '平方ユークリッド距離' },
-  { value: 'chebychev', label: 'Chebychev' },
-  { value: 'block', label: 'ブロック (市街地距離)' },
-  { value: 'minkowski', label: 'Minkowski' },
-  { value: 'correlation', label: 'Pearson 相関 (類似度)' },
-  { value: 'cosine', label: 'コサイン (類似度)' },
 ];
 
 const TYPE_OPTIONS: Choice<MdsType>[] = [
@@ -90,8 +72,8 @@ export function formatMdsOptions(o: Partial<MdsOptions>): string | null {
 export function MdsModal({ headers, busy, onCancel, onExecute }: ModalProps<MdsOptions>) {
   const [selected, setSelected] = useState<string[]>([]);
   const [source, setSource] = useState<Source>('raw');
-  const [between, setBetween] = useState<Between>('variables');
-  const [measure, setMeasure] = useState<Measure>('euclid');
+  const [between, setBetween] = useState<ProximityBetween>('variables');
+  const [measure, setMeasure] = useState<ProximityMeasure>('euclid');
   const [minkowskiP, setMinkowskiP] = useState<number | undefined>(2);
   const [type, setType] = useState<MdsType>('ratio');
   const [ties, setTies] = useState<Ties>('secondary');
@@ -146,7 +128,7 @@ export function MdsModal({ headers, busy, onCancel, onExecute }: ModalProps<MdsO
                 <SelectInput
                   options={MEASURE_OPTIONS}
                   value={measure}
-                  onChange={(v) => setMeasure(v as Measure)}
+                  onChange={(v) => setMeasure(v as ProximityMeasure)}
                   disabled={isMatrix}
                 />
                 <NumberField

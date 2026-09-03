@@ -12,41 +12,23 @@ import { GoldenSplit } from '../../../shared/ui/GoldenSplit';
 import { ModalActions } from '../../../shared/ui/ModalActions';
 import { VariablePicker } from '../../../shared/ui/VariablePicker';
 import { labelOf, type ModalProps } from '../contracts';
+import {
+  BETWEEN_OPTIONS,
+  MEASURE_OPTIONS,
+  type ProximityBetween,
+  type ProximityMeasure,
+} from '../proximity';
 
-type Between = 'variables' | 'cases';
-type Measure =
-  | 'euclid'
-  | 'seuclid'
-  | 'chebychev'
-  | 'block'
-  | 'minkowski'
-  | 'correlation'
-  | 'cosine';
 type Standardize = 'none' | 'z' | 'range' | 'rescale' | 'max' | 'mean' | 'sd';
 type StandardizeBy = 'variable' | 'case';
 
 export type DistanceOptions = {
-  between: Between;
-  measure: Measure;
+  between: ProximityBetween;
+  measure: ProximityMeasure;
   minkowskiP: number;
   standardize: Standardize;
   standardizeBy: StandardizeBy;
 };
-
-const BETWEEN_OPTIONS: Choice<Between>[] = [
-  { value: 'variables', label: '変数間' },
-  { value: 'cases', label: 'ケース間' },
-];
-
-const MEASURE_OPTIONS: Choice<Measure>[] = [
-  { value: 'euclid', label: 'ユークリッド距離' },
-  { value: 'seuclid', label: '平方ユークリッド距離' },
-  { value: 'chebychev', label: 'Chebychev' },
-  { value: 'block', label: 'ブロック (市街地距離)' },
-  { value: 'minkowski', label: 'Minkowski' },
-  { value: 'correlation', label: 'Pearson 相関 (類似度)' },
-  { value: 'cosine', label: 'コサイン (類似度)' },
-];
 
 const STANDARDIZE_OPTIONS: Choice<Standardize>[] = [
   { value: 'none', label: 'なし' },
@@ -89,8 +71,8 @@ export function DistanceModal({
   onExecute,
 }: ModalProps<DistanceOptions>) {
   const [selected, setSelected] = useState<string[]>([]);
-  const [between, setBetween] = useState<Between>('variables');
-  const [measure, setMeasure] = useState<Measure>('euclid');
+  const [between, setBetween] = useState<ProximityBetween>('variables');
+  const [measure, setMeasure] = useState<ProximityMeasure>('euclid');
   const [minkowskiP, setMinkowskiP] = useState<number | undefined>(2);
   const [standardize, setStandardize] = useState<Standardize>('none');
   const [standardizeBy, setStandardizeBy] = useState<StandardizeBy>('variable');
@@ -131,7 +113,7 @@ export function DistanceModal({
                 <SelectInput
                   options={MEASURE_OPTIONS}
                   value={measure}
-                  onChange={(v) => setMeasure(v as Measure)}
+                  onChange={(v) => setMeasure(v as ProximityMeasure)}
                 />
                 <NumberField
                   label="Minkowski の次数 p"
