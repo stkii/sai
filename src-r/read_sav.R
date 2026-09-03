@@ -4,32 +4,19 @@
 # input.json: { path }
 # output.json: { headers: [...], rows: [[...]] } (全セル文字列)
 
-REQUIRED_PACKAGES <- c("jsonlite", "haven")
-
-suppressPackageStartupMessages({
-  missing <- REQUIRED_PACKAGES[!vapply(REQUIRED_PACKAGES, requireNamespace, logical(1), quietly = TRUE)]
-  if (length(missing) > 0) {
-    stop(sprintf("必須パッケージが見つかりません: %s (renv::restore() を実行してください)",
-                 paste(missing, collapse = ", ")))
-  }
-})
-
-args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 2) {
-  message("Usage: Rscript read_sav.R <input.json> <output.json>")
-  quit(status = 2)
-}
-
-input_path <- args[[1]]
-output_path <- args[[2]]
-
 script_dir <- dirname(sub("--file=", "", grep("--file=", commandArgs(trailingOnly = FALSE), value = TRUE)[1]))
 if (is.na(script_dir) || length(script_dir) == 0 || nchar(script_dir) == 0) {
   script_dir <- getwd()
 }
-source(file.path(script_dir, "R", "common.R"))
+r_dir <- file.path(script_dir, "R")
+source(file.path(r_dir, "entry.R"))
 
-input <- .ReadInputJson(input_path)
+.RequirePackages(c("jsonlite", "haven"))
+paths <- .EntryPaths("Usage: Rscript read_sav.R <input.json> <output.json>")
+
+source(file.path(r_dir, "common.R"))
+
+input <- .ReadInputJson(paths$input)
 sav_path <- input$path
 if (is.null(sav_path) || !nzchar(sav_path)) {
   stop("読み込む .sav ファイルのパスが指定されていません")
@@ -66,4 +53,4 @@ rows <- lapply(seq_len(nrow(df)), function(i) {
   unname(lapply(cols, function(col) col[[i]]))
 })
 
-.WriteOutputJson(list(headers = as.list(names(df)), rows = rows), output_path)
+.WriteOutputJson(list(headers = as.list(names(df)), rows = rows), paths$output)

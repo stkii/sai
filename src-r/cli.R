@@ -4,35 +4,15 @@
 # input.json: { method, headers, rows, options }
 # output.json: { sections: [...], n?: number, n_note?: string }
 
-# 必須サードパーティパッケージ。renv で管理されている前提で、起動時に一括
-# requireNamespace で存在確認し、不足があれば fail-fast で停止する。
-# 自動インストールは行わない (renv の lockfile と実環境を silent に乖離させ
-# ないため)。各メソッド側では個別の requireNamespace チェックを持たず、
-# 利用は `pkg::fn()` の namespaced 呼び出しで統一する。
-REQUIRED_PACKAGES <- c("jsonlite", "EFAtools", "psych", "smacof")
-
-suppressPackageStartupMessages({
-  missing <- REQUIRED_PACKAGES[!vapply(REQUIRED_PACKAGES, requireNamespace, logical(1), quietly = TRUE)]
-  if (length(missing) > 0) {
-    stop(sprintf("必須パッケージが見つかりません: %s (renv::restore() を実行してください)",
-                 paste(missing, collapse = ", ")))
-  }
-})
-
-args <- commandArgs(trailingOnly = TRUE)
-if (length(args) < 2) {
-  message("Usage: Rscript cli.R <input.json> <output.json>")
-  quit(status = 2)
-}
-
-input_path <- args[[1]]
-output_path <- args[[2]]
-
 script_dir <- dirname(sub("--file=", "", grep("--file=", commandArgs(trailingOnly = FALSE), value = TRUE)[1]))
 if (is.na(script_dir) || length(script_dir) == 0 || nchar(script_dir) == 0) {
   script_dir <- getwd()
 }
 r_dir <- file.path(script_dir, "R")
+source(file.path(r_dir, "entry.R"))
+
+.RequirePackages(c("jsonlite", "EFAtools", "psych", "smacof"))
+paths <- .EntryPaths("Usage: Rscript cli.R <input.json> <output.json>")
 
 source(file.path(r_dir, "common.R"))
 source(file.path(r_dir, "describe.R"))
@@ -46,7 +26,7 @@ source(file.path(r_dir, "power.R"))
 source(file.path(r_dir, "distance.R"))
 source(file.path(r_dir, "mds.R"))
 
-input <- .ReadInputJson(input_path)
+input <- .ReadInputJson(paths$input)
 
 method <- input$method
 headers <- unlist(input$headers)
@@ -100,4 +80,4 @@ if (!is.null(result$n)) payload$n <- result$n
 n_note <- .MergeNotes(result$n_note, coercion_note)
 if (!is.null(n_note)) payload$n_note <- n_note
 
-.WriteOutputJson(payload, output_path)
+.WriteOutputJson(payload, paths$output)
