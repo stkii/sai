@@ -83,6 +83,25 @@ export function formatPowerOptions(o: PowerOptionsFlat): string | null {
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 
+interface SolvableField {
+  label: string;
+  value: number | undefined;
+}
+
+/**
+ * 「空欄ちょうど1つ」を満たさない理由を返す (満たしていれば null)。
+ * 検定統計量の定義域 (0 < α < 1 等) の検証は R 側が持つ。ここは実行できない
+ * 組み合わせで往復させないための構造的なガードに留める。
+ */
+function validateSolvable(fields: SolvableField[]): string | null {
+  const blanks = fields.filter((f) => f.value === undefined);
+  if (blanks.length === 0) return '求めたい項目を1つ空欄にしてください';
+  if (blanks.length > 1) {
+    return `空欄にできるのは1つだけです: ${blanks.map((f) => f.label).join('、')}`;
+  }
+  return null;
+}
+
 export function PowerModal({ busy, onCancel, onExecute }: ModalProps<PowerOptions>) {
   const [testType, setTestType] = useState<TestType>('t');
   const [sigLevel, setSigLevel] = useState<number>(0.05);
@@ -134,7 +153,33 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps<PowerOption
     };
   }
 
+  // 空欄1つの制約を課す項目は検定ごとに違う (有意水準は常に送るため対象外)
+  const solvableFields: SolvableField[] =
+    testType === 't'
+      ? [
+          { label: 'サンプルサイズ n', value: n },
+          { label: '効果量 (delta)', value: effectSize },
+          { label: '検出力 (1−β)', value: power },
+        ]
+      : testType === 'anova'
+        ? [
+            { label: '群数 groups', value: groups },
+            { label: 'サンプルサイズ n', value: n },
+            { label: '群間分散 between.var', value: betweenVar },
+            { label: '群内分散 within.var', value: withinVar },
+            { label: '検出力 (1−β)', value: power },
+          ]
+        : [
+            { label: 'サンプルサイズ n', value: n },
+            { label: '比率1 p1', value: p1 },
+            { label: '比率2 p2', value: p2 },
+            { label: '検出力 (1−β)', value: power },
+          ];
+
+  const validation = validateSolvable(solvableFields);
+
   function handleSubmit() {
+    if (validation !== null) return;
     onExecute([], buildOptions());
   }
 
@@ -207,7 +252,17 @@ export function PowerModal({ busy, onCancel, onExecute }: ModalProps<PowerOption
           </VStack>
         }
       />
-      <ModalActions busy={busy} onCancel={onCancel} onSubmit={handleSubmit} />
+      {validation && (
+        <Text fontSize="xs" color="fg.subtle">
+          {validation}
+        </Text>
+      )}
+      <ModalActions
+        busy={busy}
+        disabled={validation !== null}
+        onCancel={onCancel}
+        onSubmit={handleSubmit}
+      />
     </VStack>
   );
 }
