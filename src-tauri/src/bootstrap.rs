@@ -14,8 +14,8 @@ use crate::services::dataset::DatasetService;
 use crate::services::history::HistoryService;
 
 pub struct AppState {
-    pub dataset: DatasetService,
-    pub analysis: AnalysisService,
+    pub dataset: Arc<DatasetService>,
+    pub analysis: Arc<AnalysisService>,
     pub history: HistoryService,
 }
 
@@ -23,10 +23,10 @@ impl AppState {
     pub fn new(history_path: PathBuf) -> Self {
         let cache = Arc::new(DatasetCache::new());
         let history_store = Arc::new(HistoryStore::new(history_path));
-        Self { dataset: DatasetService::new(cache.clone(),
+        Self { dataset: Arc::new(DatasetService::new(cache.clone(),
                                             SavReader::new(default_script_path("read_sav.R")),
-                                            Transformer::new(default_script_path("transform.R"))),
-               analysis: AnalysisService::new(cache, RRunner::new(default_script_path("cli.R"))),
+                                            Transformer::new(default_script_path("transform.R")))),
+               analysis: Arc::new(AnalysisService::new(cache, RRunner::new(default_script_path("cli.R")))),
                history: HistoryService::new(history_store) }
     }
 }
