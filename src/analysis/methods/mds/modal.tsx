@@ -1,4 +1,4 @@
-import { VStack } from '@chakra-ui/react';
+import { Text, VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import {
@@ -80,6 +80,8 @@ export function MdsModal({ headers, busy, onCancel, onExecute }: ModalProps<MdsO
   const [ndim, setNdim] = useState<number | undefined>(2);
 
   const isMatrix = source === 'matrix';
+  // 行は読込時の順序のままなので、行列入力では列も元の順に揃える。
+  const variables = isMatrix ? headers.filter((h) => selected.includes(h)) : selected;
   const isMinkowski = !isMatrix && measure === 'minkowski';
   // 非類似度行列は列そのものが対象、生データの変数間も同じく変数が対象になる。
   // ケース間だけは対象が行なので、必要な列は2つでよい。
@@ -90,7 +92,7 @@ export function MdsModal({ headers, busy, onCancel, onExecute }: ModalProps<MdsO
 
   function handleSubmit() {
     if (disabled) return;
-    onExecute(selected, {
+    onExecute(variables, {
       source,
       between,
       measure,
@@ -106,7 +108,12 @@ export function MdsModal({ headers, busy, onCancel, onExecute }: ModalProps<MdsO
       <GoldenSplit
         primary={
           <FieldFrame label={`変数選択 (${minSelected}つ以上)`}>
-            <VariablePicker headers={headers} selected={selected} onChange={setSelected} />
+            <VariablePicker headers={headers} selected={variables} onChange={setSelected} />
+            {isMatrix && (
+              <Text mt={2} fontSize="xs" color="fg.muted">
+                行と列が同じ対象順の行列を指定してください。列は元データの順に使用します。
+              </Text>
+            )}
           </FieldFrame>
         }
         secondary={
