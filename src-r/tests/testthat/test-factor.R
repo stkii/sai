@@ -12,6 +12,12 @@ base_options <- list(
   sortByFactor = FALSE
 )
 
+test_that("固有値に基づく因子数が推定上限を超えても黙って減らさない", {
+  cor_mat <- matrix(c(1, .8, 0, 0, .8, 1, 0, 0, 0, 0, 1, .8, 0, 0, .8, 1), 4)
+  expect_error(.GuttmanNfactors(cor_mat), "2個.*4変数.*1因子")
+  expect_error(.GuttmanNfactors(diag(4)), "固有値が1を超える因子がありません")
+})
+
 factor_section <- function(res, title) {
   for (s in res$sections) if (s$title == title) return(s)
   stop(sprintf("セクションが見つかりません: %s", title))

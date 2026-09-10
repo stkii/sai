@@ -1,10 +1,15 @@
 .GuttmanNfactors <- function(cor_mat) {
   eigs <- eigen(cor_mat, symmetric = TRUE, only.values = TRUE)$values
   n <- sum(eigs > 1)
-  if (n < 1) n <- 1L
+  if (n < 1) stop("固有値が1を超える因子がありません。因子数の指定を見直してください")
   p <- ncol(cor_mat)
   max_m <- floor((2 * p + 1 - sqrt(8 * p + 1)) / 2)
-  if (n > max_m) n <- max_m
+  if (n > max_m) {
+    stop(sprintf(
+      "固有値が1を超える因子は%d個ですが、%d変数で推定可能な上限は%d因子です。変数の選択または因子数の指定を見直してください",
+      n, p, max_m
+    ))
+  }
   as.integer(n)
 }
 
