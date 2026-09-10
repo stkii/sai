@@ -13,7 +13,7 @@ name = "sai_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.6", features = [] }
 
 [dependencies]
 calamine = "0.32.0"
@@ -21,8 +21,8 @@ csv = "1.4.0"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri = { version = "2", features = [] }
-tauri-plugin-dialog = "2"
+tauri = { version = "2.11", features = [] }
+tauri-plugin-dialog = "2.7"
 tauri-plugin-log = "2"
 tempfile = "3.23.0"
 uuid = { version = "1.20.0", features = ["v4"] }
