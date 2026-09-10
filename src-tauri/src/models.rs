@@ -44,7 +44,8 @@ pub struct AnalysisResult {
     pub sections: Vec<AnalysisSection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // R の snake_case を受け取り、画面と履歴へは従来どおり camelCase で渡す。
+    #[serde(alias = "n_note", skip_serializing_if = "Option::is_none")]
     pub n_note: Option<String>,
 }
 
@@ -94,4 +95,20 @@ pub struct HistoryRecord {
     pub options: serde_json::Value,
     pub result: AnalysisResult,
     pub created_at: i64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AnalysisResult;
+
+    #[test]
+    fn r_notes_survive_frontend_and_history_roundtrip() {
+        let result: AnalysisResult =
+            serde_json::from_str(r#"{"sections":[],"n":2,"n_note":"1件の観測が除外されました"}"#).unwrap();
+        let json = serde_json::to_value(&result).unwrap();
+        assert_eq!(json["nNote"], "1件の観測が除外されました");
+        assert!(json.get("n_note").is_none());
+        let restored: AnalysisResult = serde_json::from_value(json).unwrap();
+        assert_eq!(restored.n_note, result.n_note);
+    }
 }
