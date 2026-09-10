@@ -11,6 +11,7 @@
     "format": "biome format --write ./src",
     "lint": "biome lint --write ./src",
     "preview": "vite preview",
+    "prepare:r": "node scripts/prepare-r-resources.mjs",
     "start": "RENV_PROFILE=default RENV_PROJECT=\"$PWD/src-r\" PATH=\"/usr/local/bin:$PATH\" tauri dev",
     "tauri": "tauri",
     "ts": "tsc --noEmit"
