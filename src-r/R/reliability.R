@@ -1,6 +1,11 @@
 .Reliability <- function(df) {
   k <- ncol(df)
   if (k < 2) stop("信頼性分析には2つ以上の項目が必要です")
+  # psych は定数列を自動で除外する。元の項目数と削除時αの対応も崩れるため停止する。
+  zero_var <- colnames(df)[vapply(df, function(x) sd(x) == 0, logical(1))]
+  if (length(zero_var) > 0) {
+    stop(sprintf("値が一定の項目は α係数に使用できません: %s", paste(zero_var, collapse = ", ")))
+  }
   # check.keys = FALSE: 負相関の項目を psych に自動逆転させない (利用者に無断で α が変わるため)。
   # psych の message は Rust 側でエラー文面に混入するため抑止する。
   res <- suppressMessages(psych::alpha(df, check.keys = FALSE, warnings = FALSE))
