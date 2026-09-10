@@ -112,7 +112,10 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<An
               label="デザイン"
               options={DESIGN_OPTIONS}
               value={design}
-              onChange={setDesign}
+              onChange={(v) => {
+                setDesign(v);
+                if (v === 'between') setSubject('');
+              }}
             />
             {design === 'within' && (
               <RadioField
@@ -135,7 +138,11 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<An
                   label="従属変数 (数値)"
                   options={toChoices(headers)}
                   value={dependent}
-                  onChange={setDependent}
+                  onChange={(v) => {
+                    setDependent(v);
+                    setFactors((prev) => prev.filter((f) => f !== v));
+                    setSubject((prev) => (prev === v ? '' : prev));
+                  }}
                   placeholder="-- 選択 --"
                 />
                 {design === 'within' && (

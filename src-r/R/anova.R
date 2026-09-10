@@ -142,6 +142,7 @@
 
 RunAnova <- function(df, options) {
   design <- if (is.null(options$design)) "between" else options$design
+  if (!design %in% c("between", "within")) stop(sprintf("未対応のデザイン: %s", design))
   layout <- if (is.null(options$dataLayout)) "long" else options$dataLayout
   if (!layout %in% c("long", "wide")) stop(sprintf("未対応のデータ形式: %s", layout))
   if (layout == "wide" && design != "within") {
@@ -189,6 +190,17 @@ RunAnova <- function(df, options) {
       if (!(subject %in% colnames(df))) {
         stop(sprintf("被験者ID列 '%s' がデータにありません", subject))
       }
+    }
+
+    if (dependent %in% factors || (!is.null(subject) && subject %in% c(dependent, factors))) {
+      stop("従属変数・要因・被験者IDには、それぞれ異なる列を指定してください")
+    }
+    # 読込元の空セルは空文字。complete.cases は空文字を欠測と見なさないため、
+    # カテゴリ列でも空欄を NA に揃える。空白以外の水準名は変更しない。
+    for (column in c(factors, subject)) {
+      values <- as.character(df[[column]])
+      values[!is.na(values) & !nzchar(trimws(values))] <- NA_character_
+      df[[column]] <- values
     }
 
     coerced <- .CoerceNumeric(df[[dependent]])

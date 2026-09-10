@@ -6,6 +6,25 @@ make_between_data <- function(seed = 12) {
   )
 }
 
+test_that("要因の空セル・空白は欠測として除外し、群を増やさない", {
+  rows <- list(list("A", "1"), list("A", "2"), list("B", "4"), list("B", "5"),
+               list("", "100"), list("  ", "110"))
+  df <- .AsMixedDf(rows, c("g", "y"))
+  opts <- list(design = "between", dependent = "y", factors = "g")
+  res <- RunAnova(df, opts)
+  reference <- RunAnova(df[1:4, ], opts)
+  expect_identical(res$sections, reference$sections)
+  expect_equal(res$n, 4)
+  expect_match(res$n_note, "2件")
+})
+
+
+test_that("列の役割が競合する指定は推定前に停止する", {
+  df <- make_between_data()
+  expect_error(RunAnova(df, list(dependent = "y", factors = c("g", "y"))), "異なる列")
+  expect_error(RunAnova(df, list(design = "within", dependent = "y", factors = "g", subject = "y")), "異なる列")
+})
+
 make_within_data <- function(seed = 13) {
   set.seed(seed)
   cond <- rep(c("pre", "post"), times = 8)
@@ -341,4 +360,15 @@ test_that("従属変数の数値化に失敗した値は注記で通知される
   res <- RunAnova(df, list(dependent = "y", factors = list("g"), design = "between"))
   expect_equal(res$n, 28)
   expect_match(res$n_note, "数値に変換できない値は欠測として扱いました: y \\(2件\\)")
+})
+
+test_that("被験者IDの空セルを同一被験者としてまとめない", {
+  df <- make_within_data()
+  df$subj[1:2] <- c("", " ")
+  opts <- list(design = "within", dependent = "y", factors = "cond", subject = "subj")
+  res <- RunAnova(df, opts)
+  reference <- RunAnova(df[-(1:2), ], opts)
+  expect_identical(res$sections, reference$sections)
+  expect_equal(res$n, 14)
+  expect_match(res$n_note, "2件")
 })
