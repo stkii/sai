@@ -3,7 +3,9 @@ import { anovaModule } from './anova';
 import type { MethodModule } from './contracts';
 import { correlationModule } from './correlation';
 import { describeModule } from './describe';
+import { distanceModule } from './distance';
 import { factorModule } from './factor';
+import { mdsModule } from './mds';
 import { powerModule } from './power';
 import { regressionModule } from './regression';
 import { reliabilityModule } from './reliability';
@@ -15,6 +17,8 @@ export const ANALYSIS_METHODS: MethodModule[] = [
   reliabilityModule,
   factorModule,
   anovaModule,
+  distanceModule,
+  mdsModule,
   powerModule,
 ];
 

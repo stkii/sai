@@ -37,7 +37,8 @@ impl AnalysisService {
                 let raw = self.cache
                               .get(key)
                               .ok_or_else(|| "データセットが見つかりません (キャッシュ切れ)".to_string())?;
-                project_columns(&raw, variables)?
+                let matrix_input = method == "mds" && options["source"] == "matrix";
+                project_columns(&raw, variables, matrix_input)?
             },
             None => empty_table(),
         };
@@ -52,19 +53,24 @@ fn empty_table() -> ParsedTable {
 }
 
 fn project_columns(table: &ParsedTable,
-                   variables: &[String])
+                   variables: &[String],
+                   source_order: bool)
                    -> Result<ParsedTable, String> {
     if variables.is_empty() {
         return Err("変数が選択されていません".into());
     }
-    let indices: Vec<usize> = variables.iter()
-                                       .map(|v| {
-                                           table.headers
-                                                .iter()
-                                                .position(|h| h == v)
-                                                .ok_or_else(|| format!("変数 '{v}' が見つかりません"))
-                                       })
-                                       .collect::<Result<_, _>>()?;
+    let mut indices: Vec<usize> = variables.iter()
+                                           .map(|v| {
+                                               table.headers
+                                                    .iter()
+                                                    .position(|h| h == v)
+                                                    .ok_or_else(|| format!("変数 '{v}' が見つかりません"))
+                                           })
+                                           .collect::<Result<_, _>>()?;
+    // 行列の行は元データ順。列だけ選択順にすると別の非類似度行列になってしまう。
+    if source_order {
+        indices.sort_unstable();
+    }
 
     let headers = indices.iter().map(|&i| table.headers[i].clone()).collect();
     let rows = table.rows
@@ -86,20 +92,31 @@ mod tests {
 
     #[test]
     fn projects_selected_columns_in_order() {
-        let projected = project_columns(&table(), &["c".into(), "a".into()]).unwrap();
+        let projected = project_columns(&table(), &["c".into(), "a".into()], false).unwrap();
         assert_eq!(projected.headers, vec!["c", "a"]);
         assert_eq!(projected.rows, vec![vec!["3", "1"], vec!["6", "4"]]);
     }
 
     #[test]
     fn rejects_empty_selection() {
-        let err = project_columns(&table(), &[]).unwrap_err();
+        let err = project_columns(&table(), &[], false).unwrap_err();
         assert!(err.contains("選択されていません"));
     }
 
     #[test]
     fn rejects_unknown_variable() {
-        let err = project_columns(&table(), &["a".into(), "z".into()]).unwrap_err();
+        let err = project_columns(&table(), &["a".into(), "z".into()], false).unwrap_err();
         assert!(err.contains("'z'"));
+    }
+
+    #[test]
+    fn matrix_selection_preserves_row_column_correspondence() {
+        let matrix = ParsedTable { headers: vec!["A".into(), "B".into(), "C".into()],
+                                   rows: vec![vec!["0".into(), "1".into(), "4".into()],
+                                              vec!["1".into(), "0".into(), "5".into()],
+                                              vec!["4".into(), "5".into(), "0".into()]] };
+        let projected = project_columns(&matrix, &["B".into(), "A".into(), "C".into()], true).unwrap();
+        assert_eq!(projected.headers, matrix.headers);
+        assert_eq!(projected.rows, matrix.rows);
     }
 }

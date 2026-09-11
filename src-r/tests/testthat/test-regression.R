@@ -86,3 +86,25 @@ test_that("目的変数の未指定・不在はエラー", {
   expect_error(RunRegression(df, list()), "指定されていません")
   expect_error(RunRegression(df, list(dependent = "zzz")), "ありません")
 })
+
+test_that("線形従属で除外された独立変数は注記で通知される", {
+  df <- make_reg_data()[, c("y", "x1", "x2")]
+  df$x4 <- 2 * df$x1 + 3 * df$x2
+  res <- RunRegression(df, list(dependent = "y"))
+
+  # lm は推定せず summary が係数表から落とすため、表からは消える
+  expect_false("x4" %in% sai_col1(res$sections[[1]]$table))
+  expect_match(res$n_note, "線形従属")
+  expect_match(res$n_note, "x4")
+})
+
+test_that("線形従属がなければ注記は付かない", {
+  df <- make_reg_data()[, c("y", "x1", "x2")]
+  expect_null(RunRegression(df, list(dependent = "y"))$n_note)
+})
+
+test_that("観測数に対して項が多すぎる場合はエラー", {
+  # 残差自由度0では R² = 1 で標準誤差・t値・p値がすべて NaN になる
+  df <- data.frame(y = c(1, 2, 3), a = c(1, 2, 4), b = c(2, 1, 5))
+  expect_error(RunRegression(df, list(dependent = "y")), "項が多すぎます")
+})

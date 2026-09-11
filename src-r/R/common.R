@@ -88,10 +88,14 @@
   unname(out)
 }
 
+# 表示用の数値整形。有効4桁を保ちつつ、指数表記へは切り替えない。
+# 平方和のような大きな値が 6.153e+09 になると桁が読めず、同じ列の他の値とも比較できない。
+# 逆に微小な値は固定小数点にすると 0.0000001234 となり読めないため、指数表記に残す。
 .FmtNum <- function(x) {
   if (is.null(x) || length(x) == 0) return("NA")
   if (is.na(x)) return("NA")
-  formatC(x, digits = 4, format = "g")
+  if (x != 0 && abs(x) < 1e-4) return(formatC(x, digits = 4, format = "g"))
+  trimws(formatC(x, digits = 4, format = "fg"))
 }
 
 # p値の表示 (regression / anova 共用)。3桁固定で、p < .001 は "< 0.001" を返す。

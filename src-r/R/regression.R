@@ -20,6 +20,18 @@
   list(fit = fit, summary = summary(fit))
 }
 
+# 他の列と線形従属な項の係数を lm は NA にし、summary はその行ごと係数表から落とす。
+# 投入した独立変数が表から消えるため、除外された項を必ず伝える。
+.AliasedNote <- function(fit) {
+  coefs <- coef(fit)
+  aliased <- names(coefs)[is.na(coefs)]
+  if (length(aliased) == 0) return(NULL)
+  sprintf(
+    "他の独立変数との線形従属のため、次の項はモデルから除外されました: %s",
+    paste(vapply(aliased, .CleanTerm, character(1)), collapse = ", ")
+  )
+}
+
 .RegressionParsed <- function(res) {
   s <- res$summary
   coefs <- s$coefficients
@@ -82,6 +94,14 @@ RunRegression <- function(df, options) {
   if (after < 2) stop("有効な観測が不足しています (リストワイズ削除後)")
 
   res <- .Regression(df, dependent, all_interactions, interactions)
+  # 残差自由度が0だとモデルは観測を完全に再現し、R² = 1・標準誤差・t 値・p 値は
+  # すべて NaN になる。適合の良いモデルと読み違えられるため先に止める。
+  if (res$fit$df.residual < 1) {
+    stop(sprintf(
+      "観測数に対してモデルの項が多すぎます (有効な観測 %d件に対し、推定する係数 %d個)。独立変数または交互作用を減らしてください",
+      after, res$fit$rank
+    ))
+  }
   parsed <- .RegressionParsed(res)
   list(
     sections = list(
@@ -89,6 +109,6 @@ RunRegression <- function(df, options) {
       list(title = "モデル適合度", table = parsed$fit_stats)
     ),
     n = after,
-    n_note = .ListwiseNote(before - after)
+    n_note = .MergeNotes(.ListwiseNote(before - after), .AliasedNote(res$fit))
   )
 }

@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use crate::infra::store::history_store::HistoryStore;
-use crate::models::HistoryRecord;
+use crate::models::{
+    HistoryLoadResult,
+    HistoryRecord,
+};
 
 pub struct HistoryService {
     store: Arc<HistoryStore>,
@@ -18,7 +21,7 @@ impl HistoryService {
         self.store.append(record)
     }
 
-    pub fn load_all(&self) -> Result<Vec<HistoryRecord>, String> {
+    pub fn load_all(&self) -> Result<HistoryLoadResult, String> {
         self.store.load_all()
     }
 

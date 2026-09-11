@@ -65,6 +65,18 @@
   list(headers = headers, rows = rows)
 }
 
+# 欠測は変数ごとに除かれるため、表示される n (総行数) はどの変数の有効数とも
+# 一致しないことがある。ずれた変数と実際の n を添える。
+.DescribeNote <- function(stats, total) {
+  n_by_var <- vapply(stats, function(s) as.integer(s$n), integer(1))
+  hit <- n_by_var[n_by_var < total]
+  if (length(hit) == 0) return(NULL)
+  sprintf(
+    "欠測は変数ごとに除外しました。有効数が総行数 (%d) を下回る変数があります: %s",
+    total, paste(sprintf("%s (n = %d)", names(hit), unname(hit)), collapse = ", ")
+  )
+}
+
 RunDescribe <- function(df, options) {
   if (ncol(df) == 0) stop("変数が選択されていません")
 
@@ -85,6 +97,7 @@ RunDescribe <- function(df, options) {
       title = "記述統計",
       table = parsed
     )),
-    n = nrow(df)
+    n = nrow(df),
+    n_note = .DescribeNote(stats, nrow(df))
   )
 }

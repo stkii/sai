@@ -63,7 +63,10 @@ export function VariablePicker({
 
   function moveToTarget() {
     if (highlightedSource.length === 0) return;
-    const additions = highlightedSource.filter((v) => !selectedSet.has(v));
+    // 他の入力で候補から外れた変数が、古いハイライトから再追加されるのを防ぐ。
+    const additions = highlightedSource.filter(
+      (v) => headers.includes(v) && !excludeSet.has(v) && !selectedSet.has(v)
+    );
     setHighlightedSource([]);
     if (additions.length === 0) return;
     onChange([...selected, ...additions]);

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { VariableSpec } from '../../shared/types';
 
 /** 変数作成の種別。メニューの項目と 1 対 1 で対応する。 */
-export type VariableKind = 'custom' | 'reverse';
+export type VariableKind = 'reverse';
 
 export interface VariableModalProps {
   headers: string[];

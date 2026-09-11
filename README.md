@@ -1,14 +1,22 @@
 <h1 align="center">SAI</h1>
 
 <p align="center">
-  <a href="https://www.typescriptlang.org" target="_blank"><img src="https://img.shields.io/badge/TypeScript-v7-3178C6.svg?logo=typescript&logoColor=3178C6&labelColor=white&style=flat" alt="TypeScript-Badge"></a>
-  <a href="https://www.rust-lang.org" target="_blank"><img src="https://img.shields.io/badge/Rust-1.96.1+-CE412B.svg?logo=rust&logoColor=CE412B&labelColor=white&style=flat" alt="Rust-Badge"></a>
-  <a href="https://www.r-project.org" target="_blank"><img src="https://img.shields.io/badge/R-4.6.1+-276DC3.svg?logo=r&logoColor=276DC3&labelColor=white&style=flat" alt="R-Badge"></a>
+  <a href="https://www.typescriptlang.org" target="_blank">
+    <img src="https://img.shields.io/badge/TypeScript-v7-3178C6.svg?logo=typescript&logoColor=3178C6&labelColor=white&style=flat" alt="TypeScript-Badge">
+  </a>
+  <a href="https://www.rust-lang.org" target="_blank">
+    <img src="https://img.shields.io/badge/Rust-1.96.1+-CE412B.svg?logo=rust&logoColor=CE412B&labelColor=white&style=flat" alt="Rust-Badge">
+  </a>
+  <a href="https://www.r-project.org" target="_blank">
+    <img src="https://img.shields.io/badge/R-4.6.1+-276DC3.svg?logo=r&logoColor=276DC3&labelColor=white&style=flat" alt="R-Badge">
+  </a>
 </p>
 <p align="center">
   <img alt="version" src="https://img.shields.io/badge/version-0.1.0--beta-orange">
   <img alt="platform" src="https://img.shields.io/badge/platform-macOS-lightgrey?logo=apple&logoColor=white">
-  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/stkii/sai?color=green"></a>
+  <a href="./LICENSE">
+    <img alt="license" src="https://img.shields.io/github/license/stkii/sai?color=green">
+  </a>
 </p>
 
 > [!IMPORTANT]
@@ -73,6 +81,16 @@
       <td>✅ Available</td>
     </tr>
     <tr>
+      <td>距離</td>
+      <td>変数間またはケース間の距離・類似度行列を算出します</td>
+      <td>✅ Available</td>
+    </tr>
+    <tr>
+      <td>多次元尺度構成法</td>
+      <td>非類似度から低次元の布置を求めます</td>
+      <td>✅ Available</td>
+    </tr>
+    <tr>
       <td>...</td>
       <td>...</td>
       <td>...</td>
@@ -126,6 +144,13 @@
         <a href="https://cran.r-project.org/web/packages/psych/index.html">psych</a>
       </td>
       <td>Cronbach の alpha 係数、McDonald の omega 係数の算出</td>
+    </tr>
+    <tr>
+      <td>多次元尺度構成法</td>
+      <td>
+        <a href="https://cran.r-project.org/web/packages/smacof/index.html">smacof</a>
+      </td>
+      <td>距離や類似度から布置を推定し視覚化します</td>
     </tr>
     <tr>
       <td>データ読込</td>

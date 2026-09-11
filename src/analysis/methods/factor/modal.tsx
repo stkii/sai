@@ -1,9 +1,10 @@
-import { NumberInput, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { useState } from 'react';
 import { FieldFrame } from '../../../shared/ui/FieldFrame';
 import {
   CheckField,
   type Choice,
+  NumberField,
   RadioChoices,
   RadioField,
   SelectField,
@@ -21,7 +22,7 @@ type NaMode = 'complete.obs' | 'pairwise.complete.obs';
 export type FactorOptions = {
   method: Method;
   nfactorsMode: NfactorsMode;
-  nfactors: number;
+  nfactors?: number;
   rotation: Rotation;
   na: NaMode;
   sortByFactor: boolean;
@@ -67,14 +68,17 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps<F
   const [selected, setSelected] = useState<string[]>([]);
   const [method, setMethod] = useState<Method>('PAF');
   const [mode, setMode] = useState<NfactorsMode>('guttman');
-  const [nfactors, setNfactors] = useState<number>(1);
+  const [nfactors, setNfactors] = useState<number | undefined>(1);
   const [rotation, setRotation] = useState<Rotation>('none');
   const [na, setNa] = useState<NaMode>('complete.obs');
   const [sortByFactor, setSortByFactor] = useState(false);
 
+  // 固有値に基づく場合は R が因子数を決めるため、空欄でも実行できる
+  const invalidNfactors = mode === 'fixed' && (nfactors === undefined || nfactors < 1);
+
   function handleSubmit() {
     if (selected.length < 3) return;
-    if (mode === 'fixed' && nfactors < 1) return;
+    if (invalidNfactors) return;
     onExecute(selected, {
       method,
       nfactorsMode: mode,
@@ -104,25 +108,14 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps<F
             <FieldFrame label="因子数">
               <VStack align="stretch" gap={2}>
                 <RadioChoices options={MODE_OPTIONS} value={mode} onChange={setMode} />
-                <NumberInput.Root
-                  size="sm"
+                <NumberField
+                  label=""
+                  value={nfactors}
+                  onChange={setNfactors}
+                  step="1"
                   min={1}
-                  step={1}
-                  value={String(nfactors)}
                   disabled={mode !== 'fixed'}
-                  onValueChange={(d) => {
-                    const v = d.valueAsNumber;
-                    if (Number.isFinite(v)) {
-                      setNfactors(Math.max(1, Math.floor(v)));
-                    }
-                  }}
-                >
-                  <NumberInput.Control>
-                    <NumberInput.IncrementTrigger />
-                    <NumberInput.DecrementTrigger />
-                  </NumberInput.Control>
-                  <NumberInput.Input aria-label="因子数" />
-                </NumberInput.Root>
+                />
               </VStack>
             </FieldFrame>
             <RadioField
@@ -144,7 +137,7 @@ export function FactorModal({ headers, busy, onCancel, onExecute }: ModalProps<F
       />
       <ModalActions
         busy={busy}
-        disabled={selected.length < 3 || (mode === 'fixed' && nfactors < 1)}
+        disabled={selected.length < 3 || invalidNfactors}
         onCancel={onCancel}
         onSubmit={handleSubmit}
       />

@@ -54,3 +54,52 @@ test_that("prop: power.prop.test と一致する", {
 test_that("未対応の test_type はエラー", {
   expect_error(RunPower(data.frame(), list(test_type = "bogus")), "未対応")
 })
+
+test_that("空欄が無い場合は求める項目を促すエラーになる", {
+  expect_error(
+    RunPower(data.frame(), list(
+      test_type = "t", n = 30, effect_size = 0.5, power = 0.8, sig_level = 0.05
+    )),
+    "求めたい項目を1つ空欄"
+  )
+})
+
+test_that("空欄が2つ以上ある場合は該当項目を挙げてエラーになる", {
+  err <- tryCatch(
+    RunPower(data.frame(), list(test_type = "t", effect_size = 0.5, sig_level = 0.05)),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "空欄にできるのは1つだけ")
+  expect_match(err, "サンプルサイズ n")
+  expect_match(err, "検出力")
+})
+
+test_that("空欄の数は検定ごとの項目で数える", {
+  # prop は p1 / p2 を持つため、t 検定なら空欄1つになる入力でも足りない
+  expect_error(
+    RunPower(data.frame(), list(test_type = "prop", n = 30, sig_level = 0.05)),
+    "空欄にできるのは1つだけ"
+  )
+})
+
+test_that("定義域を外れた値は日本語のエラーになる", {
+  base <- list(test_type = "t", effect_size = 0.5, sig_level = 0.05)
+  expect_error(
+    RunPower(data.frame(), modifyList(base, list(power = 1.2))),
+    "0より大きく1より小さい"
+  )
+  expect_error(
+    RunPower(data.frame(), modifyList(base, list(sig_level = 5, power = 0.8))),
+    "有意水準"
+  )
+  expect_error(
+    RunPower(data.frame(), list(test_type = "prop", p1 = 0.5, p2 = 0.7, n = 1)),
+    "2以上"
+  )
+  expect_error(
+    RunPower(data.frame(), list(
+      test_type = "anova", groups = 1, between_var = 1, within_var = 3, power = 0.8
+    )),
+    "2以上"
+  )
+})

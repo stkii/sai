@@ -105,6 +105,16 @@ function HistoryItem({
 export function HistoryPane() {
   const { results, currentId, selectResult, clearResults, removeResult } = useResult();
 
+  // 全削除と同じく元に戻せないため、1 件でも確認を挟む
+  async function handleRemove(entry: ResultEntry) {
+    const label = findMethod(entry.method)?.definition.label ?? entry.method;
+    const ok = await confirm(
+      `${label} (${formatTimestampShort(entry.createdAt)}) の履歴を削除します。この操作は元に戻せません。`,
+      { title: '履歴の削除', kind: 'warning' }
+    );
+    if (ok) removeResult(entry.id);
+  }
+
   async function handleClearAll() {
     const ok = await confirm('すべての分析履歴を削除します。この操作は元に戻せません。', {
       title: '履歴の全削除',
@@ -142,7 +152,7 @@ export function HistoryPane() {
             entry={entry}
             selected={entry.id === currentId}
             onSelect={() => selectResult(entry.id)}
-            onRemove={() => removeResult(entry.id)}
+            onRemove={() => handleRemove(entry)}
           />
         ))}
       </Stack>

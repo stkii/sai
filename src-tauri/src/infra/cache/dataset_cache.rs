@@ -29,8 +29,12 @@ impl DatasetCache {
         self.inner.lock().unwrap().get(key).cloned()
     }
 
-    pub fn clear(&self) {
-        self.inner.lock().unwrap().clear();
+    pub fn replace(&self,
+                   key: String,
+                   table: ParsedTable) {
+        let mut inner = self.inner.lock().unwrap();
+        inner.clear();
+        inner.insert(key, Arc::new(table));
     }
 }
 

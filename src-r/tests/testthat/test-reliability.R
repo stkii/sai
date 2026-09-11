@@ -62,6 +62,16 @@ test_that("項目が1つしかない場合はエラー", {
   expect_error(RunReliability(data.frame(i1 = rnorm(10)), list()), "2つ以上")
 })
 
+test_that("α は定数項目を自動削除せず、該当する項目名とともに停止する", {
+  df <- make_scale_data()
+  df$i2 <- 1
+  expect_error(RunReliability(df, list(coefficient = "alpha")), "値が一定の項目.*i2")
+  # 欠測除外の後で定数になる場合も同じ検証が必要。
+  df$i2[1] <- 2
+  df$i1[1] <- NA
+  expect_error(RunReliability(df, list(coefficient = "alpha")), "値が一定の項目.*i2")
+})
+
 # ---- McDonald の ω ----
 
 # 独立に実装した ω (base R の factanal による単一因子モデル + 定義式)

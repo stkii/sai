@@ -25,7 +25,7 @@ SAI のゼロベース設計。GUI 統計分析ツールに必要十分な構造
 ### ユーザー機能
 
 1. ファイル読込 (CSV/XLSX/XLS/SAV)
-2. クリック操作のみで分析実行 (記述統計・相関・回帰・因子・信頼性・分散分析・検出力分析)
+2. クリック操作のみで分析実行 (記述統計・相関・回帰・因子・信頼性・分散分析・距離・多次元尺度構成法・検出力分析)
 3. 分析結果の表示
 4. 過去の分析履歴の参照
 5. 派生列の作成 (逆転項目)
@@ -109,7 +109,7 @@ src/
 ├── data/                         # 左ペイン: データ表示 + データ操作
 │   ├── ui/                       # DataPane, DataPreview, DatasetButton,
 │   │                             #  VariableBuilderMenu, VariableBuilderHost
-│   ├── variables/                # 変数作成の種別 (contracts.ts + 種別ごとの 1 ファイル)
+│   ├── variables/                # 変数作成の種別 (contracts.ts + 種別ごとの 1 ファイル。現在は reverse のみ)
 │   ├── state/                    # DatasetContext
 │   └── loadFile.ts               # ファイル読込ロジック
 │
@@ -117,13 +117,16 @@ src/
 │   ├── ui/                       # MethodSelector, AnalysisModalHost
 │   ├── useRunAnalysis.ts         # 実行ユースケース (IPC → 結果登録 → 履歴永続化判定)
 │   └── methods/                  # 各分析メソッド (modal.tsx + index.tsx の 2 ファイル構成。
-│                                 #  result.tsx はカスタム表示が必要な場合のみ追加)
+│       │                         #  result.tsx はカスタム表示が必要な場合のみ追加)
+│       ├── proximity.ts          # distance / mds が共有する測度・計算対象の選択肢
 │       ├── describe/
 │       ├── correlation/
 │       ├── regression/
 │       ├── factor/
 │       ├── reliability/
 │       ├── anova/
+│       ├── distance/
+│       ├── mds/                  # result.tsx で布置図 (散布図) を描く
 │       └── power/                # standalone (データセット不要)
 │
 ├── result/                       # 中央ペイン: 結果表示 + 履歴 (実態が融合しているため同居)
@@ -266,6 +269,8 @@ flowchart TB
 | `requiresDataset` | `true` | `false` にするとデータセット未読込でもメニューが有効になり、`datasetKey: null` で実行される |
 | `persistHistory` | `true` | `false` にすると結果は履歴 JSONL に保存されない。データセットに紐付かない計算 (検出力分析) は再現条件が残らないため |
 
+検出力分析は `power.*.test` の「解として求める1つだけを空欄にする」制約を持つ。モーダルは空欄の数だけを見て `disabled` を決め、定義域 (0 < α < 1、n ≥ 2 等) の検証は `RunPower` が持つ。数値のルールを両層に複製せず、変数選択数と同じく「UI は構造、R が真実」の配置に揃える。
+
 ### result/ と history/ の同居について
 
 かつて `history/` を独立機能として分けていた。しかし `HistoryPane` は `useResult` を呼んで結果リストを表示するだけで、固有ロジックを持たなかった。
@@ -372,7 +377,7 @@ R の呼び出しはキャッシュ更新の直前に置く。範囲外エラー
 
 新しい列名は `VariableSpec.names` として確定した状態で渡る (接尾辞から組み立てるか直接入力するかはモーダルの選択)。Rust は `validate_new_headers` で既存列との衝突と新規同士の重複を拒否する。衝突時に silent なリネーム (`_R2` 等) はしない。
 
-種別は `data/variables/` のレジストリで持つ。現在 IPC (`VariableSpec`) を使うのは逆転項目のみで、任意の変数 (`custom`) はモーダルのみのプレースホルダ。
+種別は `data/variables/` のレジストリ (`VARIABLE_KINDS`) で持つ。現在は逆転項目 (`reverse`) のみ。
 
 派生列がどう作られたかは記録していない。履歴から分析を再実行する機能がなく現状は実害がないため、必要になった時点で `LoadedDataset` に定義を持たせる (YAGNI)。
 
@@ -384,6 +389,7 @@ R の呼び出しはキャッシュ更新の直前に置く。範囲外エラー
 
 - 単一の `history.jsonl` に append-only で書き込む
 - 起動時に全件 load する。フィルタや paging は未実装 (件数が増えたら導入する)
+- パースできない行は読み飛ばすが、`HistoryLoadResult.skipped` で件数を返しトーストで通知する。黙って捨てるとユーザーには理由の分からないまま履歴が減ったように見える。行自体は `remove` でも温存する
 - `clear_history` はファイルごと削除する全消去
 - `remove_history` は対象 1 件を除いた内容を一時ファイルへ書き出し、rename で置換する
 
@@ -417,6 +423,7 @@ src-r/
 ├── read_sav.R                # SPSS (.sav) → ParsedTable 互換 JSON の読込エントリ
 ├── transform.R               # 派生列 (逆転項目) の計算エントリ
 ├── R/
+│   ├── entry.R               # 3 つのエントリの共通処理 (パッケージ確認・引数解決)
 │   ├── common.R              # 共通ヘルパ (JSON I/O・df 変換・数値整形・n_note 生成)
 │   ├── transform.R           # 派生列の変換ロジック
 │   ├── describe.R
@@ -425,22 +432,31 @@ src-r/
 │   ├── reliability.R
 │   ├── factor.R
 │   ├── anova.R
+│   ├── distance.R            # 距離・類似度 (mds.R が .DistanceMatrix を共用する)
+│   ├── mds.R
 │   └── power.R
 ├── DESCRIPTION               # renv の依存宣言 (dev profile の追加依存を含む)
 ├── renv.lock                 # 本番 lockfile
 └── tests/                    # 後述
 ```
 
-外部パッケージは 4 つ。
+外部パッケージは 5 つ。
 
 | パッケージ | 用途 |
 |---|---|
 | `jsonlite` | JSON I/O |
 | `EFAtools` | 因子分析 |
 | `psych` | 記述統計・信頼性 |
+| `smacof` | 多次元尺度構成法 |
 | `haven` | SPSS 読込 |
 
 検出力分析は base R の `stats::power.t.test` / `power.anova.test` / `power.prop.test` を使い、追加依存を持たない。
+
+多次元尺度構成法は `smacof::mds` を SPSS PROXSCAL と同じ SMACOF (majorization) で走らせ、正規化された生ストレスを最小化する。SPSS 既定の ALSCAL は S-stress を最小化する別アルゴリズムのため、値は一致しない。初期布置は Torgerson 法を使う (PROXSCAL の既定は Simplex 法)。
+
+被験者間分散分析の平方和は Type III を用いる。効果符号化 (`contr.sum`) の下で当該項の列だけを計画行列から除いたときの残差平方和の増分で、`lm` + `drop1(scope = ~.)` で求める (追加依存は持たない)。`aov` の逐次分解 (Type I) はセル度数が不均衡だと項の投入順に依存し、同じデータでも要因を選んだ順で F 値と p 値が変わる。均衡計画では両者は一致する。
+
+反復測定は `aov` の `Error()` 分解を使い、平方和の型は変えていない。各被験者が全セルを 1 回ずつ持つ計画では Type I と Type III が一致するため。セルが欠けた場合は分解が成立しないので、値は返しつつ `n_note` でその旨を伝える。
 
 ### read_sav.R の責務
 
@@ -469,7 +485,7 @@ src-r/
 
 ### cli.R の責務
 
-1. 必須パッケージを起動時に一括 `requireNamespace` で確認し、不足があれば fail-fast で停止する。**自動インストールはしない** (lockfile と実環境が silent に乖離するため)
+1. `R/entry.R` の `.RequirePackages()` で必須パッケージを起動時に確認し、不足があれば fail-fast で停止する。**自動インストールはしない** (lockfile と実環境が silent に乖離するため)。パッケージ確認と `<input.json> <output.json>` の引数解決は 3 つのエントリで共通のため `entry.R` に置く (`script_dir` の解決だけは `source()` より前に要るため各スクリプトに残る)
 2. `input.json` (`{ method, headers, rows, options }`) を読む
 3. **dispatch table** でメソッドを解決し、`data_shape` に応じてデータフレームを組み立てる
 4. `Run<Method>(df, options)` を呼び、`{ sections, n?, n_note? }` を `output.json` へ書く
@@ -479,6 +495,7 @@ src-r/
 |---|---|---|---|
 | describe / correlation / regression / reliability / factor | `TRUE` | `all_numeric` | `.AsNumericDf` — 全列を数値化 |
 | anova | `TRUE` | `numeric_with_factors` | `.AsMixedDf` — 文字列列を保持 (要因がカテゴリ変数のため) |
+| distance / mds | `TRUE` | `all_numeric` | `.AsNumericDf` — 全列を数値化 |
 | power | `FALSE` | `none` | データフレームを作らない |
 
 この dispatch table が **メソッド実行の唯一の真実** である。未対応メソッドのエラーもここで発生し、Rust 側にメソッド名のリストは存在しない。
@@ -493,6 +510,12 @@ src-r/
 | `.<Method>Parsed(res)` | 結果を `list(headers, rows, note?)` (フロントの `AnalysisTable` 互換) へ変換 |
 | `Run<Method>(df, options)` | エントリ。引数検証 → 上記 2 つ → `list(sections, n, n_note)` |
 
+### 節の `id`
+
+`result.tsx` がカスタム表示のために特定の節を取り出す場合、節に `id` を付ける (例: `mds` の `configuration`)。`title` は表示名であり文言の変更で変わるため、鍵に使うと表示が黙って壊れる。
+
+`id` は必要なメソッドだけが付ける任意フィールドで、Rust の `AnalysisSection.id` は `Option<String>`。`id` の無い履歴レコード (導入前に保存されたもの) も読める。
+
 ### `n_note` — 有効標本サイズの注記
 
 表示される n がユーザーの期待と乖離する場面がある。
@@ -500,6 +523,9 @@ src-r/
 - リストワイズ削除で行が落ちる
 - ペアワイズ削除で対ごとに n が変わる
 - 反復測定で n が総観測数になる
+- 記述統計は変数ごとに欠測を除くため、n がどの変数の有効数とも一致しないことがある
+- 回帰で他の独立変数と線形従属な項が推定されず、係数表から消える
+- 反復測定で被験者ごとに条件が揃わず、平方和の分解が成立しない
 
 こうした状況では `Run<Method>` が `n_note` を返す。これを黙って省くのは規約上のダークパターン (`AGENTS.md`) にあたる。
 

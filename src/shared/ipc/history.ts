@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { HistoryRecord } from '../types';
+import type { HistoryLoadResult, HistoryRecord } from '../types';
 
-export async function loadHistory(): Promise<HistoryRecord[]> {
-  return invoke<HistoryRecord[]>('load_history');
+export async function loadHistory(): Promise<HistoryLoadResult> {
+  return invoke<HistoryLoadResult>('load_history');
 }
 
 export async function appendHistory(record: HistoryRecord): Promise<void> {

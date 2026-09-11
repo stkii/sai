@@ -6,7 +6,10 @@ use std::path::{
 };
 use std::sync::Mutex;
 
-use crate::models::HistoryRecord;
+use crate::models::{
+    HistoryLoadResult,
+    HistoryRecord,
+};
 
 pub struct HistoryStore {
     path: PathBuf,
@@ -33,13 +36,17 @@ impl HistoryStore {
         Ok(())
     }
 
-    pub fn load_all(&self) -> Result<Vec<HistoryRecord>, String> {
+    /// 壊れた行は読み飛ばすが件数を数える。黙って捨てると、ユーザーには
+    /// 理由の分からないまま履歴が減ったようにしか見えない。
+    pub fn load_all(&self) -> Result<HistoryLoadResult, String> {
         if !self.path.exists() {
-            return Ok(Vec::new());
+            return Ok(HistoryLoadResult { records: Vec::new(),
+                                          skipped: 0 });
         }
         let content =
             std::fs::read_to_string(&self.path).map_err(|e| format!("履歴ファイルの読込失敗: {e}"))?;
         let mut records = Vec::new();
+        let mut skipped = 0usize;
         for (i, line) in content.lines().enumerate() {
             let trimmed = line.trim();
             if trimmed.is_empty() {
@@ -47,10 +54,13 @@ impl HistoryStore {
             }
             match serde_json::from_str::<HistoryRecord>(trimmed) {
                 Ok(r) => records.push(r),
-                Err(e) => log::warn!("履歴 {} 行目をスキップ: {}", i + 1, e),
+                Err(e) => {
+                    skipped += 1;
+                    log::warn!("履歴 {} 行目をスキップ: {}", i + 1, e);
+                },
             }
         }
-        Ok(records)
+        Ok(HistoryLoadResult { records, skipped })
     }
 
     pub fn clear(&self) -> Result<(), String> {
@@ -136,7 +146,7 @@ mod tests {
         let store = store_in(&dir);
         store.append(&record("1")).unwrap();
         store.append(&record("2")).unwrap();
-        let records = store.load_all().unwrap();
+        let records = store.load_all().unwrap().records;
         assert_eq!(records.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
                    vec!["1", "2"]);
     }
@@ -144,11 +154,11 @@ mod tests {
     #[test]
     fn load_from_missing_file_is_empty() {
         let dir = tempfile::tempdir().unwrap();
-        assert!(store_in(&dir).load_all().unwrap().is_empty());
+        assert!(store_in(&dir).load_all().unwrap().records.is_empty());
     }
 
     #[test]
-    fn load_skips_broken_lines() {
+    fn load_skips_broken_lines_and_counts_them() {
         let dir = tempfile::tempdir().unwrap();
         let store = store_in(&dir);
         store.append(&record("1")).unwrap();
@@ -156,9 +166,11 @@ mod tests {
                        "not-json\n".to_string()
                        + &serde_json::to_string(&record("2")).unwrap()
                        + "\n").unwrap();
-        let records = store.load_all().unwrap();
-        assert_eq!(records.len(), 1);
-        assert_eq!(records[0].id, "2");
+        let loaded = store.load_all().unwrap();
+        assert_eq!(loaded.records.len(), 1);
+        assert_eq!(loaded.records[0].id, "2");
+        // 件数を返さないと、ユーザーには履歴が減った理由が伝わらない
+        assert_eq!(loaded.skipped, 1);
     }
 
     #[test]
@@ -174,7 +186,7 @@ mod tests {
 
         store.remove("1").unwrap();
 
-        let records = store.load_all().unwrap();
+        let records = store.load_all().unwrap().records;
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].id, "2");
         // パース不能行は消さずに温存する
@@ -187,7 +199,22 @@ mod tests {
         let store = store_in(&dir);
         store.append(&record("1")).unwrap();
         store.remove("zzz").unwrap();
-        assert_eq!(store.load_all().unwrap().len(), 1);
+        assert_eq!(store.load_all().unwrap().records.len(), 1);
+    }
+
+    /// `AnalysisSection.id` の導入前に書かれた履歴を読めなくなると、全件が
+    /// 「壊れた行」としてスキップされ履歴が丸ごと消える
+    #[test]
+    fn load_accepts_sections_without_id() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = store_in(&dir);
+        let legacy = r#"{"id":"1","method":"mds","variables":["a"],"options":{},"result":{"sections":[{"title":"布置座標","table":{"headers":["対象"],"rows":[["a"]]}}]},"createdAt":0}"#;
+        std::fs::write(dir.path().join("history.jsonl"), format!("{legacy}\n")).unwrap();
+
+        let records = store.load_all().unwrap().records;
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].result.sections[0].id, None);
+        assert_eq!(records[0].result.sections[0].title, "布置座標");
     }
 
     #[test]
@@ -196,6 +223,6 @@ mod tests {
         let store = store_in(&dir);
         store.append(&record("1")).unwrap();
         store.clear().unwrap();
-        assert!(store.load_all().unwrap().is_empty());
+        assert!(store.load_all().unwrap().records.is_empty());
     }
 }

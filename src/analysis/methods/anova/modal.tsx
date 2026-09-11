@@ -80,17 +80,10 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<An
 
   function handleSubmit() {
     if (invalid) return;
-    if (isWide) {
-      onExecute(conditions, {
-        design,
-        dataLayout: 'wide',
-        conditions,
-        factorName: factorName.trim(),
-      });
-      return;
-    }
-    const options: AnovaOptions = { design, dataLayout: 'long', dependent, factors };
-    if (design === 'within') options.subject = subject;
+    const options: AnovaOptions = isWide
+      ? { design, dataLayout: 'wide', conditions, factorName: factorName.trim() }
+      : { design, dataLayout: 'long', dependent, factors };
+    if (!isWide && design === 'within') options.subject = subject;
     onExecute(anovaColumns(options), options);
   }
 
@@ -119,7 +112,10 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<An
               label="デザイン"
               options={DESIGN_OPTIONS}
               value={design}
-              onChange={setDesign}
+              onChange={(v) => {
+                setDesign(v);
+                if (v === 'between') setSubject('');
+              }}
             />
             {design === 'within' && (
               <RadioField
@@ -142,7 +138,11 @@ export function AnovaModal({ headers, busy, onCancel, onExecute }: ModalProps<An
                   label="従属変数 (数値)"
                   options={toChoices(headers)}
                   value={dependent}
-                  onChange={setDependent}
+                  onChange={(v) => {
+                    setDependent(v);
+                    setFactors((prev) => prev.filter((f) => f !== v));
+                    setSubject((prev) => (prev === v ? '' : prev));
+                  }}
                   placeholder="-- 選択 --"
                 />
                 {design === 'within' && (

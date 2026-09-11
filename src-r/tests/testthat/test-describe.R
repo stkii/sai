@@ -41,3 +41,17 @@ test_that("mean_desc で平均の降順に並ぶ", {
 test_that("未対応の sort は黙って既定値にせずエラーにする", {
   expect_error(RunDescribe(data.frame(x = 1:3), list(sort = "bogus")), "未対応")
 })
+
+test_that("変数ごとの有効数が総行数を下回る場合は注記で通知される", {
+  df <- data.frame(x = c(1, 2, NA, NA), y = c(1, 2, 3, 4))
+  res <- RunDescribe(df, list())
+
+  expect_equal(res$n, 4)
+  expect_match(res$n_note, "x \\(n = 2\\)")
+  # 総行数と一致する変数は挙げない
+  expect_false(grepl("y \\(n", res$n_note))
+})
+
+test_that("欠測がなければ注記は付かない", {
+  expect_null(RunDescribe(data.frame(x = 1:4, y = 5:8), list())$n_note)
+})

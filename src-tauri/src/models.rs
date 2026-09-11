@@ -30,6 +30,10 @@ pub struct AnalysisTable {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalysisSection {
+    /// メソッド固有の表示が節を特定するための鍵。表示名 (`title`) と違い変わらない。
+    /// 必要なメソッドだけが付けるため任意 (`id` を持たない履歴レコードも読める)。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub title: String,
     pub table: AnalysisTable,
 }
@@ -40,7 +44,8 @@ pub struct AnalysisResult {
     pub sections: Vec<AnalysisSection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // R の snake_case を受け取り、画面と履歴へは従来どおり camelCase で渡す。
+    #[serde(alias = "n_note", skip_serializing_if = "Option::is_none")]
     pub n_note: Option<String>,
 }
 
@@ -72,6 +77,15 @@ pub struct CreateVariableResult {
     pub note: Option<String>,
 }
 
+/// 履歴の読込結果。壊れて読めなかった行は捨てるほかないが、件数を返して
+/// 「履歴が減った」ことをユーザーへ伝えられるようにする。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryLoadResult {
+    pub records: Vec<HistoryRecord>,
+    pub skipped: usize,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryRecord {
@@ -81,4 +95,20 @@ pub struct HistoryRecord {
     pub options: serde_json::Value,
     pub result: AnalysisResult,
     pub created_at: i64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AnalysisResult;
+
+    #[test]
+    fn r_notes_survive_frontend_and_history_roundtrip() {
+        let result: AnalysisResult =
+            serde_json::from_str(r#"{"sections":[],"n":2,"n_note":"1件の観測が除外されました"}"#).unwrap();
+        let json = serde_json::to_value(&result).unwrap();
+        assert_eq!(json["nNote"], "1件の観測が除外されました");
+        assert!(json.get("n_note").is_none());
+        let restored: AnalysisResult = serde_json::from_value(json).unwrap();
+        assert_eq!(restored.n_note, result.n_note);
+    }
 }

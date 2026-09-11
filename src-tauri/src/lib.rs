@@ -12,14 +12,15 @@ use bootstrap::AppState;
 pub fn run() {
     tauri::Builder::default().plugin(tauri_plugin_log::Builder::new().build())
                              .plugin(tauri_plugin_dialog::init())
-                             .plugin(tauri_plugin_opener::init())
                              .setup(|app| {
                                  let data_dir =
                                      app.path()
                                         .app_local_data_dir()
                                         .map_err(|e| format!("ローカルデータディレクトリの解決失敗: {e}"))?;
                                  let history_path = data_dir.join("history.jsonl");
-                                 app.manage(AppState::new(history_path));
+                                 let r_dir = infra::r::runner::script_directory(&app.path().resource_dir()?,
+                                                                                tauri::is_dev());
+                                 app.manage(AppState::new(history_path, r_dir));
                                  Ok(())
                              })
                              .invoke_handler(tauri::generate_handler![commands::dataset::get_sheets,

@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useState } from 'react';
+import { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
 import type { LoadedDataset } from '../../shared/types';
 
 interface ContextValue {
@@ -10,7 +10,9 @@ const Ctx = createContext<ContextValue | null>(null);
 
 export function DatasetProvider({ children }: { children: ReactNode }) {
   const [dataset, setDataset] = useState<LoadedDataset | null>(null);
-  return <Ctx.Provider value={{ dataset, setDataset }}>{children}</Ctx.Provider>;
+  // 毎レンダーで新しい object を渡すと、全行を描く DataPreview まで再描画が走る
+  const value = useMemo<ContextValue>(() => ({ dataset, setDataset }), [dataset]);
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function useDataset() {

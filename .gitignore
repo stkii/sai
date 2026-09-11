@@ -14,6 +14,7 @@ src-r/data/
 
 # Docs
 docs/llms-txt/
+docs/misc/
 docs/third-party/
 
 # Logs

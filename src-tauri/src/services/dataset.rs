@@ -3,7 +3,10 @@ use std::collections::{
     HashSet,
 };
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
 use uuid::Uuid;
 
@@ -23,6 +26,7 @@ use crate::models::{
 
 /// 対応ファイル形式の判定はここが唯一の真実。
 /// フロントは拡張子を解釈せず、`get_sheets` が空を返すか否かでシート選択の要否を判断する。
+#[derive(Debug)]
 enum FileKind {
     Csv,
     Excel,
@@ -38,7 +42,8 @@ impl FileKind {
             Some("csv") => Ok(Self::Csv),
             Some("xlsx") | Some("xls") => Ok(Self::Excel),
             Some("sav") => Ok(Self::Sav),
-            other => Err(format!("未対応のファイル形式: {other:?}")),
+            Some(ext) => Err(format!("未対応のファイル形式です: .{ext} (対応: .csv .xlsx .xls .sav)")),
+            None => Err("拡張子がないためファイル形式を判別できません".to_string()),
         }
     }
 }
@@ -47,6 +52,8 @@ pub struct DatasetService {
     cache: Arc<DatasetCache>,
     sav_reader: SavReader,
     transformer: Transformer,
+    // 非同期コマンド同士の書込み競合を防ぐ。R の計算中も読取りは妨げない。
+    write_lock: Mutex<()>,
 }
 
 impl DatasetService {
@@ -56,7 +63,8 @@ impl DatasetService {
                -> Self {
         Self { cache,
                sav_reader,
-               transformer }
+               transformer,
+               write_lock: Mutex::new(()) }
     }
 
     pub fn get_sheets(&self,
@@ -73,6 +81,9 @@ impl DatasetService {
                 path: &Path,
                 sheet: Option<String>)
                 -> Result<LoadedDataset, String> {
+        let _guard = self.write_lock
+                         .lock()
+                         .map_err(|e| format!("データ更新のロック失敗: {e}"))?;
         let table = self.read(path, sheet)?;
         validate_headers(&table.headers)?;
         let key = Uuid::new_v4().to_string();
@@ -80,8 +91,7 @@ impl DatasetService {
                                       headers: table.headers.clone(),
                                       rows: table.rows.clone() };
         // フロントは単一データセット前提のため、新規ロード時に旧エントリを破棄する
-        self.cache.clear();
-        self.cache.insert(key, table);
+        self.cache.replace(key, table);
         Ok(dataset)
     }
 
@@ -91,6 +101,9 @@ impl DatasetService {
                            key: &str,
                            spec: &VariableSpec)
                            -> Result<CreateVariableResult, String> {
+        let _guard = self.write_lock
+                         .lock()
+                         .map_err(|e| format!("データ更新のロック失敗: {e}"))?;
         if spec.sources.is_empty() {
             return Err("逆転する項目が選択されていません".into());
         }
@@ -221,13 +234,26 @@ fn validate_new_headers(existing: &[String],
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use super::{
+        FileKind,
         validate_headers,
         validate_new_headers,
     };
 
     fn headers(names: &[&str]) -> Vec<String> {
         names.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn unsupported_extension_is_reported_readably() {
+        let err = FileKind::from_path(Path::new("/tmp/data.txt")).unwrap_err();
+        assert!(err.contains(".txt"), "拡張子をそのまま示す: {err}");
+        assert!(!err.contains("Some("), "Rust のデバッグ表記を漏らさない: {err}");
+
+        let err = FileKind::from_path(Path::new("/tmp/data")).unwrap_err();
+        assert!(err.contains("拡張子がない"), "{err}");
     }
 
     #[test]
@@ -270,5 +296,45 @@ mod tests {
     fn rejects_duplicate_derived_names() {
         let err = validate_new_headers(&headers(&["q1"]), &headers(&["q1_R", "q1_R"])).unwrap_err();
         assert!(err.contains("重複"), "新規同士の重複を拒否する: {err}");
+    }
+
+    #[test]
+    #[ignore = "導入済みの R パッケージが必要"]
+    fn concurrent_variable_creation_keeps_both_changes() {
+        use super::*;
+        use std::sync::Barrier;
+
+        let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("../src-r");
+        let cache = Arc::new(DatasetCache::new());
+        cache.insert("data".into(),
+                     ParsedTable { headers: vec!["q".into()],
+                                   rows: vec![vec!["1".into()], vec!["5".into()]] });
+        let service = Arc::new(DatasetService::new(cache.clone(),
+                                                   SavReader::new(directory.join("read_sav.R")),
+                                                   Transformer::new(directory.join("transform.R"))));
+        let start = Arc::new(Barrier::new(2));
+        let jobs: Vec<_> = ["reverse_a", "reverse_b"].into_iter()
+                                                     .map(|name| {
+                                                         let service = service.clone();
+                                                         let start = start.clone();
+                                                         std::thread::spawn(move || {
+                                                             start.wait();
+                                                             service.create_variable("data", &VariableSpec {
+                    sources: vec!["q".into()], names: vec![name.into()],
+                    scale_min: 1.0, scale_max: 5.0,
+                }).unwrap();
+                                                         })
+                                                     })
+                                                     .collect();
+        for job in jobs {
+            job.join().unwrap();
+        }
+        let table = cache.get("data").unwrap();
+        assert_eq!(table.headers.len(), 3);
+        for name in ["reverse_a", "reverse_b"] {
+            let index = table.headers.iter().position(|h| h == name).unwrap();
+            assert_eq!(table.rows[0][index], "5");
+            assert_eq!(table.rows[1][index], "1");
+        }
     }
 }
