@@ -1,14 +1,22 @@
 <h1 align="center">SAI</h1>
 
 <p align="center">
-  <a href="https://www.typescriptlang.org" target="_blank"><img src="https://img.shields.io/badge/TypeScript-v7-3178C6.svg?logo=typescript&logoColor=3178C6&labelColor=white&style=flat" alt="TypeScript-Badge"></a>
-  <a href="https://www.rust-lang.org" target="_blank"><img src="https://img.shields.io/badge/Rust-1.96.1+-CE412B.svg?logo=rust&logoColor=CE412B&labelColor=white&style=flat" alt="Rust-Badge"></a>
-  <a href="https://www.r-project.org" target="_blank"><img src="https://img.shields.io/badge/R-4.6.1+-276DC3.svg?logo=r&logoColor=276DC3&labelColor=white&style=flat" alt="R-Badge"></a>
+  <a href="https://www.typescriptlang.org" target="_blank">
+    <img src="https://img.shields.io/badge/TypeScript-v7-3178C6.svg?logo=typescript&logoColor=3178C6&labelColor=white&style=flat" alt="TypeScript-Badge">
+  </a>
+  <a href="https://www.rust-lang.org" target="_blank">
+    <img src="https://img.shields.io/badge/Rust-1.96.1+-CE412B.svg?logo=rust&logoColor=CE412B&labelColor=white&style=flat" alt="Rust-Badge">
+  </a>
+  <a href="https://www.r-project.org" target="_blank">
+    <img src="https://img.shields.io/badge/R-4.6.1+-276DC3.svg?logo=r&logoColor=276DC3&labelColor=white&style=flat" alt="R-Badge">
+  </a>
 </p>
 <p align="center">
   <img alt="version" src="https://img.shields.io/badge/version-0.1.0--beta-orange">
   <img alt="platform" src="https://img.shields.io/badge/platform-macOS-lightgrey?logo=apple&logoColor=white">
-  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/github/license/stkii/sai?color=green"></a>
+  <a href="./LICENSE">
+    <img alt="license" src="https://img.shields.io/github/license/stkii/sai?color=green">
+  </a>
 </p>
 
 > [!IMPORTANT]
