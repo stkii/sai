@@ -5,6 +5,7 @@
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "cmake.sourceDirectory": "${workspaceFolder}/src-cpp",
   "editor.codeActionsOnSave": {
     "source.organizeImports.biome": "explicit",
     "source.fixAll.biome": "explicit"
@@ -14,6 +15,10 @@
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
   "rust-analyzer.checkOnSave": false,
-  "rust-analyzer.files.exclude": ["**/target/**"],
-  "rust-analyzer.linkedProjects": ["src-tauri/Cargo.toml"],
+  "rust-analyzer.files.exclude": [
+    "**/target/**"
+  ],
+  "rust-analyzer.linkedProjects": [
+    "src-tauri/Cargo.toml"
+  ]
 }

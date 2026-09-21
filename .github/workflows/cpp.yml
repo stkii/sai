@@ -1,0 +1,73 @@
+name: C++ engine
+
+# Every branch is built directly, so a feature branch gets feedback on each
+# push. pull_request is intentionally absent: a pull request from this
+# repository is already covered by its push event. Add it if outside
+# contributions are accepted later.
+on:
+  push:
+    paths:
+      - 'src-cpp/**'
+      - '.github/workflows/cpp.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Superseded runs on the same branch are cancelled rather than queued.
+concurrency:
+  group: cpp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / ${{ matrix.preset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Report every combination, so one platform failing does not hide another.
+      fail-fast: false
+      matrix:
+        # ubuntu builds with GCC on a case-sensitive filesystem; macOS builds
+        # with Apple Clang. Together they catch include-path casing mistakes
+        # and warnings that only one of the two compilers reports.
+        os: [ubuntu-latest, macos-latest]
+        # ci promotes warnings to errors; asan adds AddressSanitizer and
+        # UndefinedBehaviorSanitizer.
+        preset: [ci, asan]
+
+    defaults:
+      run:
+        # CMakePresets.json lives next to the engine, which stays buildable
+        # on its own.
+        working-directory: src-cpp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report toolchain
+        run: |
+          cmake --version
+          c++ --version
+
+      # Two CLAUDE.md rules that no compiler warning covers. Everything else in
+      # that list is enforced by the warning set in CMakeLists.txt.
+      - name: Check rules the compiler cannot see
+        run: |
+          files=$(git ls-files '*.cpp' '*.hpp' '*.h')
+          status=0
+          if [ -n "$files" ]; then
+            if grep -nE 'using[[:space:]]+namespace[[:space:]]+std' $files; then
+              echo "::error::'using namespace std' is not allowed. See CLAUDE.md."
+              status=1
+            fi
+            # Third-party headers such as <gtest/gtest.h> contain a slash and are
+            # not matched.
+            if grep -nE '#[[:space:]]*include[[:space:]]*<([a-z0-9_]+\.h|bits/stdc\+\+\.h)>' $files; then
+              echo "::error::Include the C++ header, for example <cmath> or <cstdint>. See CLAUDE.md."
+              status=1
+            fi
+          fi
+          exit $status
+
+      - name: Configure, build and test
+        run: cmake --workflow --preset ${{ matrix.preset }}
