@@ -1,8 +1,6 @@
 # Build
-build/
 dist/
 target/
-*.out
 *.tsbuildinfo
 
 # Claude

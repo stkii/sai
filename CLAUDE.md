@@ -30,6 +30,15 @@ It allows users to perform data analysis through point-and-click operations with
   - Do not write overly long functions.
   - Do not use inheritance carelessly; consider composition instead.
 
+## Comment rules
+
+Code comments must contain only non-obvious WHYs. Limit comments to information that cannot be inferred from the code itself, such as why a hidden constraint was introduced or why the code behaves in a way that may surprise readers.
+
+Do not include:
+- WHATs (anything that is obvious from reading the code)
+- Change history
+- References to task IDs, etc.
+
 ## Dark Patterns Prohibited
 
 ### Silent Changes to Analysis Results
