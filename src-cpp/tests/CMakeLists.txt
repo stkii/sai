@@ -63,7 +63,9 @@ sai_add_test(c_compatibility_test unit/c_compatibility_test.cpp sai::c_api sai::
 sai_add_test(c_api_test integration/c_api_test.cpp sai::c_api)
 
 sai_add_test(tolerance_test unit/tolerance_test.cpp sai::test_support)
+sai_add_test(descriptive_test unit/descriptive_test.cpp sai::test_support)
 
-# Step 8 adds the comparison against these values; this one checks that they
-# load and that the loader rejects a damaged file.
+# One reads the stored values and the loader that rejects a damaged file; the
+# other compares the engine against those values.
 sai_add_test(descriptive_fixture_test reference/descriptive_fixture_test.cpp sai::test_support)
+sai_add_test(descriptive_reference_test reference/descriptive_reference_test.cpp sai::test_support)

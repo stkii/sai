@@ -1,6 +1,5 @@
-// The stored reference values, read the way Step 8's reference test will read
-// them. Until the statistics exist there is nothing to compare against, so this
-// checks that every fixture loads and describes itself consistently.
+// That every fixture loads and describes itself consistently, which
+// descriptive_reference_test.cpp assumes before it compares anything.
 
 #include "support/fixture.hpp"
 

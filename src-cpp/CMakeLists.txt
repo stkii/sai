@@ -98,6 +98,7 @@ endif()
 # directories are include roots, so a header is always reached by the path it
 # has in the tree rather than relative to the file that includes it.
 add_library(sai
+    src/analysis/descriptive.cpp
     src/core/data_view.cpp
 )
 add_library(sai::sai ALIAS sai)

@@ -118,7 +118,7 @@ src-cpp/
 │   │   ├── linear/              # 線形モデルの当てはめ・推定量
 │   │   └── generalized_linear/  # 将来の一般化線形モデル
 │   └── analysis/
-│       ├── descriptive/
+│       ├── descriptive.cpp      # 最初に実装する記述統計
 │       ├── correlation/
 │       ├── t_test/
 │       ├── regression/
