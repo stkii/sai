@@ -29,7 +29,8 @@ extern "C" {
 // holds none of them after returning.
 //
 // A null missing_mask means no row is missing; otherwise its length equals
-// value_count. name may be null and need not be null terminated.
+// value_count and each element is 0 for a present row or 1 for a missing one.
+// name may be null and need not be null terminated.
 struct SaiNumericColumn {
     const double* values;
     std::size_t value_count;

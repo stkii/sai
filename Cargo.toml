@@ -1,0 +1,9 @@
+# src-tauri and crates/sai-engine share one lock file and one target directory,
+# so the engine can be built and tested without Tauri while the application
+# still resolves a single set of dependency versions.
+[workspace]
+members = [
+    "crates/sai-engine",
+    "src-tauri",
+]
+resolver = "3"
