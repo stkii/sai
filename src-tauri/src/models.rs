@@ -41,12 +41,85 @@ pub struct AnalysisSection {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisResult {
+    /// 整形済みの表。C++ エンジンの経路では空で、代わりに `typed` を持つ。
     pub sections: Vec<AnalysisSection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n: Option<usize>,
     // R の snake_case を受け取り、画面と履歴へは従来どおり camelCase で渡す。
     #[serde(alias = "n_note", skip_serializing_if = "Option::is_none")]
     pub n_note: Option<String>,
+    /// 丸める前の値と診断。R の経路と、これが無かった頃の履歴には付かない。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typed: Option<TypedResult>,
+    /// 計算した実装。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub engine: Option<EngineIdentity>,
+}
+
+/// 結果を計算した実装。保存済みの結果を、いま同じ入力で得られる値と区別できる
+/// ようにする。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct EngineIdentity {
+    pub name: String,
+    /// 版を特定できない実行先では付かない。推測で埋めない。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+/// 手法ごとに形の違う型付き結果。どの手法のものかは `method` で判別する。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "method", rename_all = "camelCase")]
+pub enum TypedResult {
+    Describe(DescriptiveReport),
+}
+
+/// 頼んだ値が返らなかった理由。表示文は持たず、画面が code と target から組み立てる。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultDiagnostic {
+    pub code: String,
+    /// 空のままだった結果のフィールド名。
+    pub target: String,
+    /// その統計量を求めるのに使えた有効件数。
+    pub count: usize,
+}
+
+/// 記述統計の型付き結果。丸めは行わず、表の見出しと桁数は画面側が決める。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DescriptiveReport {
+    pub columns: Vec<DescriptiveColumn>,
+    pub applied_options: DescriptiveAppliedOptions,
+}
+
+/// エンジンが実際に適用した設定。要求した設定は履歴の `options` に残るので、
+/// 両者を突き合わせれば何が効いたかが分かる。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DescriptiveAppliedOptions {
+    pub sort: String,
+    pub include_skewness: bool,
+    pub include_kurtosis: bool,
+}
+
+/// 1変数ぶんの記述統計。`null` は「値がない」ことを表し、0 の代わりではない。
+/// オプションで切った統計量を除き、`null` には必ず対応する診断が付く。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DescriptiveColumn {
+    pub variable: String,
+    pub total_count: usize,
+    pub valid_count: usize,
+    pub missing_count: usize,
+    pub mean: Option<f64>,
+    pub standard_deviation: Option<f64>,
+    pub minimum: Option<f64>,
+    pub median: Option<f64>,
+    pub maximum: Option<f64>,
+    pub skewness: Option<f64>,
+    pub kurtosis: Option<f64>,
+    pub diagnostics: Vec<ResultDiagnostic>,
 }
 
 /// 変数作成の指定。現在は逆転項目のみ。
@@ -77,6 +150,9 @@ pub struct CreateVariableResult {
     pub note: Option<String>,
 }
 
+/// いま書き出す履歴行の形式。型付き結果と実行エンジンが載るようになった版。
+pub const HISTORY_FORMAT_VERSION: u32 = 2;
+
 /// 履歴の読込結果。壊れて読めなかった行は捨てるほかないが、件数を返して
 /// 「履歴が減った」ことをユーザーへ伝えられるようにする。
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +165,10 @@ pub struct HistoryLoadResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryRecord {
+    /// 保存した行の形式。付かないレコードは型付き結果より前に保存されたもので、
+    /// 欠けている情報を推測で埋めない。書き込む側が付けるので読込では任意。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_version: Option<u32>,
     pub id: String,
     pub method: String,
     pub variables: Vec<String>,

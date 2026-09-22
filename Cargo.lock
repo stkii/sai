@@ -457,6 +457,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmake"
+version = "0.1.58"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0f78a02292a74a88ac736019ab962ece0bc380e3f977bf72e376c5d78ff0678"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "codepage"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3115,6 +3124,7 @@ dependencies = [
  "calamine",
  "csv",
  "log",
+ "sai-engine",
  "serde",
  "serde_json",
  "tauri",
@@ -3124,6 +3134,13 @@ dependencies = [
  "tempfile",
  "uuid",
  "wait-timeout",
+]
+
+[[package]]
+name = "sai-engine"
+version = "0.1.0"
+dependencies = [
+ "cmake",
 ]
 
 [[package]]
@@ -3991,7 +4008,7 @@ dependencies = [
  "serde_with",
  "swift-rs",
  "thiserror 2.0.17",
- "toml 0.9.11+spec-1.1.0",
+ "toml 1.1.4+spec-1.1.0",
  "url",
  "urlpattern",
  "uuid",

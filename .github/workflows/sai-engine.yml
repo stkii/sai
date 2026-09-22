@@ -1,0 +1,48 @@
+name: Rust bindings
+
+# The engine's own sources are a trigger: build.rs compiles them, so a change
+# in src-cpp/ can break the link even when no Rust file moved.
+on:
+  push:
+    paths:
+      - 'src-cpp/**'
+      - 'crates/sai-engine/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/sai-engine.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sai-engine-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # The C++ standard library and the archive order on the link line differ
+      # between the two, and only the build here decides them.
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report toolchain
+        run: |
+          cargo --version
+          cmake --version
+          c++ --version
+
+      # --locked because the lock file is committed: a job that silently
+      # resolved a different version would not be testing what ships.
+      - name: Lint
+        run: cargo clippy -p sai-engine --all-targets --locked -- -D warnings
+
+      - name: Test
+        run: cargo test -p sai-engine --locked

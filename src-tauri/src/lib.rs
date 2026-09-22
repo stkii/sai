@@ -1,3 +1,4 @@
+mod analysis;
 mod bootstrap;
 mod commands;
 mod infra;

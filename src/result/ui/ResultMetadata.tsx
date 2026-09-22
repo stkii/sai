@@ -61,6 +61,13 @@ export function ResultMetadata({ entry }: { entry: ResultEntry }) {
             設定: {optionsText}
           </Text>
         )}
+        {/* 移行中は手法ごとに実行先が違う。どの実装の数値を見ているかを示す */}
+        {entry.result.engine && (
+          <Text fontSize="xs" color="fg.muted">
+            計算: {entry.result.engine.name}
+            {entry.result.engine.version ? ` ${entry.result.engine.version}` : ''}
+          </Text>
+        )}
         {entry.result.n !== undefined && (
           <Text fontSize="xs" color="fg.muted">
             有効サンプルサイズ: n = {entry.result.n}

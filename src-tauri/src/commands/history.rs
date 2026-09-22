@@ -15,7 +15,7 @@ pub fn load_history(state: State<'_, AppState>) -> Result<HistoryLoadResult, Str
 pub fn append_history(record: HistoryRecord,
                       state: State<'_, AppState>)
                       -> Result<(), String> {
-    state.history.append(&record)
+    state.history.append(record)
 }
 
 #[tauri::command]

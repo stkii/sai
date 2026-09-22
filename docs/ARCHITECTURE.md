@@ -119,7 +119,7 @@ src/
 │   └── methods/                  # 各分析メソッド (modal.tsx + index.tsx の 2 ファイル構成。
 │       │                         #  result.tsx はカスタム表示が必要な場合のみ追加)
 │       ├── proximity.ts          # distance / mds が共有する測度・計算対象の選択肢
-│       ├── describe/
+│       ├── describe/            # result.tsx で型付き結果を表に組む
 │       ├── correlation/
 │       ├── regression/
 │       ├── factor/
@@ -131,6 +131,7 @@ src/
 │
 ├── result/                       # 中央ペイン: 結果表示 + 履歴 (実態が融合しているため同居)
 │   ├── ui/                       # ResultPane, ResultMetadata, HistoryPane
+│   ├── presentation/             # 型付き結果の表示 (数値整形・診断の表示文)
 │   └── state/                    # ResultContext (結果リスト + 履歴永続化)
 │
 └── shared/
@@ -584,7 +585,7 @@ RENV_PROFILE=dev Rscript tests/run_all.R        # 全テスト実行
 ## 分析実行フロー (end-to-end)
 
 ```
-Frontend                     Rust                              R
+Frontend                     Rust                        R / C++ エンジン
 ─────────────────────────────────────────────────────────────────────────────
 AnalysisModalHost (見た目) → useRunAnalysis (実行)
   runAnalysis({datasetKey, method, variables, options})
@@ -592,22 +593,35 @@ AnalysisModalHost (見た目) → useRunAnalysis (実行)
         ▼
                      AnalysisService::run
                        ├ datasetKey あり → cache から列を射影 (variables)
-                       └ null           → 空テーブル
-                     RRunner::run ─ temp input.json ─┐
-                                                     ▼
-                                              cli.R
-                                                ├ dispatch[method] を解決
-                                                ├ data_shape に応じて df 変換
-                                                ├ Run<Method>(df, options)
-                                                │    → {sections, n, n_note}
-                                                └ 数値変換の失敗を n_note へ合流
-                     AnalysisResult ◀─ temp output.json ─┘
+                       ├ null           → 空テーブル
+                       └ method で実行先を決める
+                          │
+                          ├ describe → analysis/describe.rs
+                          │    ├ セル文字列 → 値 + 欠損マスク (analysis/numeric.rs)
+                          │    └ sai-engine ─ C ABI ─▶ sai::analysis::describe
+                          │         → {typed, engine} (丸める前の値と診断)
+                          │
+                          └ その他 → RRunner::run ─ temp input.json ─┐
+                                                                     ▼
+                                                              cli.R
+                                                                ├ dispatch[method] を解決
+                                                                ├ data_shape に応じて df 変換
+                                                                ├ Run<Method>(df, options)
+                                                                │    → {sections, n, n_note}
+                                                                └ 数値変換の失敗を n_note へ合流
+                     AnalysisResult ◀─ temp output.json ─────────────┘
         ◀ camelCase (nNote)
 ResultContext.addResult
   └ persist (呼び出し元が MethodDefinition.persistHistory から算出) → appendHistory() で JSONL へ追記
 ```
 
-Frontend ↔ Rust は Tauri `invoke()` の JSON、Rust ↔ R は一時 JSON ファイル経由でやり取りする。`AnalysisResult.sections` が全メソッド共通の出力形であり、表示にも将来のエクスポートにも兼用する。
+Frontend ↔ Rust は Tauri `invoke()` の JSON、Rust ↔ R は一時 JSON ファイル経由、Rust ↔ C++ は C ABI (`crates/sai-engine`) でやり取りする。
+
+`AnalysisResult` は 2 つの出力形を持つ。R が返す `sections` は整形済みの文字列表で、C++ エンジンが返す `typed` は丸める前の値と診断を持つ。`typed` を持つ結果の桁と見出しは `result/presentation/` と各メソッドの `result.tsx` が決める。どちらの形でも表示できるので、`typed` が無かった頃の履歴もそのまま読める。`engine` は計算した実装で、移行中にどちらの数値を見ているかを結果画面に出す。
+
+実行先は手法ごとに固定する。C++ の失敗を理由に R へ切り替えない。同じ操作が黙って別の実装の結果を返すことになるためである (ダークパターン禁止規約)。
+
+C++ 経路では、数値として読めないセルを行番号付きで拒否する。R 経路は欠測にして注記を添えていたが、それでは欠測の多いデータと数値でない列を選んだこととを見分けられない。
 
 ---
 
@@ -630,7 +644,8 @@ Frontend ↔ Rust は Tauri `invoke()` の JSON、Rust ↔ R は一時 JSON フ�
 | レイヤー | 責務 | 持ってはいけないもの |
 |---|---|---|
 | `commands/` | Tauri コマンド・型変換 | ビジネスロジック |
-| `services/` | ビジネスロジック・薄い配管 | メソッド固有のロジック (R に集約) |
+| `services/` | ビジネスロジック・薄い配管 | メソッド固有のロジック (R と C++ に集約) |
+| `analysis/` | 要求の解釈・エンジン入力の組み立て・結果の DTO 化 | 統計的な規則 (C++ が持つ) |
 | `infra/` | 外部システム統合 | ビジネスロジック |
 | `models.rs` | 共通型 | 他レイヤーへの依存 |
 | `bootstrap.rs` | 生成と結線 (Composition Root) | ビジネスロジック |
