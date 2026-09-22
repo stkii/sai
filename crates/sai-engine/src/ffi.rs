@@ -2,7 +2,10 @@
 //! 書き写したもの。ヘッダーの本文は C++ なので bindgen では読めず、署名は
 //! 手で揃える。クレートの外へは出さない。
 
-use std::ffi::c_char;
+use std::ffi::{
+    CStr,
+    c_char,
+};
 use std::{
     ptr,
     slice,
@@ -31,6 +34,51 @@ pub(crate) struct SaiColumnCounts {
     pub(crate) valid_count: usize,
 }
 
+/// `sai_c.h` の `sai_descriptive_diagnostic_capacity`。統計量1つにつき高々1件
+/// なので固定長で足り、結果の受け渡しに確保も解放も現れない。
+pub(crate) const SAI_DESCRIPTIVE_DIAGNOSTIC_CAPACITY: usize = 7;
+
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub(crate) struct SaiOptionalDouble {
+    pub(crate) value: f64,
+    pub(crate) present: u8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub(crate) struct SaiDescriptiveOptions {
+    pub(crate) include_skewness: u8,
+    pub(crate) include_kurtosis: u8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub(crate) struct SaiDiagnostic {
+    pub(crate) code: i32,
+    pub(crate) target: *const c_char,
+    pub(crate) target_length: usize,
+    pub(crate) count: usize,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub(crate) struct SaiDescriptiveResult {
+    pub(crate) total_count: usize,
+    pub(crate) valid_count: usize,
+    pub(crate) missing_count: usize,
+    pub(crate) mean: SaiOptionalDouble,
+    pub(crate) standard_deviation: SaiOptionalDouble,
+    pub(crate) minimum: SaiOptionalDouble,
+    pub(crate) median: SaiOptionalDouble,
+    pub(crate) maximum: SaiOptionalDouble,
+    pub(crate) skewness: SaiOptionalDouble,
+    pub(crate) kurtosis: SaiOptionalDouble,
+    pub(crate) applied_options: SaiDescriptiveOptions,
+    pub(crate) diagnostics: [SaiDiagnostic; SAI_DESCRIPTIVE_DIAGNOSTIC_CAPACITY],
+    pub(crate) diagnostic_count: usize,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub(crate) struct SaiErrorMessage {
@@ -44,7 +92,33 @@ unsafe extern "C" {
                                             out_error: *mut SaiErrorMessage)
                                             -> SaiStatus;
 
+    pub(crate) fn sai_describe(column: *const SaiNumericColumn,
+                               options: *const SaiDescriptiveOptions,
+                               out_result: *mut SaiDescriptiveResult,
+                               out_error: *mut SaiErrorMessage)
+                               -> SaiStatus;
+
     fn sai_error_message_destroy(message: *mut SaiErrorMessage);
+
+    fn sai_engine_version() -> *const c_char;
+}
+
+/// エンジンのバージョン。文字列は静的で、解放しない。
+pub(crate) fn engine_version() -> &'static str {
+    // 呼ぶたびに同じ静的な文字列が返り、内容は ASCII のバージョン番号。
+    let text = unsafe { CStr::from_ptr(sai_engine_version()) };
+    text.to_str().unwrap_or_default()
+}
+
+/// エンジンが書いた診断の対象名を写す。文字列自体はエンジンの静的な領域にあり、
+/// 借りたままにするとクレートの外へ生存期間の約束が漏れるので所有する形にする。
+pub(crate) fn diagnostic_target(diagnostic: &SaiDiagnostic) -> String {
+    if diagnostic.target.is_null() {
+        return String::new();
+    }
+    // 終端は含まれない。エンジンが書くのは snake_case の ASCII キーだけ。
+    let bytes = unsafe { slice::from_raw_parts(diagnostic.target.cast::<u8>(), diagnostic.target_length) };
+    String::from_utf8_lossy(bytes).into_owned()
 }
 
 /// エンジンが確保したメッセージの所有者。解放手順をこの型の外へ出さないために

@@ -5,6 +5,8 @@
 //! 利用側は依存として並べるだけでよい。
 
 mod column;
+mod descriptive;
+mod engine;
 mod error;
 mod ffi;
 
@@ -13,6 +15,16 @@ pub use column::{
     MISSING_MASK_MISSING,
     MISSING_MASK_PRESENT,
     NumericColumn,
+};
+pub use descriptive::{
+    Descriptive,
+    DescriptiveOptions,
+    Diagnostic,
+    DiagnosticCode,
+};
+pub use engine::{
+    ENGINE_NAME,
+    engine_version,
 };
 pub use error::{
     Error,

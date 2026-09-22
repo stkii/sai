@@ -3124,6 +3124,7 @@ dependencies = [
  "calamine",
  "csv",
  "log",
+ "sai-engine",
  "serde",
  "serde_json",
  "tauri",

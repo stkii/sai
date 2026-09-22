@@ -31,9 +31,65 @@ export interface AnalysisSection {
 }
 
 export interface AnalysisResult {
+  /** 整形済みの表。C++ エンジンの経路では空で、代わりに typed を持つ。 */
   sections: AnalysisSection[];
   n?: number;
   nNote?: string;
+  /** 丸める前の値と診断。R の経路と、これが無かった頃の履歴には付かない。 */
+  typed?: TypedResult;
+  /** 計算した実装。 */
+  engine?: EngineIdentity;
+}
+
+/** 結果を計算した実装。保存済みの結果を今のエンジンの出力と区別するために使う。 */
+export interface EngineIdentity {
+  name: string;
+  /** 版を特定できない実行先では付かない。 */
+  version?: string;
+}
+
+// 手法ごとに形が違うため union。method で判別する。
+export type TypedResult = DescriptiveReport;
+
+/** 頼んだ値が返らなかった理由。表示文はこれと target から画面が組み立てる。 */
+export interface ResultDiagnostic {
+  code: string;
+  /** 空のままだった結果のフィールド名。 */
+  target: string;
+  /** その統計量を求めるのに使えた有効件数。 */
+  count: number;
+}
+
+export interface DescriptiveReport {
+  method: 'describe';
+  columns: DescriptiveColumn[];
+  appliedOptions: DescriptiveAppliedOptions;
+}
+
+/** エンジンが実際に適用した設定。要求した設定は履歴の options に残る。 */
+export interface DescriptiveAppliedOptions {
+  sort: string;
+  includeSkewness: boolean;
+  includeKurtosis: boolean;
+}
+
+/**
+ * 1 変数ぶんの記述統計。null は「値がない」ことで 0 の代わりではない。
+ * オプションで切った統計量を除き、null には必ず対応する診断が付く。
+ */
+export interface DescriptiveColumn {
+  variable: string;
+  totalCount: number;
+  validCount: number;
+  missingCount: number;
+  mean: number | null;
+  standardDeviation: number | null;
+  minimum: number | null;
+  median: number | null;
+  maximum: number | null;
+  skewness: number | null;
+  kurtosis: number | null;
+  diagnostics: ResultDiagnostic[];
 }
 
 /** 読み込み済みデータセットの全体。プレビュー表示のため全行を含む。 */
@@ -68,6 +124,8 @@ export interface HistoryLoadResult {
 }
 
 export interface HistoryRecord {
+  /** 保存された行の形式。付かない記録は型付き結果より前に保存されたもの。 */
+  formatVersion?: number;
   id: string;
   method: Method;
   variables: string[];

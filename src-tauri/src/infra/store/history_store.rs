@@ -122,17 +122,21 @@ mod tests {
     use super::*;
     use crate::models::{
         AnalysisResult,
+        HISTORY_FORMAT_VERSION,
         HistoryRecord,
     };
 
     fn record(id: &str) -> HistoryRecord {
-        HistoryRecord { id: id.to_string(),
+        HistoryRecord { format_version: Some(HISTORY_FORMAT_VERSION),
+                        id: id.to_string(),
                         method: "describe".to_string(),
                         variables: vec!["a".to_string()],
                         options: serde_json::json!({}),
                         result: AnalysisResult { sections: Vec::new(),
                                                  n: None,
-                                                 n_note: None },
+                                                 n_note: None,
+                                                 typed: None,
+                                                 engine: None },
                         created_at: 0 }
     }
 
@@ -149,6 +153,28 @@ mod tests {
         let records = store.load_all().unwrap().records;
         assert_eq!(records.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
                    vec!["1", "2"]);
+    }
+
+    #[test]
+    fn reads_a_record_saved_before_typed_results_existed() {
+        // 型付き結果もエンジンの記録も無かった頃の行。欠けた項目を補わずに読む。
+        let old_line = r#"{"id":"1","method":"describe","variables":["a"],"options":{},
+            "result":{"sections":[{"title":"記述統計","table":{"headers":["変数"],"rows":[["a"]]}}],
+            "n":3,"nNote":"欠測は変数ごとに除外しました"},"createdAt":1}"#
+                                                                          .replace('\n', "");
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("history.jsonl"), old_line + "\n").unwrap();
+
+        let loaded = store_in(&dir).load_all().unwrap();
+
+        assert_eq!(loaded.skipped, 0);
+        let record = &loaded.records[0];
+        assert_eq!(record.format_version, None);
+        assert!(record.result.typed.is_none());
+        assert!(record.result.engine.is_none());
+        assert_eq!(record.result.n_note.as_deref(),
+                   Some("欠測は変数ごとに除外しました"));
+        assert_eq!(record.result.sections.len(), 1);
     }
 
     #[test]

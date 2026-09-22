@@ -1,6 +1,10 @@
 use std::ffi::c_char;
 use std::ptr;
 
+use crate::descriptive::{
+    Descriptive,
+    DescriptiveOptions,
+};
 use crate::error::Error;
 use crate::ffi;
 
@@ -55,15 +59,7 @@ impl<'a> NumericColumn<'a> {
     ///
     /// [`ErrorKind::InvalidArgument`]: crate::ErrorKind::InvalidArgument
     pub fn counts(&self) -> Result<ColumnCounts, Error> {
-        let missing_mask = self.missing_mask.unwrap_or_default();
-        let name = self.name.unwrap_or_default();
-        let column = ffi::SaiNumericColumn { values: borrowed_ptr(self.values),
-                                             value_count: self.values.len(),
-                                             missing_mask: borrowed_ptr(missing_mask),
-                                             missing_mask_count: missing_mask.len(),
-                                             name: borrowed_ptr(name.as_bytes()).cast::<c_char>(),
-                                             name_length: name.len() };
-
+        let column = self.as_ffi();
         let mut counts = ffi::SaiColumnCounts::default();
         let mut error = ffi::ErrorMessage::empty();
 
@@ -77,6 +73,51 @@ impl<'a> NumericColumn<'a> {
                                      valid_count: counts.valid_count });
         }
         Err(Error::from_status(status, error.text()))
+    }
+
+    /// 平均・標準偏差・最小・中央値・最大と、頼んだ場合の歪度・尖度を求める。
+    ///
+    /// 空の列、全欠損の列、定数列、件数の足りない列はいずれも正常な入力で、
+    /// 返らない値は [`Descriptive::diagnostics`] が理由を持つ。
+    ///
+    /// # Errors
+    ///
+    /// [`counts`] と同じ入力契約に反した場合に [`ErrorKind::InvalidArgument`] を返す。
+    ///
+    /// [`counts`]: Self::counts
+    /// [`ErrorKind::InvalidArgument`]: crate::ErrorKind::InvalidArgument
+    pub fn describe(&self,
+                    options: DescriptiveOptions)
+                    -> Result<Descriptive, Error> {
+        let column = self.as_ffi();
+        let options = options.to_ffi();
+        let mut result = ffi::SaiDescriptiveResult::default();
+        let mut error = ffi::ErrorMessage::empty();
+
+        let status = unsafe {
+            ffi::sai_describe(&raw const column,
+                              &raw const options,
+                              &raw mut result,
+                              error.as_mut_ptr())
+        };
+
+        if status == ffi::SAI_STATUS_OK {
+            return Ok(Descriptive::from_ffi(&result));
+        }
+        Err(Error::from_status(status, error.text()))
+    }
+
+    /// 借用したままのポインターを詰めるので、戻り値はこの列より長く生きては
+    /// ならない。呼び出しの間だけ使う。
+    fn as_ffi(&self) -> ffi::SaiNumericColumn {
+        let missing_mask = self.missing_mask.unwrap_or_default();
+        let name = self.name.unwrap_or_default();
+        ffi::SaiNumericColumn { values: borrowed_ptr(self.values),
+                                value_count: self.values.len(),
+                                missing_mask: borrowed_ptr(missing_mask),
+                                missing_mask_count: missing_mask.len(),
+                                name: borrowed_ptr(name.as_bytes()).cast::<c_char>(),
+                                name_length: name.len() }
     }
 }
 

@@ -126,6 +126,12 @@ target_link_libraries(sai_c_api
     PRIVATE sai::sai
 )
 
+# The only place the engine version exists is this file, and a result records
+# which build produced it.
+target_compile_definitions(sai_c_api
+    PRIVATE SAI_ENGINE_VERSION="${PROJECT_VERSION}"
+)
+
 if(SAI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)

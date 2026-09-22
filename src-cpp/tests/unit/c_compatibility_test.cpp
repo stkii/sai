@@ -39,6 +39,12 @@ static_assert(std::is_standard_layout_v<SaiColumnCounts>);
 static_assert(std::is_trivially_copyable_v<SaiColumnCounts>);
 static_assert(std::is_standard_layout_v<SaiErrorMessage>);
 static_assert(std::is_trivially_copyable_v<SaiErrorMessage>);
+static_assert(std::is_standard_layout_v<SaiOptionalDouble>);
+static_assert(std::is_trivially_copyable_v<SaiOptionalDouble>);
+static_assert(std::is_standard_layout_v<SaiDescriptiveOptions>);
+static_assert(std::is_trivially_copyable_v<SaiDescriptiveOptions>);
+static_assert(std::is_standard_layout_v<SaiDescriptiveResult>);
+static_assert(std::is_trivially_copyable_v<SaiDescriptiveResult>);
 
 template <typename T>
 [[nodiscard]] std::span<const T> as_span(const T* data, std::size_t count) {

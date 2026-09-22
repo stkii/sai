@@ -40,8 +40,8 @@ struct SaiNumericColumn {
     std::size_t name_length;
 };
 
-// No function returns one yet; the shape is fixed here because the boundary
-// contract is. target is a static string and is never released.
+// Why a value the caller asked for is absent. target is a static string owned
+// by the engine and is never released.
 struct SaiDiagnostic {
     std::int32_t code;
     const char* target;
@@ -63,13 +63,66 @@ struct SaiColumnCounts {
     std::size_t valid_count;
 };
 
+// A statistic the engine did not produce. present is 0 and value must not be
+// read: a caller that substitutes zero reports a result nobody computed.
+struct SaiOptionalDouble {
+    double value;
+    std::uint8_t present;
+};
+
+// Each flag is independent, and 0 means the caller did not ask for that
+// statistic rather than that the engine could not produce it.
+struct SaiDescriptiveOptions {
+    std::uint8_t include_skewness;
+    std::uint8_t include_kurtosis;
+};
+
+// One per statistic below, because a value is explained at most once. Fixed so
+// that a result crosses without an allocation and needs no release.
+inline constexpr std::size_t sai_descriptive_diagnostic_capacity = 7;
+
+struct SaiDescriptiveResult {
+    std::size_t total_count;
+    std::size_t valid_count;
+    std::size_t missing_count;
+
+    SaiOptionalDouble mean;
+    SaiOptionalDouble standard_deviation;
+    SaiOptionalDouble minimum;
+    SaiOptionalDouble median;
+    SaiOptionalDouble maximum;
+    SaiOptionalDouble skewness;
+    SaiOptionalDouble kurtosis;
+
+    // What the engine ran with, which a caller that sent no options reads to
+    // learn the defaults.
+    SaiDescriptiveOptions applied_options;
+
+    SaiDiagnostic diagnostics[sai_descriptive_diagnostic_capacity];
+    std::size_t diagnostic_count;
+};
+
 // out_error may be null, and must not already hold a message: this overwrites
 // it without releasing. out_counts is written only on success.
 SaiStatus sai_numeric_column_counts(const SaiNumericColumn* column,
                                     SaiColumnCounts* out_counts,
                                     SaiErrorMessage* out_error) noexcept;
 
+// Statistics for one column. options may be null, which asks for neither shape
+// statistic. out_result is written only on success and is overwritten whole, so
+// a reused structure carries nothing from an earlier call.
+//
+// An empty, all-missing or constant column is accepted: it is data, not a
+// broken call, and the diagnostics say which statistics it has no value for.
+SaiStatus sai_describe(const SaiNumericColumn* column, const SaiDescriptiveOptions* options,
+                       SaiDescriptiveResult* out_result, SaiErrorMessage* out_error) noexcept;
+
 // Idempotent, and safe to call with null.
 void sai_error_message_destroy(SaiErrorMessage* message) noexcept;
+
+// Which build of the engine produced a result, as a static null terminated
+// string that is never released. Recorded with the result so a stored one can
+// be told apart from a value this engine would produce today.
+const char* sai_engine_version() noexcept;
 
 }  // extern "C"
