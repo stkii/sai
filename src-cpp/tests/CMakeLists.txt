@@ -32,6 +32,27 @@ function(sai_add_test name source)
     gtest_discover_tests(${name})
 endfunction()
 
+# Shared by tests that read stored reference values or compare doubles. A
+# library rather than extra sources per test, so the comparison defined in
+# docs/NUMERICAL_POLICY.md has one implementation for every method. It carries
+# sai::sai so the fixture mask uses the engine's own encoding; a test that
+# names this target must not name sai::sai as well.
+add_library(sai_test_support STATIC
+    support/fixture.cpp
+    support/tolerance.cpp
+)
+add_library(sai::test_support ALIAS sai_test_support)
+
+target_include_directories(sai_test_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(sai_test_support
+    PUBLIC sai::compile_options sai::sai GTest::gtest
+)
+# The fixtures are read from the source tree rather than copied next to the
+# binary, so a regenerated reference value takes effect without reconfiguring.
+target_compile_definitions(sai_test_support
+    PRIVATE SAI_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+)
+
 sai_add_test(data_view_test unit/data_view_test.cpp sai::sai)
 sai_add_test(diagnostic_test unit/diagnostic_test.cpp sai::sai)
 
@@ -40,3 +61,9 @@ sai_add_test(diagnostic_test unit/diagnostic_test.cpp sai::sai)
 # reads the C++ types the structures mirror.
 sai_add_test(c_compatibility_test unit/c_compatibility_test.cpp sai::c_api sai::sai)
 sai_add_test(c_api_test integration/c_api_test.cpp sai::c_api)
+
+sai_add_test(tolerance_test unit/tolerance_test.cpp sai::test_support)
+
+# Step 8 adds the comparison against these values; this one checks that they
+# load and that the loader rejects a damaged file.
+sai_add_test(descriptive_fixture_test reference/descriptive_fixture_test.cpp sai::test_support)

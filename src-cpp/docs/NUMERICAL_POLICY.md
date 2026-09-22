@@ -126,7 +126,7 @@ fast-mathだけは理由が数値計算固有です。NaNと無限大が存在�
 
 現行の `tests/fixtures/descriptive/` に記録されている値と同じです。
 
-GoogleTest の `EXPECT_NEAR` は絶対誤差だけを見るため、この式を満たす比較ヘルパーを `tests/` に1つ用意し、全手法で共有します。
+GoogleTest の `EXPECT_NEAR` は絶対誤差だけを見るため、この式を満たす比較ヘルパー `tests/support/tolerance.hpp` の `sai::test::is_near` を全手法で共有します。
 
 ### 手法ごとの上書き
 

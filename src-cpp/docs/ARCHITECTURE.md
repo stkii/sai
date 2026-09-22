@@ -137,6 +137,7 @@ src-cpp/
 │   ├── unit/                    # 個別の計算・入力検証
 │   ├── integration/             # 公開API・外部接続
 │   ├── reference/               # 保存済み参照値との照合
+│   ├── support/                 # 参照値の読み込み・許容誤差の比較
 │   └── fixtures/                # 手法別の入力・期待値・計算条件
 ├── validation/
 │   ├── r/                       # 参照値生成スクリプト・環境固定
