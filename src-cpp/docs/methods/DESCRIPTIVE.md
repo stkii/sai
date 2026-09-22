@@ -1,52 +1,91 @@
 # 記述統計
 
-## APIと実装範囲
+## この文書について
 
-`sai::analysis::describe(column, options)` は数値1列の重みなし記述統計を返します。複数列は列ごとに呼び出します。入力は `NumericColumnView` で参照し、変更しません。
+数値1列の記述統計について、返す値、返らない条件、採用する定義とSPSS資料の対応を定めます。エラーの伝え方、浮動小数点の扱い、許容誤差の既定は [数値計算とエラー処理の方針](../NUMERICAL_POLICY.md) に従い、ここには手法固有の判断だけを書きます。
 
-| フィールド | 意味・条件 |
-| --- | --- |
-| `total_count` | 欠損行も含めた入力行数 |
-| `valid_count` | 統計量に使用した有効値の数 |
-| `missing_count` | 欠損マスクで指定された欠損行の数 |
-| `mean` | 算術平均。有効件数1以上 |
-| `standard_deviation` | 標本標準偏差。分母は `n - 1`、有効件数2以上 |
-| `minimum` / `maximum` | 最小値・最大値。有効件数1以上 |
-| `median` | 中央値。有効件数1以上 |
-| `skewness` | 補正済み歪度。要求時のみ、有効件数3以上 |
-| `kurtosis` | 補正済み超過尖度。要求時のみ、有効件数4以上。正規分布の基準は0 |
-| `applied_options` | 今回適用したオプション |
-| `diagnostics` | 標準偏差・歪度・尖度を返せなかった理由 |
+計算の手順と内部の変数名はこの文書の対象外です。実装を読まずに、どの入力でどの値が返り、どの条件で返らないかが判断できることを目的とします。
+
+### SPSS準拠の段階
+
+| 統計量 | 段階 | 残す根拠 |
+| --- | --- | --- |
+| 平均・標準偏差・最小・最大・歪度・尖度 | B：式一致 | IBM SPSS Statistics Algorithms v32 の `DESCRIPTIVES Algorithms`（PDFの364〜366ページ。PDF先頭を1ページとして数えた位置）に式がある。参照値はRのbase/statsと `psych` の `type = 2` で生成した |
+| 中央値 | C：SAI採用仕様 | DESCRIPTIVES章に対応する記述がない。通常の標本中央値を採用する |
+
+SPSS本体での照合は未実施です。段階Aの統計量はありません。資料のPDFは容量と再配布の都合で追跡していないため、出典はページ番号で示します。
+
+## 公開API
+
+`sai::analysis::describe(column, options)` は、数値1列の重みなし記述統計を返します。複数列は列ごとに呼び出します。入力の `sai::core::NumericColumnView` は借用するだけで、変更しません。宣言は `include/sai/analysis/descriptive.hpp` にあります。
 
 ```cpp
-const sai::analysis::DescriptiveOptions options{true, true};
-const auto result = sai::analysis::describe(column, options);
-if (result.standard_deviation.has_value()) {
-    const double sd = *result.standard_deviation;
-    // Use sd for output or further processing.
+const sai::analysis::DescriptiveOptions options{.include_skewness = true};
+const sai::analysis::DescriptiveResult result = sai::analysis::describe(column, options);
+if (result.skewness.has_value()) {
+    use(*result.skewness);
 }
 ```
 
-`include_skewness` と `include_kurtosis` は独立したオプションで、既定値は `false` です。指定しない場合、高次モーメントの計算も省きます。ただし尖度には内部の3次モーメントも必要です。
+### オプション
 
-数値は `std::optional<double>` です。空列・全欠損ではすべての統計量が `std::nullopt` になります。オプションを無効にした統計量も `std::nullopt` ですが、その診断は発生しません。要求した統計量が計算できなかった場合は件数と診断から理由を確認できます。平均・最小・最大・中央値の欠落理由は `valid_count == 0` です。
+| フィールド | 既定 | 意味 |
+| --- | --- | --- |
+| `include_skewness` | `false` | 歪度を求める |
+| `include_kurtosis` | `false` | 尖度を求める |
 
-## 定義とSPSS資料との対応
+2つは独立で、片方だけを有効にできます。
 
-資料：[IBM SPSS Statistics Algorithms v32](../algorithm/v32_IBM_SPSS_Statistics_Algorithms.pdf)、`DESCRIPTIVES Algorithms`、PDFの364〜366ページ（PDF先頭を1ページとして数えた位置）。数式はページ画像でも確認しました。各有効観測の重みを1とし、その件数を $`n`$、中心モーメントの和を $`M_r=\sum_i(x_i-\bar{x})^r`$ とします。
+### 結果
 
-平均は資料の暫定平均の更新に従います。
+| フィールド | 型 | 意味 |
+| --- | --- | --- |
+| `total_count` | `std::size_t` | 欠損行を含む入力行数 |
+| `valid_count` | `std::size_t` | 統計量に使った有効行数 |
+| `missing_count` | `std::size_t` | 欠損マスクが1の行数 |
+| `mean` | `std::optional<double>` | 算術平均 |
+| `standard_deviation` | `std::optional<double>` | 標本標準偏差。分母は $`n-1`$ |
+| `minimum` / `maximum` | `std::optional<double>` | 最小値・最大値 |
+| `median` | `std::optional<double>` | 中央値 |
+| `skewness` | `std::optional<double>` | 補正済み歪度 |
+| `kurtosis` | `std::optional<double>` | 補正済み超過尖度。正規分布で0 |
+| `applied_options` | `DescriptiveOptions` | 今回適用したオプション |
+| `diagnostics` | `std::vector<sai::core::Diagnostic>` | 要求した値が返らなかった理由 |
 
-```math
-\bar{x}_j=\bar{x}_{j-1}+\frac{x_j-\bar{x}_{j-1}}{j}
-```
+`total_count == valid_count + missing_count` が常に成り立ちます。
 
-新しい値と平均が異符号の場合は、差のオーバーフローを避けるため、数学的に同じ重み付き平均 $`(j-1)\bar{x}_{j-1}/j+x_j/j`$ に並べ替えます。
+## 値が返らない条件
 
-標本標準偏差と補正済み歪度・超過尖度は次の定義です。
+有効行は、欠損マスクが1でない行です。その件数を $`n`$ とします。
+
+| 統計量 | 返る条件 | 満たさないときの診断 |
+| --- | --- | --- |
+| `mean`・`minimum`・`maximum`・`median` | $`n\ge1`$ | `InsufficientObservations` |
+| `standard_deviation` | $`n\ge2`$ | `InsufficientObservations` |
+| `skewness` | 要求あり、$`n\ge3`$、標本分散が閾値以上 | `InsufficientObservations`／`VarianceTooSmall` |
+| `kurtosis` | 要求あり、$`n\ge4`$、標本分散が閾値以上 | `InsufficientObservations`／`VarianceTooSmall` |
+
+診断の `target` は返らなかったフィールド名、`count` は有効件数 $`n`$ です。
+
+要求しなかった統計量は `std::nullopt` になりますが、診断は出しません。利用者が選ばなかったことは異常ではないためです。したがって診断が空であることは、要求したすべての値が返ったことを意味します。
+
+### 数値表現の限界
+
+定義上は存在しても double で表せない場合は、値を返さずに `NotRepresentable` を記録します。入力の誤りではないので例外にしません。
+
+- 平均が有限でなくなった場合。平均に依存する `standard_deviation`・`skewness`・`kurtosis` も返しません。`minimum`・`maximum`・`median` は平均を使わないので返ります
+- 標準偏差がdoubleの範囲を超えた場合、または標本分散が0でないのに標準偏差が0へアンダーフローした場合。`skewness`・`kurtosis` も返しません
+
+いずれも、返せなかったフィールドごとに診断を記録します。他の計算できた統計量は保持します。
+
+## 定義
+
+有効値を $`x_i`$、その件数を $`n`$、平均を $`\bar{x}`$、中心モーメントの和を $`M_r=\sum_i(x_i-\bar{x})^r`$ とします。各有効観測の重みは1です。
 
 ```math
 \begin{align*}
+  \bar{x} &= \frac{1}{n}\sum_i x_i
+  \\[8pt]
   s &= \sqrt{\frac{M_2}{n-1}}
   \\[8pt]
   G_1 &= \frac{n M_3}{(n-1)(n-2)s^3}
@@ -55,50 +94,47 @@ if (result.standard_deviation.has_value()) {
 \end{align*}
 ```
 
-歪度は $`n\le2`$、尖度は $`n\le3`$ で未定義です。SPSS資料に従い、標本分散 $`s^2<10^{-20}`$ では両方を返しません。実装では標準偏差の閾値を名前付き定数 `minimum_shape_standard_deviation`（$`10^{-10}`$）として保持します。この閾値は標準偏差自体には適用せず、定数列でも $`n\ge2`$ なら標準偏差0を返します。
+SPSS資料は平均を暫定平均の逐次更新で示していますが、定義として同じ値です。
 
-中央値はこのDESCRIPTIVES章の掲載統計量には含まれません。SAIの仕様として通常の標本中央値を採用します。奇数件では昇順の中央の値、偶数件では中央2値の平均です。既存R版の中央値および `stats::median` と照合します。
+中央値は通常の標本中央値です。有効値を昇順に並べ、奇数件では中央の値、偶数件では中央2値の平均とします。同順位は区別しません。
 
-## 数値計算と作業領域
+### 分散の閾値
 
-実装の内部変数はファイル全体でSPSS資料の記号に対応させます。`collect_valid_values` と `update_mean` の `X_j` は今回の有効値、`X_bar` は元の尺度での暫定平均です。`central_moments` では `X_j_original` が元の値、`X_j` が中心・尺度調整後の作業値、`moments.X_bar` が作業値の暫定平均です。`M2`・`M3`・`M4` は資料の中心モーメント和に対応し、この関数では作業値について計算します。`X_j_minus_X_bar_previous` は式中の $`X_j-\bar{X}_{j-1}`$、`v_j` は平均の更新量、`M2_increment` は2次モーメント和の増分を表します。`M2` などの数字は次数であり、観測番号ではありません。
+標本分散 $`s^2`$ が $`10^{-20}`$ 未満のとき、歪度と尖度を返しません。SPSS資料が定める打ち切りです。
 
-重みはすべて1なので `W_j` は取り込み済み件数、`W_N` は最終的な有効件数 `N` に一致します。`N` は件数判定と中央値の位置計算に使う整数、`W_N` は統計量の式に使う浮動小数点数です。`S_normalized`・`S2_normalized` は作業値の標本標準偏差・分散、`S` は元の尺度へ戻した標本標準偏差です。公開結果の `mean`・`median` などは利用側が読みやすい名前を維持します。
+この閾値は標準偏差そのものには適用しません。定数列でも $`n\ge2`$ なら `standard_deviation` は0を返します。
 
-SPSSの数式に直接対応しない補助変数には、役割を示す名前を使います。`valid_values` は欠損除外後の作業用配列、`normalization_center`・`normalization_scale` は中心・尺度調整の基準、`median_position` は中央値計算で使う中央位置です。入力行の添字 `i` は欠損行も数えるため、有効値を数える `j` とは区別します。
+## 欠損と契約違反
 
-中心モーメントは資料の暫定平均による逐次更新を用います。大きな値の2乗・4乗によるオーバーフローを避けるため、有効値の最小・最大の中点を中心として移動し、最大偏差で尺度を揃えた作業値から計算します。大きなオフセットに対して小さな変動があるケースでも、中心を先に差し引くことで変動を保持します。
+欠損マスクが1の行は、そこに入っている値によらず全統計量から除外します。すべての統計量が同じ有効行を使います。マスクを渡さないことは「欠損なし」を意味します。
 
-標準偏差は最後に元の尺度へ戻します。歪度・尖度は正の尺度変換で変わらないため、作業値のモーメントから直接求めます。分散の閾値は元の尺度で判定します。これらは対象行や統計量の定義を変更する処理ではありません。
+次の3つは呼び出し元のコードの誤りなので `std::invalid_argument` を投げます。検証は `sai::core::validate` が入口で1度だけ行い、文言は [数値計算とエラー処理の方針](../NUMERICAL_POLICY.md) が定めます。
 
-中央値には有効値のコピーと `std::nth_element` を使います。偶数件の中央2値の平均は、同符号の大きな値の和がオーバーフローしない式で計算します。入力列を並べ替えません。作業領域として入力行数に比例するメモリを確保します。
+- 欠損マスクの長さが値と違う
+- 欠損マスクに0と1以外がある
+- 欠損として印を付けられていない行が有限でない値を持つ
 
-丸め誤差や入力順序の影響は残ります。SPSSとビット単位で一致することや、任意の数値範囲での高精度は保証しません。SPSSアプリ本体での出力照合はまだ行っていません。
+欠損の印がないNaNを黙って欠損として扱いません。SPSSのシステム欠損の内部表現は再現しません。
 
-## 欠損・不正値・診断
+## 検証
 
-- マスクが1の行はプレースホルダーの値に関係なく除外します。すべての統計量に同じ有効行を使用します。
-- マスクが0のNaN・正負の無限大は、1始まりの行番号を含む `std::invalid_argument` にします。黙って欠損へ変更しません。
-- 平均が非有限になった場合は `std::overflow_error` にします。
-- 標準偏差がdoubleの範囲を超える、または非ゼロの標準偏差が0にアンダーフローした場合は、その値を返さず `NumericRange` を記録します。他の計算可能な統計量は保持します。
+許容誤差は方針の既定（絶対誤差 $`10^{-12}`$ ＋相対誤差 $`10^{-10}`$、件数は完全一致）を使い、この手法では上書きしません。
 
-| 診断 | 意味 |
+| 場所 | 内容 |
 | --- | --- |
-| `InsufficientObservations` | 有効件数が足りない |
-| `VarianceTooSmall` | 歪度・尖度について、元の尺度の標本分散がSPSSの閾値未満 |
-| `NumericRange` | 標準偏差を有限のdoubleとして表現できない |
+| `tests/unit/descriptive_test.cpp` | 境界条件、欠損、空列、定数列、件数の境界、オプションの独立性、入力を変更しないこと |
+| `tests/reference/descriptive_reference_test.cpp` | 保存済みの参照値との照合 |
+| `tests/fixtures/descriptive/` | `iris` の数値4列と `airquality` の4列、生成環境と出典 |
+| `validation/r/generate_descriptive.R` | 参照値の再生成 |
 
-これはSAIのAPI上の表現です。SPSSのシステム欠損の内部表現を再現しません。Rust接続時は診断を保持し、未定義をゼロに置き換えずに画面へ伝える必要があります。
+通常のテスト実行にRは要りません。
 
-## R版との互換性と検証
+### R版との差異
 
-通常の条件では既存の `psych::describe(..., type = 2)` と同じ標本標準偏差・補正済み歪度・補正済み超過尖度を目標にします。ただし既存R版はSPSSの $`10^{-20}`$ の分散閾値を明示的に適用していません。極小分散の列での歪度・尖度の省略は今回の採用仕様として記録し、`VarianceTooSmall` を返します。R側の結果を無条件に再現するものではありません。
+既存のR実装はSPSSの分散の閾値を適用していません。極小分散の列では、R版が歪度・尖度の値を返すのに対し、SAIは返さずに `VarianceTooSmall` を記録します。SAIの採用仕様であり、Rに合わせません。
 
-- `tests/unit/descriptive_test.cpp`：手計算可能な例、偶数・奇数・同順位の中央値、欠損、空列、定数列、標本数の境界、オプションの独立性、大きなオフセット・数値範囲を検証。
-- `tests/reference/descriptive_reference_test.cpp`：`iris` の数値4列と `airquality` の4列を、Rの保存済み参照値と比較。
-- `tests/fixtures/descriptive/`：入力と丸め前の期待値、生成環境と形式の説明を保存。
-- `validation/r/generate_descriptive.R`：参照値の再生成。Rのbase/statsと `psych::skew`／`psych::kurtosi` の `type=2` を使用。パッケージは自動インストールしない。
+それ以外の条件では、`psych::describe(..., type = 2)` と同じ標本標準偏差・補正済み歪度・補正済み超過尖度になります。
 
-通常のテストにはRは不要です。両テストの冒頭にコンパイル・実行コマンドを記載しています。参照ケースは件数を厳密に、数値を絶対誤差 $`10^{-12}`$ ＋相対誤差 $`10^{-10}`$ で比較します。この許容誤差は今回の8ケース用で、すべての分析に共通の基準ではありません。
+## 範囲外
 
-重み付き集計、歪度・尖度の標準誤差、平均の標準誤差、表示順、Rust・GUIへの接続は今回の範囲に含みません。Rエンジンの置換完了を意味しません。
+重み付き集計、歪度・尖度の標準誤差、平均の標準誤差、表示順、Rustと画面への接続は含みません。
