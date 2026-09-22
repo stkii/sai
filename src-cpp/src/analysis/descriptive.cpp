@@ -18,11 +18,11 @@ using core::DiagnosticCode;
 using core::NumericColumnView;
 
 // The valid observations a statistic needs before it has a definition. A
-// single value is its own mean, minimum, median and maximum; a spread needs
-// two; the bias corrections of skewness and kurtosis divide by (n - 2) and by
+// single value is its own mean, minimum, median and maximum; a standard
+// deviation needs two; the bias corrections of skewness and kurtosis divide by (n - 2) and by
 // (n - 2)(n - 3).
 constexpr std::size_t minimum_observations = 1;
-constexpr std::size_t minimum_spread_observations = 2;
+constexpr std::size_t minimum_dispersion_observations = 2;
 constexpr std::size_t minimum_skewness_observations = 3;
 constexpr std::size_t minimum_kurtosis_observations = 4;
 
@@ -42,7 +42,7 @@ constexpr std::string_view maximum_target = "maximum";
 constexpr std::string_view skewness_target = "skewness";
 constexpr std::string_view kurtosis_target = "kurtosis";
 
-void report(DescriptiveResult& result, DiagnosticCode code, std::string_view target) {
+void report_diagnostic(DescriptiveResult& result, DiagnosticCode code, std::string_view target) {
     result.diagnostics.push_back(Diagnostic{code, target, result.valid_count});
 }
 
@@ -93,27 +93,30 @@ void report(DescriptiveResult& result, DiagnosticCode code, std::string_view tar
     return mean;
 }
 
-// The sums M_r = sum (x_i - mean)^r that skewness and kurtosis are built from.
-struct CentralMoments {
-    double m2{};
-    double m3{};
-    double m4{};
+// The sums of (x_i - mean)^r that skewness and kurtosis are built from. Sums
+// rather than central moments: a central moment divides by the count, and
+// nothing here does.
+struct DeviationSums {
+    double squared{};
+    double cubed{};
+    double fourth{};
 };
 
-// The moments of the values after x -> (x - center) / scale, which is a change
-// of origin and of unit only. Skewness and kurtosis are ratios of a moment to
-// a matching power of the standard deviation, so the unit cancels and they are
-// read off these sums directly; the standard deviation carries the unit and is
-// multiplied back by scale, and the variance cutoff is applied on the original
-// scale.
+// The sums for the values after x -> (x - center) / scale, which is a change
+// of origin and of unit only. Skewness and kurtosis are ratios of one of these
+// sums to a matching power of the standard deviation, so the unit cancels and
+// they are read off the normalized sums directly; the standard deviation
+// carries the unit and is multiplied back by scale, and the variance cutoff is
+// applied on the original scale.
 //
-// Requires scale > 0. The update of a moment reads the lower ones as they
-// stood before this observation, hence m4 before m3 before m2. The recurrence
-// is the one the SPSS algorithm gives for the weighted case with every weight 1.
-[[nodiscard]] CentralMoments central_moments_of(const std::vector<double>& values, double center,
-                                                double scale,
-                                                const DescriptiveOptions& options) noexcept {
-    CentralMoments moments;
+// Requires scale > 0. The update of one sum reads the lower ones as they stood
+// before this observation, hence fourth before cubed before squared. The
+// recurrence is the one the SPSS algorithm gives for the weighted case with
+// every weight 1.
+[[nodiscard]] DeviationSums deviation_sums_of(const std::vector<double>& values, double center,
+                                              double scale,
+                                              const DescriptiveOptions& options) noexcept {
+    DeviationSums sums;
     double mean = 0.0;
     std::size_t count = 0;
     for (const double original : values) {
@@ -121,20 +124,20 @@ struct CentralMoments {
         const double weight = static_cast<double>(++count);
         const double deviation = value - mean;
         const double step = deviation / weight;
-        const double m2_increment = deviation * step * (weight - 1.0);
+        const double squared_increment = deviation * step * (weight - 1.0);
 
         if (options.include_kurtosis) {
-            moments.m4 += (m2_increment * step * step
-                           * ((weight * weight) - (3.0 * weight) + 3.0))
-                          + (6.0 * step * step * moments.m2) - (4.0 * step * moments.m3);
+            sums.fourth += (squared_increment * step * step
+                            * ((weight * weight) - (3.0 * weight) + 3.0))
+                           + (6.0 * step * step * sums.squared) - (4.0 * step * sums.cubed);
         }
         if (options.include_skewness || options.include_kurtosis) {
-            moments.m3 += (m2_increment * step * (weight - 2.0)) - (3.0 * step * moments.m2);
+            sums.cubed += (squared_increment * step * (weight - 2.0)) - (3.0 * step * sums.squared);
         }
-        moments.m2 += m2_increment;
+        sums.squared += squared_increment;
         mean += step;
     }
-    return moments;
+    return sums;
 }
 
 // Orders its argument, which is why it takes the working copy and not the
@@ -152,17 +155,17 @@ struct CentralMoments {
 // Which statistics the caller asked for and the sample size allows. A
 // statistic ruled out here already has its diagnostic and must not be given a
 // second one further down.
-struct Pending {
+struct PendingStatistics {
     bool standard_deviation{};
     bool skewness{};
     bool kurtosis{};
 };
 
-[[nodiscard]] Pending pending_of(const DescriptiveResult& result) noexcept {
+[[nodiscard]] PendingStatistics pending_statistics_of(const DescriptiveResult& result) noexcept {
     const std::size_t count = result.valid_count;
     const DescriptiveOptions& options = result.applied_options;
-    return Pending{
-        count >= minimum_spread_observations,
+    return PendingStatistics{
+        count >= minimum_dispersion_observations,
         options.include_skewness && count >= minimum_skewness_observations,
         options.include_kurtosis && count >= minimum_kurtosis_observations,
     };
@@ -170,70 +173,73 @@ struct Pending {
 
 // Ordered by the number of observations each statistic needs, so the least
 // demanding one is reported first.
-void report_short_column(DescriptiveResult& result) {
+void report_insufficient_observations(DescriptiveResult& result) {
     const std::size_t count = result.valid_count;
     const DescriptiveOptions& options = result.applied_options;
 
     if (count < minimum_observations) {
         for (const std::string_view target :
              {mean_target, minimum_target, median_target, maximum_target}) {
-            report(result, DiagnosticCode::InsufficientObservations, target);
+            report_diagnostic(result, DiagnosticCode::InsufficientObservations, target);
         }
     }
-    if (count < minimum_spread_observations) {
-        report(result, DiagnosticCode::InsufficientObservations, standard_deviation_target);
+    if (count < minimum_dispersion_observations) {
+        report_diagnostic(result, DiagnosticCode::InsufficientObservations,
+                          standard_deviation_target);
     }
     if (options.include_skewness && count < minimum_skewness_observations) {
-        report(result, DiagnosticCode::InsufficientObservations, skewness_target);
+        report_diagnostic(result, DiagnosticCode::InsufficientObservations, skewness_target);
     }
     if (options.include_kurtosis && count < minimum_kurtosis_observations) {
-        report(result, DiagnosticCode::InsufficientObservations, kurtosis_target);
+        report_diagnostic(result, DiagnosticCode::InsufficientObservations, kurtosis_target);
     }
 }
 
 // Everything the mean feeds, when the mean itself could not be represented.
-void report_without_a_mean(DescriptiveResult& result, const Pending& pending) {
+void report_statistics_needing_the_mean(DescriptiveResult& result,
+                                       const PendingStatistics& pending) {
     if (pending.standard_deviation) {
-        report(result, DiagnosticCode::NotRepresentable, standard_deviation_target);
+        report_diagnostic(result, DiagnosticCode::NotRepresentable, standard_deviation_target);
     }
     if (pending.skewness) {
-        report(result, DiagnosticCode::NotRepresentable, skewness_target);
+        report_diagnostic(result, DiagnosticCode::NotRepresentable, skewness_target);
     }
     if (pending.kurtosis) {
-        report(result, DiagnosticCode::NotRepresentable, kurtosis_target);
+        report_diagnostic(result, DiagnosticCode::NotRepresentable, kurtosis_target);
     }
 }
 
-void report_shape(DescriptiveResult& result, const Pending& pending, DiagnosticCode code) {
+void report_shape_statistics(DescriptiveResult& result, const PendingStatistics& pending,
+                             DiagnosticCode code) {
     if (pending.skewness) {
-        report(result, code, skewness_target);
+        report_diagnostic(result, code, skewness_target);
     }
     if (pending.kurtosis) {
-        report(result, code, kurtosis_target);
+        report_diagnostic(result, code, kurtosis_target);
     }
 }
 
-// The moments and the standard deviation are both on the normalized scale,
-// where the unit of the ratios below cancels.
-void assign_shape(DescriptiveResult& result, const Pending& pending,
-                  const CentralMoments& moments, double normalized) {
+// The sums and the standard deviation are both on the normalized scale, where
+// the unit of the ratios below cancels.
+void assign_shape_statistics(DescriptiveResult& result, const PendingStatistics& pending,
+                             const DeviationSums& sums, double normalized) {
     const double count = static_cast<double>(result.valid_count);
     const double variance = normalized * normalized;
     if (pending.skewness) {
         result.skewness =
-            (count * moments.m3) / ((count - 1.0) * (count - 2.0) * variance * normalized);
+            (count * sums.cubed) / ((count - 1.0) * (count - 2.0) * variance * normalized);
     }
     if (pending.kurtosis) {
         result.kurtosis =
-            ((count * (count + 1.0) * moments.m4)
+            ((count * (count + 1.0) * sums.fourth)
              / ((count - 1.0) * (count - 2.0) * (count - 3.0) * variance * variance))
             - ((3.0 * (count - 1.0) * (count - 1.0)) / ((count - 2.0) * (count - 3.0)));
     }
 }
 
 // Requires a minimum and a maximum.
-void describe_spread(DescriptiveResult& result, const std::vector<double>& values,
-                     const Pending& pending) {
+void describe_dispersion_and_shape(DescriptiveResult& result, const std::vector<double>& values,
+                                   const PendingStatistics& pending) {
     // Nothing below is defined for one value, and a pending shape statistic
     // needs more still, so this leaves no statistic unanswered.
     if (!pending.standard_deviation) {
@@ -245,12 +251,12 @@ void describe_spread(DescriptiveResult& result, const std::vector<double>& value
     // and the maximum at +1, so no power of a deviation can overflow.
     const double center = midpoint(*result.minimum, *result.maximum);
     const double scale = std::max(*result.maximum - center, center - *result.minimum);
-    const CentralMoments moments =
-        scale > 0.0 ? central_moments_of(values, center, scale, result.applied_options)
-                    : CentralMoments{};
+    const DeviationSums sums =
+        scale > 0.0 ? deviation_sums_of(values, center, scale, result.applied_options)
+                    : DeviationSums{};
 
     const double count = static_cast<double>(result.valid_count);
-    const double normalized = std::sqrt(moments.m2 / (count - 1.0));
+    const double normalized = std::sqrt(sums.squared / (count - 1.0));
     const double standard_deviation = normalized * scale;
 
     // The extremes normalize to -1 and +1, so a normalized deviation of zero
@@ -262,8 +268,8 @@ void describe_spread(DescriptiveResult& result, const std::vector<double>& value
         std::isfinite(standard_deviation) && (standard_deviation > 0.0 || is_constant);
 
     if (!is_representable) {
-        report(result, DiagnosticCode::NotRepresentable, standard_deviation_target);
-        report_shape(result, pending, DiagnosticCode::NotRepresentable);
+        report_diagnostic(result, DiagnosticCode::NotRepresentable, standard_deviation_target);
+        report_shape_statistics(result, pending, DiagnosticCode::NotRepresentable);
         return;
     }
     result.standard_deviation = standard_deviation;
@@ -272,10 +278,10 @@ void describe_spread(DescriptiveResult& result, const std::vector<double>& value
     // scale < 1e-10 / normalized. A normalized value small enough to make that
     // quotient infinite leaves the comparison true, which is the intent.
     if (is_constant || scale < (minimum_shape_standard_deviation / normalized)) {
-        report_shape(result, pending, DiagnosticCode::VarianceTooSmall);
+        report_shape_statistics(result, pending, DiagnosticCode::VarianceTooSmall);
         return;
     }
-    assign_shape(result, pending, moments, normalized);
+    assign_shape_statistics(result, pending, sums, normalized);
 }
 
 }  // namespace
@@ -292,7 +298,7 @@ DescriptiveResult describe(const core::NumericColumnView& column,
     result.valid_count = values.size();
     result.missing_count = result.total_count - result.valid_count;
 
-    report_short_column(result);
+    report_insufficient_observations(result);
     if (values.empty()) {
         return result;
     }
@@ -301,21 +307,21 @@ DescriptiveResult describe(const core::NumericColumnView& column,
     result.minimum = *smallest;
     result.maximum = *largest;
 
-    const Pending pending = pending_of(result);
+    const PendingStatistics pending = pending_statistics_of(result);
     const double mean = mean_of(values);
     if (std::isfinite(mean)) {
         result.mean = mean;
         // Before median_of, which reorders the working copy: a sum in floating
         // point depends on the order of its terms, and the stored reference
         // values were produced in the order the column is read.
-        describe_spread(result, values, pending);
+        describe_dispersion_and_shape(result, values, pending);
     } else {
         // The provisional mean above keeps every intermediate between the
         // smallest and largest input, so finite values are not expected to
         // reach this. It stands because the result contract is that an absent
         // value always carries a reason.
-        report(result, DiagnosticCode::NotRepresentable, mean_target);
-        report_without_a_mean(result, pending);
+        report_diagnostic(result, DiagnosticCode::NotRepresentable, mean_target);
+        report_statistics_needing_the_mean(result, pending);
     }
 
     result.median = median_of(values);
