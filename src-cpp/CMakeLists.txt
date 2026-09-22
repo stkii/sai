@@ -108,6 +108,23 @@ target_include_directories(sai
 )
 target_link_libraries(sai PUBLIC sai::compile_options)
 
+# The C ABI adapter. A separate target rather than more sources in sai, so that
+# src/ stays private to the engine and the adapter can only reach it through
+# include/sai/. It converts representations and passes errors across; the
+# statistical rules stay behind the public API. See docs/ARCHITECTURE.md.
+add_library(sai_c_api
+    adapters/c_api/src/sai_c.cpp
+)
+add_library(sai::c_api ALIAS sai_c_api)
+
+target_include_directories(sai_c_api
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/adapters/c_api/include
+)
+target_link_libraries(sai_c_api
+    PUBLIC sai::compile_options
+    PRIVATE sai::sai
+)
+
 if(SAI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)

@@ -22,13 +22,21 @@ include(GoogleTest)
 
 # Register one test executable. Each TEST() inside it becomes a separate CTest
 # entry, so a failure names the case rather than the whole binary.
-# Extra arguments are additional source files.
+#
+# The remaining arguments are the targets under test. They are named per test
+# instead of fixed, so a test that reaches the engine through the C adapter
+# does not also link the engine directly and put it on the link line twice.
 function(sai_add_test name source)
-    add_executable(${name} ${source} ${ARGN})
-    target_link_libraries(${name} PRIVATE sai::sai GTest::gtest_main)
+    add_executable(${name} ${source})
+    target_link_libraries(${name} PRIVATE GTest::gtest_main ${ARGN})
     gtest_discover_tests(${name})
 endfunction()
 
-sai_add_test(data_view_test unit/data_view_test.cpp)
-sai_add_test(diagnostic_test unit/diagnostic_test.cpp)
-sai_add_test(c_compatibility_test unit/c_compatibility_test.cpp)
+sai_add_test(data_view_test unit/data_view_test.cpp sai::sai)
+sai_add_test(diagnostic_test unit/diagnostic_test.cpp sai::sai)
+
+# The C boundary has two tests: one for the structures the adapter declares,
+# one for the functions it exports. The first also names sai::sai, because it
+# reads the C++ types the structures mirror.
+sai_add_test(c_compatibility_test unit/c_compatibility_test.cpp sai::c_api sai::sai)
+sai_add_test(c_api_test integration/c_api_test.cpp sai::c_api)

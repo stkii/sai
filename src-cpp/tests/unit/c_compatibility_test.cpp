@@ -1,7 +1,12 @@
-// The structures below are what adapters/c_api/sai_c.h will declare in Step 4.
-// They live here because Step 3 adds no adapter code, but the check cannot
-// wait: the deleted engine skipped it and its input type turned out not to
+// The layout side of the C boundary: that every structure adapters/c_api
+// declares can be written by hand in another language, and that a column and a
+// diagnostic survive conversion in both directions without losing a field.
+//
+// The check has its own test because the deleted engine never made it: its
+// input type held references to standard containers and turned out not to
 // cross the boundary at all.
+
+#include "sai_c.h"
 
 #include <gtest/gtest.h>
 
@@ -24,28 +29,16 @@ using sai::core::missing_mask_missing;
 using sai::core::missing_mask_present;
 using sai::core::NumericColumnView;
 
-struct SaiNumericColumn {
-    const double* values;
-    std::size_t value_count;
-    const std::uint8_t* missing_mask;
-    std::size_t missing_mask_count;
-    // Not necessarily null terminated; the length is authoritative.
-    const char* name;
-    std::size_t name_length;
-};
-
-struct SaiDiagnostic {
-    std::int32_t code;
-    const char* target;
-    std::size_t target_length;
-    std::size_t count;
-};
-
-// A C caller writes these by hand.
+// A caller in another language declares these itself, so each one has to be
+// reachable without a C++ constructor and copyable as bytes.
 static_assert(std::is_standard_layout_v<SaiNumericColumn>);
 static_assert(std::is_trivially_copyable_v<SaiNumericColumn>);
 static_assert(std::is_standard_layout_v<SaiDiagnostic>);
 static_assert(std::is_trivially_copyable_v<SaiDiagnostic>);
+static_assert(std::is_standard_layout_v<SaiColumnCounts>);
+static_assert(std::is_trivially_copyable_v<SaiColumnCounts>);
+static_assert(std::is_standard_layout_v<SaiErrorMessage>);
+static_assert(std::is_trivially_copyable_v<SaiErrorMessage>);
 
 template <typename T>
 [[nodiscard]] std::span<const T> as_span(const T* data, std::size_t count) {
