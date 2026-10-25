@@ -14,21 +14,6 @@ It allows users to perform data analysis through point-and-click operations with
   - Do not use default exports. Always use named exports.
 - Rust
   - Do not use `mod.rs`. Define modules in the `<name>.rs` format.
-- C++
-  - Always use `override` when overriding a function.
-  - Always use `nullptr` instead of `NULL`.
-  - Always use `using` type aliases instead of `typedef`.
-  - Ensure exception safety with `noexcept`.
-  - Prefer `constexpr` over `#define` whenever possible.
-  - Prefer unnamed namespaces over `static`.
-  - Do not use `int`, except for the standard `main` return type and its `argc` parameter.
-  - Do not use `using namespace std`.
-  - Do not include C standard library headers.
-  - Do not include `bits/stdc++.h`.
-  - Do not use C-style casts.
-  - Do not use magic numbers.
-  - Do not write overly long functions.
-  - Do not use inheritance carelessly; consider composition instead.
 
 ## Comment rules
 
@@ -39,16 +24,18 @@ Do not include:
 - Change history
 - References to task IDs, etc.
 
+Keep comments concise. Avoid repetition, preamble, and filler words; convey the necessary information in as few words as possible.
+
 ## Dark Patterns Prohibited
 
 ### Silent Changes to Analysis Results
 
 Do not implement fallbacks or logic that change a user's analysis results in a way the user did not intend, or without explicit notification.
 
-Example: If `corr_use` is invalid, silently defaulting to `"all.obs"` alters the analysis without user awareness and is prohibited.
+Example: If the missing-value option is unrecognized, silently falling back to `"all.obs"` alters the analysis without user awareness; reject it with an error instead.
 
 ## Statistical Output Policy
 
-Analysis results must match SPSS. When an R package's default differs from SPSS, choose the option that reproduces SPSS output (for example, `psych::describe(type = 2)` for skewness/kurtosis, `EFAtools::EFA(type = "SPSS")`), and cover the resulting values with tests in `src-r/tests/testthat/`.
+Analysis results should match SPSS wherever possible. Where a result cannot match, record the reason and how it differs from SPSS. When an R package's default differs from SPSS, choose the option that reproduces SPSS output (for example, `psych::describe(type = 2)` for skewness/kurtosis, `EFAtools::EFA(type = "SPSS")`), and cover the resulting values with tests in `src-r/tests/testthat/`.
 
 This is a project-wide default, so do not annotate individual call sites with "to match SPSS" comments. When a comment is warranted, state the statistical reason itself (which estimator or formula, and how it differs from the package default) rather than the software being matched.

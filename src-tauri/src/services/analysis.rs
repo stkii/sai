@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
-use crate::analysis::describe;
 use crate::infra::cache::dataset_cache::DatasetCache;
 use crate::infra::r::runner::RRunner;
 use crate::models::{
@@ -44,12 +43,7 @@ impl AnalysisService {
             None => empty_table(),
         };
 
-        // 実行先は手法ごとに固定する。C++ の失敗を理由に R へ切り替えると、
-        // 同じ操作が黙って別の実装の結果を返すことになる。
-        match method {
-            "describe" => describe::run(&table, &options),
-            _ => self.runner.run(method, &table, options),
-        }
+        self.runner.run(method, &table, options)
     }
 }
 
