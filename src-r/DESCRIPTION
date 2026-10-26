@@ -3,4 +3,4 @@ Description: SAI R analysis layer. This file declares renv profile metadata
     only; the production dependencies are managed in renv.lock. The dev
     profile (RENV_PROFILE=dev) adds test-only packages so that they never
     enter the production lockfile.
-Config/renv/profiles/dev/dependencies: testthat
+Config/renv/profiles/dev/dependencies: testthat, psych, EFAtools, smacof

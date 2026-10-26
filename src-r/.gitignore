@@ -2,3 +2,6 @@
 .Rproj.user/
 src-r.Rproj
 .Rhistory
+
+# Documents
+docs/

@@ -43,6 +43,38 @@ sai_factor_data <- function(n = 200, seed = 42) {
   )
 }
 
+# 旧実装 (CRAN パッケージ) との突き合わせ用の許容誤差 (相対)。画面に出る有効4桁より
+# 十分に厳しく取り、表示の丸めで差が隠れないようにする。
+# 閉形式の計算は丸め誤差しか出ないので厳しく、反復解法は収束基準の分だけ緩める。
+SAI_TOL_CLOSED <- 1e-9
+SAI_TOL_ITERATIVE <- 1e-5
+
+# 比較相手のパッケージは dev profile にだけ置く。本番の環境でも testthat が
+# 動くよう、無ければテストを飛ばす。
+sai_skip_unless_oracle <- function(pkg) {
+  testthat::skip_if_not_installed(pkg)
+}
+
+# 突き合わせ用の乱数データ。歪度・尖度が 0 にならないよう指数分布を混ぜ、
+# 変数ごとに欠測の位置が変わるようにする。
+sai_random_data <- function(n = 60, p = 4, na_rate = 0.1, seed = 1) {
+  set.seed(seed)
+  df <- as.data.frame(lapply(seq_len(p), function(j) {
+    x <- if (j %% 2 == 0) rexp(n) else rnorm(n, mean = j, sd = j)
+    x[runif(n) < na_rate] <- NA_real_
+    x
+  }))
+  colnames(df) <- sprintf("v%d", seq_len(p))
+  df
+}
+
+# 置き換えの PR に書く「旧実装との最大の相対差」を求める。
+sai_max_rel_diff <- function(actual, expected) {
+  a <- as.numeric(actual)
+  e <- as.numeric(expected)
+  max(abs(a - e) / pmax(abs(e), .Machine$double.eps), na.rm = TRUE)
+}
+
 # cli.R を本物の Rscript サブプロセスで実行する (E2E)。
 # fixture には tests/fixtures/cli/ 配下のファイル名、input には R オブジェクトを渡す。
 sai_run_cli <- function(input = NULL, fixture = NULL) {
