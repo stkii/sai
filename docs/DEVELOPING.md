@@ -61,6 +61,24 @@ R 層（`src-r`）では分析アルゴリズムの記述、ディスパッチ�
    - **原則として変更不要**。Rust は R との受け渡しをするだけで、対応していないメソッドが指定された場合のエラーも R 側から返ってきます
    - options の整形や結果の加工を Rust 側で行いたい場合のみ、`services/analysis.rs` に処理を追加してください
 
+### 数値計算の核と旧実装との突き合わせ
+
+**置き場所**
+
+- メソッドをまたいで使う数値計算は `R/stat_<topic>.R` に置きます (例: `stat_efa.R`)。`cli.R` で `source()` します
+- 関数は `.PascalCase` で、行列やベクトルを受け取って数値や list を返す純粋関数にします。表への変換 (`.Parsed`) と `n_note` は `<method>.R` に残します
+- 縮退 (定数列・非正定値・識別不能など) は黙って補正せず、`stop()` で利用者に伝えます
+
+**突き合わせテスト**
+
+置き換えたパッケージは、dev profile にだけ残して比較相手にします。`Config/renv/profiles/dev/dependencies` (`DESCRIPTION`) に宣言しておくと、`R/` から `pkg::` が消えても dev の lockfile から外れません (`tests/` は `.renvignore` で依存の走査から除いているため)。
+
+- ファイル名は `tests/testthat/test-oracle-<method>.R` とします。冒頭で `sai_skip_unless_oracle("<pkg>")` を呼び、入っていなければ飛ばします
+- 乱数データは `sai_random_data()`、最大の相対差は `sai_max_rel_diff()` で求めます
+- 許容誤差は `SAI_TOL_CLOSED` (1e-9。閉形式の計算) と `SAI_TOL_ITERATIVE` (1e-5。反復解法) を使い分けます。画面の表示は有効 4 桁なので、それより十分に厳しい値です
+- 突き合わせとは別に、SPSS の出力や文献値を固定値としたテストも書きます。こちらは本番の環境でも常に動きます
+- 一致しない点がある場合は、理由と差を `CLAUDE.md` の統計出力方針に従って記録します
+
 ## 配布版のビルド
 
 `pnpm tauri build` は、画面のビルド前に `pnpm prepare:r` を実行します。default profile の `src-r/renv.lock` と導入済みパッケージの版を照合し、R スクリプトとパッケージの実体を `src-tauri/resources/r/` に生成します。renv のキャッシュへのリンク、開発用データ、テストは同梱しません。パッケージが不足している場合は `src-r/` で`RENV_PROFILE=default Rscript -e 'renv::restore()'` を先に実行してください。
